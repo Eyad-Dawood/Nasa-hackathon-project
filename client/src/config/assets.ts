@@ -99,7 +99,7 @@ export const Assets = {
   /**
    * Spaceship sprite — 32×24 procedural rocket silhouette.
    */
-  ship: { key: "ship", url: "" } as AssetEntry,
+  ship: { key: "ship", url: "assets/spaceShip/SpaceShip.png" } as AssetEntry,
 
   /**
    * Item carry indicator — tiny 8×8 glowing dot above the player.

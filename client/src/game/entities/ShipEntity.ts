@@ -23,19 +23,22 @@ import { ColyseusService } from "../../network/ColyseusService";
  * state snapshot passed in via refreshState() on every onStateChange.
  */
 export class ShipEntity implements IInteractable {
-  private _worldX:      number;
-  private _worldY:      number;
-  private _sprite:      Phaser.GameObjects.Image;
-  private _label:       Phaser.GameObjects.Text;
-  private _carry:       CarrySystem;
+  private _worldX: number;
+  private _worldY: number;
+  private _sprite: Phaser.GameObjects.Image;
+  private _label: Phaser.GameObjects.Text;
+  private _carry: CarrySystem;
   private _playerRoles: string[];
-  private _menu:        ShipMenuUI | null = null;
+  private _menu: ShipMenuUI | null = null;
 
   /** Latest snapshot of ship items from the server. Updated by GameScene. */
-  private _shipItemsSnapshot: Map<string, { itemId: string; roleId: string; addedBy: string }> = new Map();
+  private _shipItemsSnapshot: Map<
+    string,
+    { itemId: string; roleId: string; addedBy: string }
+  > = new Map();
 
   constructor(scene: Phaser.Scene, carry: CarrySystem, playerRoles: string[]) {
-    this._carry       = carry;
+    this._carry = carry;
     this._playerRoles = playerRoles;
     this._worldX = SHIP_WORLD_POS.x;
     this._worldY = SHIP_WORLD_POS.y;
@@ -43,21 +46,32 @@ export class ShipEntity implements IInteractable {
     this._sprite = scene.add.image(this._worldX, this._worldY, Assets.ship.key);
     this._sprite.setScale(3).setDepth(5);
 
-    this._label = scene.add.text(this._worldX, this._worldY - 48, "🚀 Spaceship", {
-      fontFamily:      Theme.font.family,
-      fontSize:        "11px",
-      color:           "#aaffcc",
-      stroke:          "#000000",
-      strokeThickness: 3,
-    });
+    this._label = scene.add.text(
+      this._worldX,
+      this._worldY - 48,
+      "🚀 Spaceship",
+      {
+        fontFamily: Theme.font.family,
+        fontSize: "11px",
+        color: "#aaffcc",
+        stroke: "#000000",
+        strokeThickness: 3,
+      },
+    );
     this._label.setOrigin(0.5, 1).setDepth(11);
   }
 
   // ── IInteractable ────────────────────────────────────────────────────────
 
-  get worldX(): number { return this._worldX; }
-  get worldY(): number { return this._worldY; }
-  get interactionLabel(): string { return "E  —  Access Ship"; }
+  get worldX(): number {
+    return this._worldX;
+  }
+  get worldY(): number {
+    return this._worldY;
+  }
+  get interactionLabel(): string {
+    return "E  —  Access Ship";
+  }
 
   onInteract(): void {
     if (this._menu) return;
@@ -66,7 +80,9 @@ export class ShipEntity implements IInteractable {
       this._shipItemsSnapshot,
       this._carry,
       this._playerRoles,
-      () => { this._menu = null; },
+      () => {
+        this._menu = null;
+      },
     );
     this._menu.mount();
   }
@@ -86,8 +102,8 @@ export class ShipEntity implements IInteractable {
     this._shipItemsSnapshot = new Map();
     shipItems.forEach((entry: any, key: string) => {
       this._shipItemsSnapshot.set(key, {
-        itemId:  entry.itemId,
-        roleId:  entry.roleId,
+        itemId: entry.itemId,
+        roleId: entry.roleId,
         addedBy: entry.addedBy,
       });
     });
