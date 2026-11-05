@@ -23,18 +23,20 @@ import { ColyseusService } from "../../network/ColyseusService";
  * state snapshot passed in via refreshState() on every onStateChange.
  */
 export class ShipEntity implements IInteractable {
-  private _worldX: number;
-  private _worldY: number;
-  private _sprite: Phaser.GameObjects.Image;
-  private _label:  Phaser.GameObjects.Text;
-  private _carry:  CarrySystem;
-  private _menu:   ShipMenuUI | null = null;
+  private _worldX:      number;
+  private _worldY:      number;
+  private _sprite:      Phaser.GameObjects.Image;
+  private _label:       Phaser.GameObjects.Text;
+  private _carry:       CarrySystem;
+  private _playerRoles: string[];
+  private _menu:        ShipMenuUI | null = null;
 
   /** Latest snapshot of ship items from the server. Updated by GameScene. */
   private _shipItemsSnapshot: Map<string, { itemId: string; roleId: string; addedBy: string }> = new Map();
 
-  constructor(scene: Phaser.Scene, carry: CarrySystem) {
-    this._carry  = carry;
+  constructor(scene: Phaser.Scene, carry: CarrySystem, playerRoles: string[]) {
+    this._carry       = carry;
+    this._playerRoles = playerRoles;
     this._worldX = SHIP_WORLD_POS.x;
     this._worldY = SHIP_WORLD_POS.y;
 
@@ -63,7 +65,8 @@ export class ShipEntity implements IInteractable {
     this._menu = new ShipMenuUI(
       this._shipItemsSnapshot,
       this._carry,
-      () => { this._menu = null; },      // onClose
+      this._playerRoles,
+      () => { this._menu = null; },
     );
     this._menu.mount();
   }

@@ -24,24 +24,28 @@ type ShipEntry = { itemId: string; roleId: string; addedBy: string };
  *   patches arrive, so the menu stays live while open.
  */
 export class ShipMenuUI {
-  private _container: HTMLDivElement;
-  private _carry:     CarrySystem;
-  private _onClose:   () => void;
+  private _container:  HTMLDivElement;
+  private _carry:      CarrySystem;
+  private _onClose:    () => void;
   private _openDetail: ItemDetailUI | null = null;
+  /** roleIds this local player has — used to gate the Remove button. */
+  private _playerRoles: string[];
 
   // The main content area re-rendered on refresh
   private _contentEl!: HTMLDivElement;
   private _snapshot:   Map<string, ShipEntry>;
 
   constructor(
-    snapshot: Map<string, ShipEntry>,
-    carry:    CarrySystem,
-    onClose:  () => void,
+    snapshot:    Map<string, ShipEntry>,
+    carry:       CarrySystem,
+    playerRoles: string[],
+    onClose:     () => void,
   ) {
-    this._snapshot = snapshot;
-    this._carry    = carry;
-    this._onClose  = onClose;
-    this._container = this._buildDOM();
+    this._snapshot    = snapshot;
+    this._carry       = carry;
+    this._playerRoles = playerRoles;
+    this._onClose     = onClose;
+    this._container   = this._buildDOM();
   }
 
   mount(): void { document.body.appendChild(this._container); }
@@ -137,10 +141,10 @@ export class ShipMenuUI {
     weightBar.append(wLabel, wValue);
     this._contentEl.appendChild(weightBar);
 
-    // ── Role sections ──
-    const allRoles = STATIONS.map((s) => ({ roleId: s.roleId, label: s.label }));
-    for (const { roleId, label } of allRoles) {
-      const section = this._buildRoleSection(roleId, label);
+    // ── Role sections — labels come from Theme.roles (single source of truth) ──
+    const allRoles = STATIONS.map((s) => ({ roleId: s.roleId }));
+    for (const { roleId } of allRoles) {
+      const section = this._buildRoleSection(roleId);
       this._contentEl.appendChild(section);
     }
 
@@ -173,8 +177,12 @@ export class ShipMenuUI {
     }
   }
 
-  private _buildRoleSection(roleId: string, label: string): HTMLDivElement {
+  private _buildRoleSection(roleId: string): HTMLDivElement {
     const { colors, font, spacing, radius } = Theme;
+    // Label comes from Theme.roles — single source of truth for role names
+    const label = getRoleLabel(roleId);
+    // Whether this local player can remove items from this role's section
+    const playerOwnsRole = this._playerRoles.includes(roleId);
 
     const section = document.createElement("div");
     Object.assign(section.style, { display: "flex", flexDirection: "column", gap: "4px" });
@@ -228,12 +236,17 @@ export class ShipMenuUI {
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "Remove";
-      const canRemove = !this._carry.isHolding;
+      // Disabled if: (a) player is already carrying something, or
+      //              (b) player doesn't have the role that owns this item
+      const canRemove = !this._carry.isHolding && playerOwnsRole;
       removeBtn.disabled = !canRemove;
       this._styleBtn(removeBtn, "#e94560");
       if (!canRemove) {
         removeBtn.style.background = colors.disabled;
         removeBtn.style.cursor = "not-allowed";
+        removeBtn.title = playerOwnsRole
+          ? "Put down your current item first"
+          : "You don't have this role";
       }
       removeBtn.addEventListener("click", () => {
         if (this._carry.isHolding) return;

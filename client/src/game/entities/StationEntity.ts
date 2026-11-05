@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import { Assets } from "../../config/assets";
-import { Theme, getRoleHex } from "../../config/theme";
+import { Theme, getRoleHex, getRoleLabel } from "../../config/theme";
+
 import { IInteractable } from "../interfaces/IInteractable";
 import { StationDefinition, stationWorldPos } from "../data/StationData";
 import { getItemsByRole } from "../data/ItemData";
@@ -54,8 +55,8 @@ export class StationEntity implements IInteractable {
     this._sprite.setTint(getRoleHex(def.roleId));
     if (!this._hasAccess) this._sprite.setAlpha(0.55); // dim if no access
 
-    // Label above sprite
-    this._label = scene.add.text(x, y - 32, def.label, {
+    // Label above sprite — always taken from Theme.roles (single source of truth)
+    this._label = scene.add.text(x, y - 32, getRoleLabel(def.roleId), {
       fontFamily:      Theme.font.family,
       fontSize:        "9px",
       color:           "#ccccff",

@@ -99,7 +99,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     // ── 6. Spaceship (center) ─────────────────────────────────────────────
-    this.ship = new ShipEntity(this, this.carry);
+    this.ship = new ShipEntity(this, this.carry, this.roles);
 
     // ── 7. InteractionSystem — receives ALL interactables ─────────────────
     const interactables: IInteractable[] = [

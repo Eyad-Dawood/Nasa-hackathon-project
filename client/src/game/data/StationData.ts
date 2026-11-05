@@ -21,16 +21,16 @@ export interface StationDefinition {
   tileCol: number;
   /** Tile-grid row (not pixels). */
   tileRow: number;
-  /** Label shown above the station sprite and in the station menu header. */
-  label: string;
+  // label is intentionally omitted — use getRoleLabel(roleId) everywhere.
+  // This keeps Theme.roles as the single source of truth for role names.
 }
 
 /** Four corner stations, one per role. */
 export const STATIONS: StationDefinition[] = [
-  { id: "station_r1", roleId: "role1", tileCol: 2,  tileRow: 2,  label: "Engineering Bay" },
-  { id: "station_r2", roleId: "role2", tileCol: 17, tileRow: 2,  label: "Navigation Bay"  },
-  { id: "station_r3", roleId: "role3", tileCol: 2,  tileRow: 12, label: "Structure Bay"   },
-  { id: "station_r4", roleId: "role4", tileCol: 17, tileRow: 12, label: "Weapons Bay"      },
+  { id: "station_r1", roleId: "role1", tileCol: 2,  tileRow: 2  },
+  { id: "station_r2", roleId: "role2", tileCol: 17, tileRow: 2  },
+  { id: "station_r3", roleId: "role3", tileCol: 2,  tileRow: 12 },
+  { id: "station_r4", roleId: "role4", tileCol: 17, tileRow: 12 },
 ];
 
 /** Center of the map — where the spaceship sits. */

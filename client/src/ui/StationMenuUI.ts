@@ -1,4 +1,5 @@
-import { Theme, getRoleHex } from "../config/theme";
+import { Theme, getRoleHex, getRoleLabel } from "../config/theme";
+
 import { StationDefinition } from "../game/data/StationData";
 import { GameItem } from "../game/data/ItemData";
 import { CarrySystem } from "../game/systems/CarrySystem";
@@ -75,7 +76,8 @@ export class StationMenuUI {
     Object.assign(header.style, { display: "flex", justifyContent: "space-between", alignItems: "center" });
 
     const title = document.createElement("h3");
-    title.textContent = def.label;
+    // Use the role's label from Theme.roles — single source of truth
+    title.textContent = getRoleLabel(def.roleId);
     Object.assign(title.style, {
       color: `#${getRoleHex(def.roleId).toString(16).padStart(6, "0")}`,
       fontSize: font.sizeLg, margin: "0", letterSpacing: "1px",
