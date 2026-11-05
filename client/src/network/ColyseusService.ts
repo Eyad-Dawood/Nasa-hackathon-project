@@ -8,7 +8,10 @@ export const BACKEND_WS_URL = isLocalhost
       window.location.port ? `:${window.location.port}` : ""
     }`;
 
-export const BACKEND_HTTP_URL = BACKEND_WS_URL.replace("ws://", "http://").replace("wss://", "https://");
+export const BACKEND_HTTP_URL = BACKEND_WS_URL.replace(
+  "ws://",
+  "http://",
+).replace("wss://", "https://");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -68,14 +71,26 @@ class _ColyseusService {
     username: string,
     role: string,
     spawnX: number,
-    spawnY: number
+    spawnY: number,
+    isHost: boolean = false,
   ): Promise<void> {
     this._leaveCurrentRoom();
+    console.log("=== 🚩 TRACKING: 4. ColyseusService before sending ===");
+    console.log("Received isHost in arguments:", isHost);
+    console.log("Full options object being sent:", {
+      username,
+      role,
+      x: spawnX,
+      y: spawnY,
+      isHost,
+    });
+    console.log("======================================================");
     this.currentRoom = await this.client.joinById(gameRoomId, {
       username,
       role,
       x: spawnX,
       y: spawnY,
+      isHost, // 🔴 Pass isHost to the server
     });
     this._attachRoomListeners();
   }
@@ -88,7 +103,6 @@ class _ColyseusService {
   leaveRoom(): void {
     this._leaveCurrentRoom();
   }
-
 
   // ── Sending messages ──────────────────────────────────────────────────
 
@@ -142,8 +156,12 @@ class _ColyseusService {
 
   // ── Accessors ─────────────────────────────────────────────────────────
 
-  get room() { return this.currentRoom; }
-  get sessionId(): string { return this.currentRoom?.sessionId ?? ""; }
+  get room() {
+    return this.currentRoom;
+  }
+  get sessionId(): string {
+    return this.currentRoom?.sessionId ?? "";
+  }
 
   // ── Private helpers ───────────────────────────────────────────────────
 

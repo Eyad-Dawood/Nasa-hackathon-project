@@ -98,11 +98,16 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
       }
 
       try {
-        // Create a GameRoom for this session and broadcast its ID.
-        // Clients will leave the LobbyRoom and join the GameRoom.
-        const gameRoomCache = await matchMaker.createRoom("game", {});
+        // Create a GameRoom, passing the current host's sessionId.
+        // GameRoom uses this to gate "selectObjective" to the host only.
+        const gameRoomCache = await matchMaker.createRoom("game", {
+          hostId: this.state.hostId,
+        });
         this.state.gameStarted = true;
-        this.broadcast("game-started", { gameRoomId: gameRoomCache.roomId });
+        this.broadcast("game-started", {
+          gameRoomId: gameRoomCache.roomId,
+          hostId: this.state.hostId,   // clients need this to know who is host in ObjectiveScene
+        });
       } catch (e) {
         console.error("[LobbyRoom] Failed to create GameRoom:", e);
         client.send("startError", { message: "Failed to start game. Please try again." });

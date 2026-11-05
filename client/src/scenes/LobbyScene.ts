@@ -54,9 +54,14 @@ export class LobbyScene extends Phaser.Scene {
 
     const isHost = room.sessionId === room.state?.hostId;
 
-    this.lobbyPanel = new LobbyRoomPanel(room.sessionId, isHost, (gameRoomId: string) => {
-      this._onGameStarted(gameRoomId);
-    });
+    this.lobbyPanel = new LobbyRoomPanel(
+      room.sessionId,
+      isHost,
+      (gameRoomId: string) => {
+        const hostId = (room.state as any)?.hostId ?? "";
+        this._onGameStarted(gameRoomId, hostId);
+      },
+    );
     this.lobbyPanel.mount();
 
     // Initial render
@@ -112,9 +117,14 @@ export class LobbyScene extends Phaser.Scene {
       startBtn.style.display = isHost ? "block" : "none";
     }
   }
-  private _onGameStarted(gameRoomId: string): void {
+  private _onGameStarted(gameRoomId: string, hostId: string): void {
     const room = ColyseusService.room;
+    let isCurrentPlayerHost = false; // متغير هنحدد بيه لو إحنا الـ Host
+
     if (room && room.state && room.state.players) {
+      // 1. تحديد ما إذا كان اللاعب الحالي هو الـ Host بناءً على بيانات اللوبي
+      isCurrentPlayerHost = room.sessionId === hostId;
+
       console.log("🎮 Game Started! Players and their roles:");
 
       room.state.players.forEach((player: any, sessionId: string) => {
@@ -133,26 +143,39 @@ export class LobbyScene extends Phaser.Scene {
       });
     }
 
-    // Extract local player's first assigned role to pass to GameScene
+    // 2. استخراج الدور الأول (Role) للاعب الحالي لتمريره للمشهد القادم
     let localRoleId = "role1";
     if (room && room.state && room.state.players) {
       const localPlayer = room.state.players.get(room.sessionId);
       if (localPlayer && localPlayer.roles) {
-        const roles: string[] = typeof localPlayer.roles.toArray === "function"
-          ? localPlayer.roles.toArray()
-          : Array.from(localPlayer.roles as Iterable<string>);
+        const roles: string[] =
+          typeof localPlayer.roles.toArray === "function"
+            ? localPlayer.roles.toArray()
+            : Array.from(localPlayer.roles as Iterable<string>);
         if (roles.length > 0) localRoleId = roles[0];
       }
     }
 
+    // 3. تنظيف الشاشة (إخفاء الـ UI الخاص باللوبي)
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
-    // Note: do NOT call ColyseusService.leaveRoom() here — GameScene will
-    // call joinGame() which internally leaves the lobby room first.
-    this.scene.start("GameScene", {
+
+    // ملاحظة: لا تقم باستدعاء ColyseusService.leaveRoom() هنا
+    // لأن ObjectiveScene هتعمل joinGame واللي بتخرج من الروم القديمة تلقائياً
+
+    console.log("=== 🚩 TRACKING: 1. Leaving LobbyScene ===");
+    console.log(
+      "Is this player host? (isCurrentPlayerHost):",
+      isCurrentPlayerHost,
+    );
+    console.log("==========================================");
+
+    this.scene.start("ObjectiveScene", {
       username: this.username,
       roleId: localRoleId,
       gameRoomId,
+      hostId,
+      isHost: isCurrentPlayerHost,
     });
   }
 }

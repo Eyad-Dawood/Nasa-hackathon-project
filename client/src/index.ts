@@ -1,13 +1,14 @@
 import Phaser from "phaser";
 import { BootScene } from "./scenes/BootScene";
 import { LobbyScene } from "./scenes/LobbyScene";
+import { ObjectiveScene } from "./scenes/ObjectiveScene";
 import { GameScene } from "./scenes/GameScene";
 
 /**
  * index.ts – Phaser game entry point.
  *
  * Registers all scenes. All old tutorial UI and FPS widget are removed.
- * Scene flow: BootScene → LobbyScene → GameScene
+ * Scene flow: BootScene → LobbyScene → ObjectiveScene → GameScene
  */
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -24,7 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
     default: "arcade",
     arcade: { debug: false },
   },
-  scene: [BootScene, LobbyScene, GameScene],
+  scene: [BootScene, LobbyScene, ObjectiveScene, GameScene],
 };
 
 new Phaser.Game(config);

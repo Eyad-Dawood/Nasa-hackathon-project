@@ -3,6 +3,7 @@ import { Assets } from "../config/assets";
 import { getRoleHex } from "../config/theme";
 import { MAP_GRID, MAP_COLS, MAP_ROWS, TILE, TILE_PX, PLAYER_SPAWN_TILE } from "../game/data/MapData";
 import { NPC_LIST } from "../game/data/NpcData";
+import { Objective } from "../game/data/ObjectiveData";
 import { PlayerController } from "../game/systems/PlayerController";
 import { NpcController } from "../game/systems/NpcController";
 import { InteractionSystem } from "../game/systems/InteractionSystem";
@@ -29,6 +30,12 @@ export class GameScene extends Phaser.Scene {
   private username: string = "";
   private roleId: string = "role1";
   private gameRoomId: string = "";
+  /**
+   * The objective selected on ObjectiveScene.
+   * null = offline/solo mode (no objective chosen).
+   * Replace Objective type with a richer interface when real data is designed.
+   */
+  private objective: Objective | null = null;
 
   // ── Local player systems ──────────────────────────────────────────────
   private player!: PlayerController;
@@ -48,10 +55,11 @@ export class GameScene extends Phaser.Scene {
     super({ key: "GameScene" });
   }
 
-  init(data: { username?: string; roleId?: string; gameRoomId?: string }) {
+  init(data: { username?: string; roleId?: string; gameRoomId?: string; objective?: Objective | null }) {
     this.username   = data?.username   ?? localStorage.getItem("username") ?? "Player";
     this.roleId     = data?.roleId     ?? "role1";
     this.gameRoomId = data?.gameRoomId ?? "";
+    this.objective  = data?.objective  ?? null;
   }
 
   create() {
@@ -84,7 +92,12 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
 
-    // ── 8. Join GameRoom & start multiplayer sync ─────────────────────
+    // ── 8. Join GameRoom or reuse existing connection ─────────────────
+    // ObjectiveScene already called joinGame() so the room connection is open.
+    // We only call _connectToGameRoom() if not already connected (solo/offline).
+    console.log(
+      `[GameScene] Objective: ${this.objective ? `"${this.objective.label}"` : "(none)"}`
+    );
     this._connectToGameRoom(spawnX, spawnY);
   }
 
@@ -117,62 +130,69 @@ export class GameScene extends Phaser.Scene {
   // ── Multiplayer ───────────────────────────────────────────────────────
 
   private async _connectToGameRoom(spawnX: number, spawnY: number): Promise<void> {
-    if (!this.gameRoomId) {
-      console.warn("[GameScene] No gameRoomId — running in offline/solo mode.");
-      return;
+    // ObjectiveScene already called joinGame() — reuse that connection.
+    // Only call joinGame() if we have no room yet (offline/solo fallback).
+    const alreadyConnected = ColyseusService.room !== null;
+
+    if (!alreadyConnected) {
+      if (!this.gameRoomId) {
+        console.warn("[GameScene] No gameRoomId — running in offline/solo mode.");
+        return;
+      }
+      try {
+        await ColyseusService.joinGame(
+          this.gameRoomId,
+          this.username,
+          this.roleId,
+          spawnX,
+          spawnY
+        );
+      } catch (e) {
+        console.error("[GameScene] Failed to join GameRoom:", e);
+        return;
+      }
     }
 
-    try {
-      await ColyseusService.joinGame(
-        this.gameRoomId,
-        this.username,
-        this.roleId,
-        spawnX,
-        spawnY
-      );
+    const room = ColyseusService.room;
+    if (!room) return;
+    const mySessionId = room.sessionId;
 
-      const room = ColyseusService.room!;
-      const mySessionId = room.sessionId;
+    // ── State change listener — syncs remote players ─────────────────
+    room.onStateChange((state: any) => {
+      const serverPlayers: Map<string, any> = state.players;
 
-      // ── State change listener — syncs remote players ─────────────────
-      room.onStateChange((state: any) => {
-        const serverPlayers: Map<string, any> = state.players;
+      // Add or update remote players
+      serverPlayers.forEach((serverPlayer: any, sessionId: string) => {
+        if (sessionId === mySessionId) return; // skip self
 
-        // Add or update remote players
-        serverPlayers.forEach((serverPlayer: any, sessionId: string) => {
-          if (sessionId === mySessionId) return; // skip self
-
-          const existing = this.remotePlayers.get(sessionId);
-          if (existing) {
-            // Update target position — sprite will lerp there in update()
-            existing.updateTarget(serverPlayer.x, serverPlayer.y);
-          } else {
-            // New remote player appeared — create a controller for them
-            const rp = new RemotePlayerController(
-              this,
-              sessionId,
-              serverPlayer.username,
-              serverPlayer.role,
-              serverPlayer.x,
-              serverPlayer.y
-            );
-            this.remotePlayers.set(sessionId, rp);
-          }
-        });
-
-        // Remove players who left
-        this.remotePlayers.forEach((_rp, sessionId) => {
-          if (!serverPlayers.has(sessionId)) {
-            this.remotePlayers.get(sessionId)?.destroy();
-            this.remotePlayers.delete(sessionId);
-          }
-        });
+        const existing = this.remotePlayers.get(sessionId);
+        if (existing) {
+          // Update target position — sprite will lerp there in update()
+          existing.updateTarget(serverPlayer.x, serverPlayer.y);
+        } else {
+          // New remote player appeared — create a controller for them
+          const rp = new RemotePlayerController(
+            this,
+            sessionId,
+            serverPlayer.username,
+            serverPlayer.role,
+            serverPlayer.x,
+            serverPlayer.y
+          );
+          this.remotePlayers.set(sessionId, rp);
+        }
       });
 
-      console.log(`[GameScene] Joined GameRoom ${this.gameRoomId} as ${mySessionId}`);
-    } catch (e) {
-      console.error("[GameScene] Failed to join GameRoom:", e);
-    }
+      // Remove players who left
+      this.remotePlayers.forEach((_rp, sessionId) => {
+        if (!serverPlayers.has(sessionId)) {
+          this.remotePlayers.get(sessionId)?.destroy();
+          this.remotePlayers.delete(sessionId);
+        }
+      });
+    });
+
+    console.log(`[GameScene] Connected to GameRoom ${this.gameRoomId} as ${mySessionId}`);
   }
 
   // ── Tilemap ───────────────────────────────────────────────────────────

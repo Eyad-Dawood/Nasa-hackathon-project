@@ -33,4 +33,17 @@ export class GamePlayerSchema extends Schema {
 export class GameState extends Schema {
   @type({ map: GamePlayerSchema })
   players = new MapSchema<GamePlayerSchema>();
+
+  /** SessionId of the player who created the room (the lobby host). */
+  @type("string") hostId: string = "";
+
+  /**
+   * The objective chosen by the host.
+   * Empty string = not yet selected (players are on the ObjectiveScene).
+   * Any non-empty value = objective confirmed, all clients move to GameScene.
+   *
+   * Store only the id here — full data lives in ObjectiveData.ts on the client.
+   * Replace with a richer schema object when real objective data is defined.
+   */
+  @type("string") selectedObjectiveId: string = "";
 }
