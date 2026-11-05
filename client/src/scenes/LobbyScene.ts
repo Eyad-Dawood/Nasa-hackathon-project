@@ -143,7 +143,7 @@ export class LobbyScene extends Phaser.Scene {
       });
     }
 
-    let localRoles: string[] = ["role1"];
+    let localRoles: string[] = ["powerAndThermal"];
     if (room && room.state && room.state.players) {
       const localPlayer = room.state.players.get(room.sessionId);
       if (localPlayer && localPlayer.roles) {

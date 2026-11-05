@@ -1,7 +1,10 @@
 import { Room, Client } from "colyseus";
 import type { RoomOptions } from "@colyseus/core";
-import { GameState, GamePlayerSchema, ShipItemSchema } from "../models/GameState";
-
+import {
+  GameState,
+  GamePlayerSchema,
+  ShipItemSchema,
+} from "../models/GameState";
 
 type GameRoomOptions = RoomOptions & { state: GameState };
 
@@ -18,7 +21,7 @@ type GameRoomOptions = RoomOptions & { state: GameState };
  *
  * JOIN OPTIONS:
  *   username  string   — display name
- *   role      string   — primary role ("role1"…"role4")
+ *   role      string   — primary role ("powerAndThermal"…"Science")
  *   x         number   — spawn world-X in pixels
  *   y         number   — spawn world-Y in pixels
  *   isHost    boolean  — whether this joining client is the host
@@ -97,12 +100,14 @@ export class GameRoom extends Room<GameRoomOptions> {
         if (!itemId || !roleId) return;
 
         const entry = new ShipItemSchema();
-        entry.itemId  = itemId;
-        entry.roleId  = roleId;
+        entry.itemId = itemId;
+        entry.roleId = roleId;
         entry.addedBy = client.sessionId;
         this.state.shipItems.set(itemId, entry);
 
-        console.log(`[GameRoom] ${this.roomId} — ship +item "${itemId}" by ${client.sessionId}`);
+        console.log(
+          `[GameRoom] ${this.roomId} — ship +item "${itemId}" by ${client.sessionId}`,
+        );
       },
     );
 
@@ -115,7 +120,9 @@ export class GameRoom extends Room<GameRoomOptions> {
         if (!itemId || !this.state.shipItems.has(itemId)) return;
 
         this.state.shipItems.delete(itemId);
-        console.log(`[GameRoom] ${this.roomId} — ship -item "${itemId}" by ${client.sessionId}`);
+        console.log(
+          `[GameRoom] ${this.roomId} — ship -item "${itemId}" by ${client.sessionId}`,
+        );
       },
     );
   }

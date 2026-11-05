@@ -44,13 +44,16 @@ export class ObjectiveScene extends Phaser.Scene {
     hostId?: string;
     isHost?: boolean;
   }) {
-    this.username = data?.username ?? localStorage.getItem("username") ?? "Player";
-    this.roles      = data?.roles      ?? ["role1"];
-    this.gameRoomId = data?.gameRoomId ?? "";   // ← was broken: accidentally on same line as roles
-    this.hostId     = data?.hostId     ?? "";
-    this.isHost     = data?.isHost     ?? false;
+    this.username =
+      data?.username ?? localStorage.getItem("username") ?? "Player";
+    this.roles = data?.roles ?? ["powerAndThermal"];
+    this.gameRoomId = data?.gameRoomId ?? ""; // ← was broken: accidentally on same line as roles
+    this.hostId = data?.hostId ?? "";
+    this.isHost = data?.isHost ?? false;
 
-    console.log(`[ObjectiveScene] init — gameRoomId="${this.gameRoomId}" isHost=${this.isHost}`);
+    console.log(
+      `[ObjectiveScene] init — gameRoomId="${this.gameRoomId}" isHost=${this.isHost}`,
+    );
   }
 
   create() {

@@ -34,7 +34,7 @@ type MessageHandler = (data: unknown) => void;
  * Usage:
  *   await ColyseusService.createLobby(username)
  *   await ColyseusService.joinLobby(roomId, username)
- *   ColyseusService.send("setRole", { role: "role1", claim: true })
+ *   ColyseusService.send("setRole", { role: "powerAndThermal", claim: true })
  *   ColyseusService.on("game-started", handler)
  *   await ColyseusService.getLobbies()
  */
@@ -100,7 +100,6 @@ class _ColyseusService {
   sendRemoveItem(itemId: string): void {
     this.send("removeItemFromShip", { itemId });
   }
-
 
   leaveRoom(): void {
     this._leaveCurrentRoom();

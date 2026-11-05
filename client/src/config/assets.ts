@@ -40,14 +40,26 @@ export interface AssetEntry {
 
 export const Assets = {
   // ── UI / Role Icons ───────────────────────────────────────────────────
-  role1Icon: { key: "role1_icon", url: "https://via.placeholder.com/64x64.png?text=R1" } as AssetEntry,
-  role2Icon: { key: "role2_icon", url: "https://via.placeholder.com/64x64.png?text=R2" } as AssetEntry,
-  role3Icon: { key: "role3_icon", url: "https://via.placeholder.com/64x64.png?text=R3" } as AssetEntry,
-  role4Icon: { key: "role4_icon", url: "https://via.placeholder.com/64x64.png?text=R4" } as AssetEntry,
+  powerAndThermalIcon: {
+    key: "powerAndThermal_icon",
+    url: "https://via.placeholder.com/64x64.png?text=R1",
+  } as AssetEntry,
+  structureAndComputingIcon: {
+    key: "structureAndComputing_icon",
+    url: "https://via.placeholder.com/64x64.png?text=R2",
+  } as AssetEntry,
+  CommunicationsIcon: {
+    key: "Communications_icon",
+    url: "https://via.placeholder.com/64x64.png?text=R3",
+  } as AssetEntry,
+  ScienceIcon: {
+    key: "Science_icon",
+    url: "https://via.placeholder.com/64x64.png?text=R4",
+  } as AssetEntry,
 
   // ── World tiles (procedurally generated — url is intentionally empty) ──
   tileGrass: { key: "tile_grass", url: "" } as AssetEntry,
-  tileWall:  { key: "tile_wall",  url: "" } as AssetEntry,
+  tileWall: { key: "tile_wall", url: "" } as AssetEntry,
   tileWater: { key: "tile_water", url: "" } as AssetEntry,
 
   // ── Player spritesheets (real pixel-art files) ─────────────────────────

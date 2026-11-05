@@ -51,25 +51,97 @@ export interface GameItem {
 }
 
 export const ITEMS: GameItem[] = [
-  // ── Role 1 — Engineering ──────────────────────────────────────────────
-  { id: "engine_core",    name: "Engine Core",       weight: 50, roleId: "role1", assetKey: "item_placeholder" },
-  { id: "fuel_cell",      name: "Fuel Cell",          weight: 20, roleId: "role1", assetKey: "item_placeholder" },
-  { id: "thruster",       name: "Thruster",           weight: 35, roleId: "role1", assetKey: "item_placeholder" },
+  // ── Power And Thermal — Engineering ──────────────────────────────────────────────
+  {
+    id: "engine_core",
+    name: "Engine Core",
+    weight: 50,
+    roleId: "powerAndThermal",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "fuel_cell",
+    name: "Fuel Cell",
+    weight: 20,
+    roleId: "powerAndThermal",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "thruster",
+    name: "Thruster",
+    weight: 35,
+    roleId: "powerAndThermal",
+    assetKey: "item_placeholder",
+  },
 
-  // ── Role 2 — Navigation ───────────────────────────────────────────────
-  { id: "nav_system",     name: "Nav System",         weight: 15, roleId: "role2", assetKey: "item_placeholder" },
-  { id: "radar_dish",     name: "Radar Dish",         weight: 25, roleId: "role2", assetKey: "item_placeholder" },
-  { id: "comms_array",    name: "Comms Array",        weight: 10, roleId: "role2", assetKey: "item_placeholder" },
+  // ── Structure And Computing — Navigation ───────────────────────────────────────────────
+  {
+    id: "nav_system",
+    name: "Nav System",
+    weight: 15,
+    roleId: "structureAndComputing",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "radar_dish",
+    name: "Radar Dish",
+    weight: 25,
+    roleId: "structureAndComputing",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "comms_array",
+    name: "Comms Array",
+    weight: 10,
+    roleId: "structureAndComputing",
+    assetKey: "item_placeholder",
+  },
 
-  // ── Role 3 — Structure ────────────────────────────────────────────────
-  { id: "hull_plate",     name: "Hull Plate",         weight: 60, roleId: "role3", assetKey: "item_placeholder" },
-  { id: "shield_gen",     name: "Shield Generator",   weight: 45, roleId: "role3", assetKey: "item_placeholder" },
-  { id: "armor_slab",     name: "Armor Slab",         weight: 70, roleId: "role3", assetKey: "item_placeholder" },
+  // ── Communications — Structure ────────────────────────────────────────────────
+  {
+    id: "hull_plate",
+    name: "Hull Plate",
+    weight: 60,
+    roleId: "Communications",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "shield_gen",
+    name: "Shield Generator",
+    weight: 45,
+    roleId: "Communications",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "armor_slab",
+    name: "Armor Slab",
+    weight: 70,
+    roleId: "Communications",
+    assetKey: "item_placeholder",
+  },
 
-  // ── Role 4 — Weapons ──────────────────────────────────────────────────
-  { id: "laser_cannon",   name: "Laser Cannon",       weight: 40, roleId: "role4", assetKey: "item_placeholder" },
-  { id: "ammo_crate",     name: "Ammo Crate",         weight: 30, roleId: "role4", assetKey: "item_placeholder" },
-  { id: "targeting_sys",  name: "Targeting System",   weight: 20, roleId: "role4", assetKey: "item_placeholder" },
+  // ── Science — Weapons ──────────────────────────────────────────────────
+  {
+    id: "laser_cannon",
+    name: "Laser Cannon",
+    weight: 40,
+    roleId: "Science",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "ammo_crate",
+    name: "Ammo Crate",
+    weight: 30,
+    roleId: "Science",
+    assetKey: "item_placeholder",
+  },
+  {
+    id: "targeting_sys",
+    name: "Targeting System",
+    weight: 20,
+    roleId: "Science",
+    assetKey: "item_placeholder",
+  },
 ];
 
 /** Look up a full GameItem by its id. Returns undefined if not found. */

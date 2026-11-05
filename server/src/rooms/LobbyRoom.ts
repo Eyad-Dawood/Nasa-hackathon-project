@@ -4,7 +4,12 @@ import { LobbyState } from "../models/LobbyState";
 import { PlayerSchema } from "../models/PlayerSchema";
 
 /** All valid role identifiers – single source of truth on the server. */
-const ALL_ROLES = ["role1", "role2", "role3", "role4"] as const;
+const ALL_ROLES = [
+  "powerAndThermal",
+  "structureAndComputing",
+  "Communications",
+  "Science",
+] as const;
 type Role = (typeof ALL_ROLES)[number];
 
 /** Maximum players allowed in one lobby. */
@@ -27,15 +32,20 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
      * setUsername – called immediately after joining.
      * Payload: { username: string }
      */
-    this.onMessage("setUsername", (client: Client, payload: { username: string }) => {
-      const player = this.state.players.get(client.sessionId);
-      if (!player) return;
+    this.onMessage(
+      "setUsername",
+      (client: Client, payload: { username: string }) => {
+        const player = this.state.players.get(client.sessionId);
+        if (!player) return;
 
-      const username = String(payload.username ?? "").trim().slice(0, 24);
-      if (!username) return;
+        const username = String(payload.username ?? "")
+          .trim()
+          .slice(0, 24);
+        if (!username) return;
 
-      player.username = username;
-    });
+        player.username = username;
+      },
+    );
 
     /**
      * setRole – player requests to claim or release a role.
@@ -60,7 +70,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
         if (claim) {
           // Ensure no other player already holds this role
           const alreadyTaken = [...this.state.players.values()].some(
-            (p) => p !== player && p.roles.includes(role)
+            (p) => p !== player && p.roles.includes(role),
           );
           if (alreadyTaken) {
             client.send("roleError", {
@@ -78,7 +88,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
             player.roles.splice(idx, 1);
           }
         }
-      }
+      },
     );
 
     /**
@@ -87,7 +97,9 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
      */
     this.onMessage("startGame", async (client: Client) => {
       if (client.sessionId !== this.state.hostId) {
-        client.send("startError", { message: "Only the host can start the game." });
+        client.send("startError", {
+          message: "Only the host can start the game.",
+        });
         return;
       }
 
@@ -106,20 +118,26 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
         this.state.gameStarted = true;
         this.broadcast("game-started", {
           gameRoomId: gameRoomCache.roomId,
-          hostId: this.state.hostId,   // clients need this to know who is host in ObjectiveScene
+          hostId: this.state.hostId, // clients need this to know who is host in ObjectiveScene
         });
       } catch (e) {
         console.error("[LobbyRoom] Failed to create GameRoom:", e);
-        client.send("startError", { message: "Failed to start game. Please try again." });
+        client.send("startError", {
+          message: "Failed to start game. Please try again.",
+        });
       }
     });
   }
 
   onJoin(client: Client, options: { username?: string }) {
-    console.log(`[LobbyRoom] ${this.roomId} — joined: ${client.sessionId} as "${options?.username}"`);
+    console.log(
+      `[LobbyRoom] ${this.roomId} — joined: ${client.sessionId} as "${options?.username}"`,
+    );
     const player = new PlayerSchema();
     player.id = client.sessionId;
-    player.username = String(options?.username ?? "Player").trim().slice(0, 24);
+    player.username = String(options?.username ?? "Player")
+      .trim()
+      .slice(0, 24);
 
     // First player becomes the host
     if (this.state.players.size === 0) {
@@ -133,10 +151,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
     this.state.players.delete(client.sessionId);
 
     // If host left, promote the next player
-    if (
-      client.sessionId === this.state.hostId &&
-      this.state.players.size > 0
-    ) {
+    if (client.sessionId === this.state.hostId && this.state.players.size > 0) {
       this.state.hostId = [...this.state.players.keys()][0];
     }
   }
@@ -174,7 +189,8 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
     // Check for duplicates
     const seen = new Set<string>();
     for (const r of allAssigned) {
-      if (seen.has(r)) return `Role "${r}" is assigned to more than one player.`;
+      if (seen.has(r))
+        return `Role "${r}" is assigned to more than one player.`;
       seen.add(r);
     }
 

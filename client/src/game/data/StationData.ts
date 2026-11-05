@@ -27,17 +27,25 @@ export interface StationDefinition {
 
 /** Four corner stations, one per role. */
 export const STATIONS: StationDefinition[] = [
-  { id: "station_r1", roleId: "role1", tileCol: 2,  tileRow: 2  },
-  { id: "station_r2", roleId: "role2", tileCol: 17, tileRow: 2  },
-  { id: "station_r3", roleId: "role3", tileCol: 2,  tileRow: 12 },
-  { id: "station_r4", roleId: "role4", tileCol: 17, tileRow: 12 },
+  { id: "station_r1", roleId: "powerAndThermal", tileCol: 2, tileRow: 2 },
+  {
+    id: "station_r2",
+    roleId: "structureAndComputing",
+    tileCol: 17,
+    tileRow: 2,
+  },
+  { id: "station_r3", roleId: "Communications", tileCol: 2, tileRow: 12 },
+  { id: "station_r4", roleId: "Science", tileCol: 17, tileRow: 12 },
 ];
 
 /** Center of the map — where the spaceship sits. */
 export const SHIP_TILE = { col: 10, row: 7 };
 
 /** Convenience: convert a station's tile position to world pixels. */
-export function stationWorldPos(def: StationDefinition): { x: number; y: number } {
+export function stationWorldPos(def: StationDefinition): {
+  x: number;
+  y: number;
+} {
   return {
     x: def.tileCol * TILE_PX + TILE_PX / 2,
     y: def.tileRow * TILE_PX + TILE_PX / 2,

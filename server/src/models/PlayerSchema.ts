@@ -12,7 +12,7 @@ export class PlayerSchema extends Schema {
   @type("string") id: string = "";
   @type("string") username: string = "";
 
-  /** Roles assigned to this player, e.g. ["role1", "role3"] */
+  /** Roles assigned to this player, e.g. ["powerAndThermal", "Communications"] */
   @type(["string"]) roles = new ArraySchema<string>();
 
   /** True once the player has finished selecting their role(s). */
