@@ -44,15 +44,13 @@ export class ObjectiveScene extends Phaser.Scene {
     hostId?: string;
     isHost?: boolean;
   }) {
-    console.log("=== 🚩 TRACKING: 2. Entering ObjectiveScene (init) ===");
-    console.log("Received data.isHost:", data?.isHost);
-    console.log("=====================================================");
+    this.username = data?.username ?? localStorage.getItem("username") ?? "Player";
+    this.roles      = data?.roles      ?? ["role1"];
+    this.gameRoomId = data?.gameRoomId ?? "";   // ← was broken: accidentally on same line as roles
+    this.hostId     = data?.hostId     ?? "";
+    this.isHost     = data?.isHost     ?? false;
 
-    this.username =
-      data?.username ?? localStorage.getItem("username") ?? "Player";
-    this.roles = data?.roles ?? ["role1"]; // 🔴 استقبلنا المصفوفة    this.gameRoomId = data?.gameRoomId ?? "";
-    this.hostId = data?.hostId ?? "";
-    this.isHost = data?.isHost ?? false;
+    console.log(`[ObjectiveScene] init — gameRoomId="${this.gameRoomId}" isHost=${this.isHost}`);
   }
 
   create() {
