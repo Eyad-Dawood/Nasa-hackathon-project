@@ -1,28 +1,21 @@
 import { defineServer, defineRoom, monitor, playground } from "colyseus";
-
-/**
- * Import your Room files
- */
+import { LobbyRoom } from "./rooms/LobbyRoom";
+import { GameRoom } from "./rooms/GameRoom";
 
 const server = defineServer({
-  rooms: {},
+  rooms: {
+    lobby: defineRoom(LobbyRoom),
+    game: defineRoom(GameRoom),
+  },
 
   express: (app) => {
-    /**
-     * Bind your custom express routes here:
-     */
-    app.get("/hello", (req, res) => {
-      res.send("It's time to kick ass and chew bubblegum!");
-    });
-
     if (process.env.NODE_ENV !== "production") {
       app.use("/", playground());
     }
 
     /**
-     * Bind @colyseus/monitor
-     * It is recommended to protect this route with a password.
-     * Read more: https://docs.colyseus.io/tools/monitor/
+     * Colyseus Monitor – useful during development to inspect rooms/state.
+     * Protect with auth before going to production.
      */
     app.use("/monitor", monitor());
   },

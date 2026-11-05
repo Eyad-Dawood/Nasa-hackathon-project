@@ -1,51 +1,30 @@
 import Phaser from "phaser";
+import { BootScene } from "./scenes/BootScene";
+import { LobbyScene } from "./scenes/LobbyScene";
+import { GameScene } from "./scenes/GameScene";
 
-import { SceneSelector } from "./scenes/SceneSelector";
-
+/**
+ * index.ts – Phaser game entry point.
+ *
+ * Registers all scenes. All old tutorial UI and FPS widget are removed.
+ * Scene flow: BootScene → LobbyScene → GameScene
+ */
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  backgroundColor: "#0d0d1a",
+  parent: "game-container",
+  pixelArt: true,
   fps: {
     target: 60,
     forceSetTimeOut: true,
-    smoothStep: false,
   },
-  width: 800,
-  height: 600,
-  // height: 200,
-  backgroundColor: "#b6d53c",
-  parent: "phaser-example",
   physics: {
     default: "arcade",
+    arcade: { debug: false },
   },
-  pixelArt: true,
-  scene: [SceneSelector],
+  scene: [BootScene, LobbyScene, GameScene],
 };
 
-const game = new Phaser.Game(config);
-
-/**
- * Create FPS selector
- */
-
-// current fps label
-const fpsInput = document.querySelector<HTMLInputElement>("input#fps");
-const fpsValueLabel = document.querySelector<HTMLSpanElement>("#fps-value");
-fpsValueLabel.innerText = fpsInput.value;
-
-fpsInput.oninput = function (event: InputEvent) {
-  const value = (event.target as HTMLInputElement).value;
-  fpsValueLabel.innerText = value;
-
-  // destroy previous loop
-  game.loop.destroy();
-
-  // create new loop
-  game.loop = new Phaser.Core.TimeStep(game, {
-    target: parseInt(value),
-    forceSetTimeOut: true,
-    smoothStep: false,
-  });
-
-  // start new loop
-  game.loop.start(game.step.bind(game));
-};
+new Phaser.Game(config);
