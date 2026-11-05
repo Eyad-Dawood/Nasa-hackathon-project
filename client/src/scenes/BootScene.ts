@@ -1,7 +1,9 @@
 import Phaser from "phaser";
-import { REMOTE_ASSETS } from "../config/assets";
+import { REMOTE_ASSETS, SPRITESHEET_ASSETS } from "../config/assets";
 import { Theme } from "../config/theme";
 import { AccountForm, getSavedUsername } from "../ui/AccountForm";
+import { registerAnimations } from "../game/data/AnimationKeys";
+
 
 /**
  * BootScene
@@ -26,15 +28,26 @@ export class BootScene extends Phaser.Scene {
   preload() {
     this._buildLoadingBar();
 
-    // Load only assets that have a real URL (non-empty url in assets.ts)
+    // Load plain image assets (non-empty url, not spritesheets)
     for (const asset of REMOTE_ASSETS) {
       this.load.image(asset.key, asset.url);
+    }
+
+    // Load spritesheet assets (need frameWidth/frameHeight for Phaser)
+    for (const asset of SPRITESHEET_ASSETS) {
+      this.load.spritesheet(asset.key, asset.url, {
+        frameWidth:  asset.frameWidth  ?? 16,
+        frameHeight: asset.frameHeight ?? 16,
+      });
     }
   }
 
   create() {
     // Generate all placeholder textures BEFORE transitioning
     this._generatePlaceholderTextures();
+
+    // Register all sprite animations (centralized in AnimationKeys.ts)
+    registerAnimations(this);
 
     const saved = getSavedUsername();
 
@@ -100,15 +113,9 @@ export class BootScene extends Phaser.Scene {
     g.clear();
 
     // ── player ──────────────────────────────────────────────────────────
-    // White base — tinted at runtime with the player's role colour.
-    // Body: rounded square
-    g.fillStyle(0xffffff, 1);
-    g.fillRect(2, 2, 12, 12);
-    // Eyes / direction indicator
-    g.fillStyle(game.playerDot, 1);
-    g.fillCircle(8, 7, 2);
-    g.generateTexture("player", 16, 16);
-    g.clear();
+    // REMOVED: player now uses real spritesheets (player_idle, player_walk).
+    // See AnimationKeys.ts for animation definitions.
+    // See assets.ts playerIdle / playerWalk entries.
 
     // ── npc ─────────────────────────────────────────────────────────────
     g.fillStyle(game.npcFill, 1);

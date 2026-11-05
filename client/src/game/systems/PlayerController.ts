@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { Assets } from "../../config/assets";
+import { ANIM_KEYS } from "../data/AnimationKeys";
 
 /** Player movement speed in pixels per second. */
 const PLAYER_SPEED = 100;
@@ -13,8 +14,17 @@ const PLAYER_SPEED = 100;
  *   - Creates an arcade-physics sprite at the given world position.
  *   - Reads WASD + arrow keys every frame and applies velocity.
  *   - Normalises diagonal movement (no speed boost when moving diagonally).
- *   - Flips the sprite horizontally based on movement direction.
+ *   - Plays the correct directional walk animation (down/left/right/up).
+ *   - Falls back to idle animation when stationary.
  *   - Collides with world bounds.
+ *
+ * DIRECTIONS:
+ *   4-directional only (down/left/right/up). When moving diagonally the
+ *   dominant axis determines the facing direction (vertical takes priority).
+ *
+ * ANIMATIONS:
+ *   All animation keys come from AnimationKeys.ts. PlayerController never
+ *   hard-codes animation key strings — it only imports ANIM_KEYS.
  *
  * WHAT IT DOES NOT DO:
  *   - Know anything about NPCs, dialogue, the HUD, or roles.
@@ -39,24 +49,25 @@ export class PlayerController {
 
   /**
    * @param scene      The Phaser scene this controller lives in.
-   * @param spawnX     World X in pixels (top-left of spawn tile).
-   * @param spawnY     World Y in pixels (top-left of spawn tile).
-   * @param roleTint   Phaser hex number used to tint the player sprite per role.
+   * @param spawnX     World X in pixels.
+   * @param spawnY     World Y in pixels.
+   * @param roleTint   Phaser hex number used to tint the sprite per role.
    */
   constructor(
-    scene: Phaser.Scene,
-    spawnX: number,
-    spawnY: number,
-    roleTint: number
+    scene:    Phaser.Scene,
+    spawnX:   number,
+    spawnY:   number,
+    roleTint: number,
   ) {
-    // Create physics sprite, centred on the spawn tile
-    this._sprite = scene.physics.add.sprite(spawnX, spawnY, Assets.player.key);
+    this._sprite = scene.physics.add.sprite(spawnX, spawnY, Assets.playerIdle.key);
     this._sprite.setTint(roleTint);
-    this._sprite.setScale(2); // 16px texture → 32px on screen
+    this._sprite.setScale(2);               // 16px → 32px on screen
     this._sprite.setCollideWorldBounds(true);
-    this._sprite.setDepth(10); // render above tiles
+    this._sprite.setDepth(10);
 
-    // Input
+    // Start with idle animation
+    this._sprite.play(ANIM_KEYS.playerIdle);
+
     this.cursors = scene.input.keyboard!.createCursorKeys();
     this.wasd = {
       up:    scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.W),
@@ -84,31 +95,46 @@ export class PlayerController {
     if (moveUp)    vy -= PLAYER_SPEED;
     if (moveDown)  vy += PLAYER_SPEED;
 
-    // Normalize diagonal movement so it doesn't feel faster
+    // Normalize diagonal movement
     if (vx !== 0 && vy !== 0) {
-      const factor = 1 / Math.SQRT2;
-      vx *= factor;
-      vy *= factor;
+      const f = 1 / Math.SQRT2;
+      vx *= f;
+      vy *= f;
     }
 
     this._sprite.setVelocity(vx, vy);
 
-    // Flip sprite when moving left/right
-    if (moveLeft)       this._sprite.setFlipX(true);
-    else if (moveRight) this._sprite.setFlipX(false);
+    // ── Animation selection ──────────────────────────────────────────────
+    // 4 directions only. Vertical movement (up/down) takes priority over
+    // horizontal so that diagonal movement doesn't feel awkward.
+    if (vx === 0 && vy === 0) {
+      this._playIfNotPlaying(ANIM_KEYS.playerIdle);
+    } else if (moveUp && !moveDown) {
+      this._playIfNotPlaying(ANIM_KEYS.playerWalkUp);
+    } else if (moveDown && !moveUp) {
+      this._playIfNotPlaying(ANIM_KEYS.playerWalkDown);
+    } else if (moveLeft) {
+      this._playIfNotPlaying(ANIM_KEYS.playerWalkLeft);
+    } else {
+      this._playIfNotPlaying(ANIM_KEYS.playerWalkRight);
+    }
   }
 
-  // ── Public accessors ──────────────────────────────────────────────────
+  // ── Public accessors ───────────────────────────────────────────────────
 
-  get sprite(): Phaser.Physics.Arcade.Sprite {
-    return this._sprite;
-  }
+  get sprite(): Phaser.Physics.Arcade.Sprite { return this._sprite; }
+  get worldX(): number { return this._sprite.x; }
+  get worldY(): number { return this._sprite.y; }
 
-  get worldX(): number {
-    return this._sprite.x;
-  }
+  // ── Private ────────────────────────────────────────────────────────────
 
-  get worldY(): number {
-    return this._sprite.y;
+  /**
+   * Play an animation only if it isn't already playing.
+   * Avoids resetting the frame mid-cycle every frame.
+   */
+  private _playIfNotPlaying(key: string): void {
+    if (this._sprite.anims.currentAnim?.key !== key) {
+      this._sprite.play(key);
+    }
   }
 }

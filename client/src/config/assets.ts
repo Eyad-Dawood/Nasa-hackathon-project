@@ -3,10 +3,6 @@
  * ─────────
  * Single source of truth for every asset URL/key used in the game.
  *
- * HOW TO USE:
- *   import { Assets } from "../config/assets";
- *   this.load.image(Assets.tileGrass.key, Assets.tileGrass.url);
- *
  * HOW TO ADD A NEW ASSET:
  *   1. Add a new entry in the `Assets` object below.
  *   2. Any scene or system that needs it imports from this file.
@@ -16,11 +12,17 @@
  *   Game-world assets (tiles, sprites) have an empty url — their textures are
  *   generated procedurally in BootScene._generatePlaceholderTextures().
  *   When real pixel-art files are ready:
- *     1. Set `url` to the real path (e.g. "/assets/tileset.png").
+ *     1. Set `url` to the real path (e.g. "src/resources/assets/player/Idle.png").
  *     2. Remove that asset's entry from _generatePlaceholderTextures().
+ *
+ * SPRITESHEETS:
+ *   Spritesheets have a non-empty url but are NOT loaded via this.load.image().
+ *   They are loaded via this.load.spritesheet() in BootScene.preload().
+ *   They are NOT included in REMOTE_ASSETS (which is for plain images only).
+ *   Mark them with isSpritesheet: true.
  */
 
-interface AssetEntry {
+export interface AssetEntry {
   /** The key Phaser uses to identify this asset internally. */
   key: string;
   /**
@@ -28,6 +30,12 @@ interface AssetEntry {
    * Replace with a real path when real assets are available.
    */
   url: string;
+  /** True for spritesheets — loaded via load.spritesheet(), not load.image(). */
+  isSpritesheet?: true;
+  /** Frame width in pixels (required for spritesheets). */
+  frameWidth?: number;
+  /** Frame height in pixels (required for spritesheets). */
+  frameHeight?: number;
 }
 
 export const Assets = {
@@ -42,39 +50,61 @@ export const Assets = {
   tileWall:  { key: "tile_wall",  url: "" } as AssetEntry,
   tileWater: { key: "tile_water", url: "" } as AssetEntry,
 
-  // ── World sprites (procedurally generated) ────────────────────────────
+  // ── Player spritesheets (real pixel-art files) ─────────────────────────
   /**
-   * Player sprite — generated as a white 16×16 square with a black dot.
-   * Tinted at runtime with the player's role colour.
+   * Player idle animation — 64×16 PNG, 4 frames of 16×16.
+   * Animations defined in AnimationKeys.ts.
    */
-  player: { key: "player", url: "" } as AssetEntry,
+  playerIdle: {
+    key: "player_idle",
+    url: "assets/player/Idle.png",
+    isSpritesheet: true,
+    frameWidth: 16,
+    frameHeight: 16,
+  } as AssetEntry,
 
   /**
-   * NPC sprite — yellow 16×16 square with a dark dot.
+   * Player walk animation — 64×64 PNG, 4 columns × 4 rows of 16×16.
+   * Row 0 = down, Row 1 = left, Row 2 = right, Row 3 = up.
    */
+  playerWalk: {
+    key: "player_walk",
+    url: "assets/player/Walk.png",
+    isSpritesheet: true,
+    frameWidth: 16,
+    frameHeight: 16,
+  } as AssetEntry,
+
+  // ── World sprites (procedurally generated) ────────────────────────────
+  /** NPC sprite — yellow 16×16 procedural. */
   npc: { key: "npc", url: "" } as AssetEntry,
 
   /**
-   * Station sprite — coloured 16×16 crate shape.
-   * Tinted at runtime with the station's role colour.
+   * Station sprite — 16×16 crate shape, tinted by role colour at runtime.
    */
   station: { key: "station", url: "" } as AssetEntry,
 
   /**
-   * Spaceship sprite — large central object (32×24 procedural).
+   * Spaceship sprite — 32×24 procedural rocket silhouette.
    */
   ship: { key: "ship", url: "" } as AssetEntry,
 
   /**
-   * Item carry indicator — tiny 8×8 glowing dot shown above the player.
-   * All items share this until real pixel-art per-item sprites are made.
+   * Item carry indicator — tiny 8×8 glowing dot above the player.
+   * Tinted at runtime with the item's role colour.
    */
   itemPlaceholder: { key: "item_placeholder", url: "" } as AssetEntry,
 } as const;
 
+/** Plain image assets (non-empty url, not spritesheets) — loaded via load.image(). */
+export const REMOTE_ASSETS: AssetEntry[] = Object.values(Assets).filter(
+  (a) => a.url !== "" && !a.isSpritesheet,
+);
 
-/** Assets that have a real URL and should be loaded via this.load.image(). */
-export const REMOTE_ASSETS: AssetEntry[] = Object.values(Assets).filter((a) => a.url !== "");
+/** Spritesheet assets — loaded via load.spritesheet(). */
+export const SPRITESHEET_ASSETS: AssetEntry[] = Object.values(Assets).filter(
+  (a) => a.isSpritesheet === true,
+);
 
 /** Asset keys for procedurally generated textures (url === ""). */
 export const PROCEDURAL_KEYS: string[] = Object.values(Assets)
