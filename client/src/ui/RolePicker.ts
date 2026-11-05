@@ -1,5 +1,6 @@
 import { Theme, ALL_ROLE_IDS, RoleId } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
+import { Assets } from "../config/assets";
 
 /**
  * RolePicker
@@ -70,6 +71,13 @@ export class RolePicker {
       gap: spacing.md,
     });
 
+    const roleIconUrls: Record<string, string> = {
+      powerAndThermal: Assets.powerAndThermalIcon.url,
+      structureAndComputing: Assets.structureAndComputingIcon.url,
+      Communications: Assets.CommunicationsIcon.url,
+      Science: Assets.ScienceIcon.url,
+    };
+
     for (const roleDef of Theme.roles) {
       const roleId = roleDef.id as RoleId;
 
@@ -89,12 +97,13 @@ export class RolePicker {
         transition: `all ${transition.fast}`,
       });
 
-      const dot = document.createElement("div");
-      Object.assign(dot.style, {
+      // [جديد]: استبدال الـ div بـ img
+      const icon = document.createElement("img");
+      icon.src = roleIconUrls[roleId as string] || ""; // هنسحب المسار من الماب
+      Object.assign(icon.style, {
         width: "32px",
         height: "32px",
-        borderRadius: radius.full,
-        background: roleDef.color,
+        objectFit: "contain",
       });
 
       const label = document.createElement("span");
@@ -107,7 +116,8 @@ export class RolePicker {
       desc.style.fontSize = font.sizeXs;
       desc.style.color = colors.textMuted;
 
-      card.append(dot, label, desc);
+      // ضفنا icon بدل dot
+      card.append(icon, label, desc);
 
       card.addEventListener("mouseenter", () => {
         if (!card.disabled && card.getAttribute("data-state") !== "mine") {

@@ -42,19 +42,19 @@ export const Assets = {
   // ── UI / Role Icons ───────────────────────────────────────────────────
   powerAndThermalIcon: {
     key: "powerAndThermal_icon",
-    url: "https://via.placeholder.com/64x64.png?text=R1",
+    url: "assets/icons/Power_And_Thermal_Engineer.png",
   } as AssetEntry,
   structureAndComputingIcon: {
     key: "structureAndComputing_icon",
-    url: "https://via.placeholder.com/64x64.png?text=R2",
+    url: "assets/icons/Structure_And_Computing_Engineer.png",
   } as AssetEntry,
   CommunicationsIcon: {
     key: "Communications_icon",
-    url: "https://via.placeholder.com/64x64.png?text=R3",
+    url: "assets/icons/Communications_Engineer.png",
   } as AssetEntry,
   ScienceIcon: {
     key: "Science_icon",
-    url: "https://via.placeholder.com/64x64.png?text=R4",
+    url: "assets/icons/Science_Engineer.png",
   } as AssetEntry,
 
   // ── World tiles (procedurally generated — url is intentionally empty) ──

@@ -4,7 +4,6 @@ import { Theme } from "../config/theme";
 import { AccountForm, getSavedUsername } from "../ui/AccountForm";
 import { registerAnimations } from "../game/data/AnimationKeys";
 
-
 /**
  * BootScene
  * ─────────
@@ -36,7 +35,7 @@ export class BootScene extends Phaser.Scene {
     // Load spritesheet assets (need frameWidth/frameHeight for Phaser)
     for (const asset of SPRITESHEET_ASSETS) {
       this.load.spritesheet(asset.key, asset.url, {
-        frameWidth:  asset.frameWidth  ?? 16,
+        frameWidth: asset.frameWidth ?? 16,
         frameHeight: asset.frameHeight ?? 16,
       });
     }
@@ -133,11 +132,11 @@ export class BootScene extends Phaser.Scene {
     // A crate/locker shape — tinted at runtime with the role colour.
     // White base so setTint() works correctly.
     g.fillStyle(0xffffff, 1);
-    g.fillRect(1, 2, 14, 13);        // body
+    g.fillRect(1, 2, 14, 13); // body
     g.fillStyle(0xdddddd, 1);
-    g.fillRect(1, 2, 14, 3);         // lid strip
+    g.fillRect(1, 2, 14, 3); // lid strip
     g.fillStyle(0xaaaaaa, 1);
-    g.fillRect(6, 4, 4, 2);          // latch
+    g.fillRect(6, 4, 4, 2); // latch
     g.lineStyle(1, 0x888888, 0.6);
     g.strokeRect(1, 2, 14, 13);
     g.generateTexture("station", 16, 16);
@@ -180,7 +179,6 @@ export class BootScene extends Phaser.Scene {
     g.destroy();
   }
 
-
   // ── Loading Bar ──────────────────────────────────────────────────────────
 
   private _buildLoadingBar(): void {
@@ -195,10 +193,18 @@ export class BootScene extends Phaser.Scene {
     const barY = height / 2 - barHeight / 2;
 
     // Track background
-    this.add.rectangle(barX + barWidth / 2, barY + barHeight / 2, barWidth, barHeight, 0x2a2a4a);
+    this.add.rectangle(
+      barX + barWidth / 2,
+      barY + barHeight / 2,
+      barWidth,
+      barHeight,
+      0x2a2a4a,
+    );
 
     // Loading fill
-    const fill = this.add.rectangle(barX, barY + barHeight / 2, 0, barHeight, 0xe94560).setOrigin(0, 0.5);
+    const fill = this.add
+      .rectangle(barX, barY + barHeight / 2, 0, barHeight, 0xe94560)
+      .setOrigin(0, 0.5);
 
     const label = this.add
       .text(width / 2, barY - 24, "Loading…", {
