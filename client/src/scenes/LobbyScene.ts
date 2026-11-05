@@ -143,16 +143,14 @@ export class LobbyScene extends Phaser.Scene {
       });
     }
 
-    // 2. استخراج الدور الأول (Role) للاعب الحالي لتمريره للمشهد القادم
-    let localRoleId = "role1";
+    let localRoles: string[] = ["role1"];
     if (room && room.state && room.state.players) {
       const localPlayer = room.state.players.get(room.sessionId);
       if (localPlayer && localPlayer.roles) {
-        const roles: string[] =
+        localRoles =
           typeof localPlayer.roles.toArray === "function"
             ? localPlayer.roles.toArray()
             : Array.from(localPlayer.roles as Iterable<string>);
-        if (roles.length > 0) localRoleId = roles[0];
       }
     }
 
@@ -160,21 +158,11 @@ export class LobbyScene extends Phaser.Scene {
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
 
-    // ملاحظة: لا تقم باستدعاء ColyseusService.leaveRoom() هنا
-    // لأن ObjectiveScene هتعمل joinGame واللي بتخرج من الروم القديمة تلقائياً
-
-    console.log("=== 🚩 TRACKING: 1. Leaving LobbyScene ===");
-    console.log(
-      "Is this player host? (isCurrentPlayerHost):",
-      isCurrentPlayerHost,
-    );
-    console.log("==========================================");
-
+    // 4. الانتقال لـ ObjectiveScene مع تمرير المصفوفة (roles) بدلاً من roleId
     this.scene.start("ObjectiveScene", {
       username: this.username,
-      roleId: localRoleId,
+      roles: localRoles, // 🔴 هنا بنبعت المصفوفة كلها
       gameRoomId,
-      hostId,
       isHost: isCurrentPlayerHost,
     });
   }

@@ -69,28 +69,19 @@ class _ColyseusService {
   async joinGame(
     gameRoomId: string,
     username: string,
-    role: string,
+    roles: string[], // 🔴 نستقبل المصفوفة
     spawnX: number,
     spawnY: number,
     isHost: boolean = false,
   ): Promise<void> {
     this._leaveCurrentRoom();
-    console.log("=== 🚩 TRACKING: 4. ColyseusService before sending ===");
-    console.log("Received isHost in arguments:", isHost);
-    console.log("Full options object being sent:", {
+
+    this.currentRoom = await this.client.joinById(gameRoomId, {
       username,
-      role,
+      roles, // 🔴 نبعت المصفوفة كلها للسيرفر
       x: spawnX,
       y: spawnY,
       isHost,
-    });
-    console.log("======================================================");
-    this.currentRoom = await this.client.joinById(gameRoomId, {
-      username,
-      role,
-      x: spawnX,
-      y: spawnY,
-      isHost, // 🔴 Pass isHost to the server
     });
     this._attachRoomListeners();
   }

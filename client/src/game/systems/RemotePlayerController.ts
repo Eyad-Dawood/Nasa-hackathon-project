@@ -43,9 +43,9 @@ export class RemotePlayerController {
     scene: Phaser.Scene,
     sessionId: string,
     username: string,
-    role: string,
+    roles: string[],
     x: number,
-    y: number
+    y: number,
   ) {
     this.sessionId = sessionId;
     this.targetX = x;
@@ -55,7 +55,7 @@ export class RemotePlayerController {
     // Sprite — same texture as local player, tinted by role
     this.sprite = scene.add.image(x, y, Assets.player.key);
     this.sprite.setScale(2);
-    this.sprite.setTint(getRoleHex(role));
+    this.sprite.setTint(getRoleHex(roles[0]));
     this.sprite.setDepth(10);
     this.sprite.setAlpha(0.9); // slightly transparent to distinguish from local player
 
@@ -93,7 +93,7 @@ export class RemotePlayerController {
     // Flip based on movement direction
     const movingLeft = this.targetX < this.prevX;
     const movingRight = this.targetX > this.prevX;
-    if (movingLeft)       this.sprite.setFlipX(true);
+    if (movingLeft) this.sprite.setFlipX(true);
     else if (movingRight) this.sprite.setFlipX(false);
 
     // Keep label above sprite

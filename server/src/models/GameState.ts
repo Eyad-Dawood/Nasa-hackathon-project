@@ -1,4 +1,4 @@
-import { Schema, type, MapSchema } from "@colyseus/schema";
+import { Schema, type, MapSchema, ArraySchema } from "@colyseus/schema";
 
 /**
  * GamePlayerSchema
@@ -12,17 +12,17 @@ import { Schema, type, MapSchema } from "@colyseus/schema";
  *   etc.
  */
 export class GamePlayerSchema extends Schema {
-  @type("string")  id: string       = "";
-  @type("string")  username: string = "";
+  @type("string") id: string = "";
+  @type("string") username: string = "";
 
   /** First assigned role (primary role for rendering/gameplay). */
-  @type("string")  role: string     = "role1";
+  @type(["string"]) roles = new ArraySchema<string>();
 
   /** World X position in pixels. */
-  @type("float32") x: number        = 0;
+  @type("float32") x: number = 0;
 
   /** World Y position in pixels. */
-  @type("float32") y: number        = 0;
+  @type("float32") y: number = 0;
 }
 
 /**

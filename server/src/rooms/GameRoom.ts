@@ -86,55 +86,28 @@ export class GameRoom extends Room<GameRoomOptions> {
     );
   }
 
-  onJoin(
-    client: Client,
-    options: {
-      username?: string;
-      role?: string;
-      x?: number;
-      y?: number;
-      isHost?: boolean;
-    },
-  ) {
-    console.log(
-      `[GameRoom] ${this.roomId} — joined: ${client.sessionId} as "${options?.username}" role=${options?.role}`,
-    );
-
-    // 🔍 DEBUG: هنطبع كل الخيارات اللي وصلت من الـ Client
-    console.log(
-      `[🔍 DEBUG GameRoom] onJoin - Full options received:`,
-      JSON.stringify(options),
-    );
-    console.log(
-      `[🔍 DEBUG GameRoom] onJoin - Received options.isHost:`,
-      options?.isHost,
-      `| Type:`,
-      typeof options?.isHost,
-    );
-
+  onJoin(client: Client, options: any) {
     const player = new GamePlayerSchema();
     player.id = client.sessionId;
     player.username = String(options?.username ?? "Player")
       .trim()
       .slice(0, 24);
-    player.role = String(options?.role ?? "role1");
+
+    // 🔴 إضافة كل الأدوار للمصفوفة في السيرفر
+    if (Array.isArray(options?.roles)) {
+      player.roles.push(...options.roles);
+    }
+
     player.x = Number(options?.x ?? 0);
     player.y = Number(options?.y ?? 0);
 
     this.state.players.set(client.sessionId, player);
 
-    // لو الـ isHost وصل صح للسيرفر بـ true، المفروض السطر ده يشتغل
-    if (options?.isHost) {
+    if (options && options.isHost === true) {
       this.state.hostId = client.sessionId;
-      console.log(
-        `[🔍 DEBUG GameRoom] SUCCESS! Host ID updated to NEW sessionId: ${client.sessionId}`,
-      );
-    } else {
-      console.log(
-        `[🔍 DEBUG GameRoom] FAILED! options.isHost is not true. It is: ${options?.isHost}`,
-      );
     }
   }
+
   // 🔴 رجعنا دالة onLeave عشان لو الـ Host خرج
   onLeave(client: Client, _code?: number) {
     console.log(`[GameRoom] ${this.roomId} — left: ${client.sessionId}`);

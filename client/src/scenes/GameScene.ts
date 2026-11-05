@@ -1,7 +1,14 @@
 import Phaser from "phaser";
 import { Assets } from "../config/assets";
 import { getRoleHex } from "../config/theme";
-import { MAP_GRID, MAP_COLS, MAP_ROWS, TILE, TILE_PX, PLAYER_SPAWN_TILE } from "../game/data/MapData";
+import {
+  MAP_GRID,
+  MAP_COLS,
+  MAP_ROWS,
+  TILE,
+  TILE_PX,
+  PLAYER_SPAWN_TILE,
+} from "../game/data/MapData";
 import { NPC_LIST } from "../game/data/NpcData";
 import { Objective } from "../game/data/ObjectiveData";
 import { PlayerController } from "../game/systems/PlayerController";
@@ -22,13 +29,13 @@ const MOVE_SEND_INTERVAL = 50; // 20 updates/sec
  *
  * DATA PASSED IN via scene.start("GameScene", { ... }):
  *   username    — local player's display name
- *   roleId      — "role1" | "role2" | "role3" | "role4"
+ *   roles       — Array of role IDs
  *   gameRoomId  — ID of the GameRoom to join (from LobbyRoom's game-started event)
  */
 export class GameScene extends Phaser.Scene {
   // ── Scene init data ──────────────────────────────────────────────────
   private username: string = "";
-  private roleId: string = "role1";
+  private roles: string[] = ["no-role"];
   private gameRoomId: string = "";
   /**
    * The objective selected on ObjectiveScene.
@@ -55,11 +62,17 @@ export class GameScene extends Phaser.Scene {
     super({ key: "GameScene" });
   }
 
-  init(data: { username?: string; roleId?: string; gameRoomId?: string; objective?: Objective | null }) {
-    this.username   = data?.username   ?? localStorage.getItem("username") ?? "Player";
-    this.roleId     = data?.roleId     ?? "role1";
+  init(data: {
+    username?: string;
+    roles?: string[];
+    gameRoomId?: string;
+    objective?: Objective | null;
+  }) {
+    this.username =
+      data?.username ?? localStorage.getItem("username") ?? "Player";
+    this.roles = data?.roles ?? ["no-role"]; // Default to no-role if not provided
     this.gameRoomId = data?.gameRoomId ?? "";
-    this.objective  = data?.objective  ?? null;
+    this.objective = data?.objective ?? null;
   }
 
   create() {
@@ -75,7 +88,16 @@ export class GameScene extends Phaser.Scene {
     // ── 3. Local player ───────────────────────────────────────────────
     const spawnX = PLAYER_SPAWN_TILE.col * TILE_PX + TILE_PX / 2;
     const spawnY = PLAYER_SPAWN_TILE.row * TILE_PX + TILE_PX / 2;
-    this.player = new PlayerController(this, spawnX, spawnY, getRoleHex(this.roleId));
+
+    // استخدام الدور الأول لتحديد لون اللاعب
+    const primaryRole = this.roles.length > 0 ? this.roles[0] : "no-role";
+
+    this.player = new PlayerController(
+      this,
+      spawnX,
+      spawnY,
+      getRoleHex(primaryRole),
+    );
     this.physics.add.collider(this.player.sprite, this.wallsGroup);
 
     // ── 4. NPCs ───────────────────────────────────────────────────────
@@ -85,7 +107,7 @@ export class GameScene extends Phaser.Scene {
     this.interaction = new InteractionSystem(this, this.player, this.npcs);
 
     // ── 6. HUD ────────────────────────────────────────────────────────
-    this.hud = new GameHUD(this.username, this.roleId);
+    this.hud = new GameHUD(this.username, this.roles);
     this.hud.mount();
 
     // ── 7. Camera ─────────────────────────────────────────────────────
@@ -96,7 +118,7 @@ export class GameScene extends Phaser.Scene {
     // ObjectiveScene already called joinGame() so the room connection is open.
     // We only call _connectToGameRoom() if not already connected (solo/offline).
     console.log(
-      `[GameScene] Objective: ${this.objective ? `"${this.objective.label}"` : "(none)"}`
+      `[GameScene] Objective: ${this.objective ? `"${this.objective.label}"` : "(none)"}`,
     );
     this._connectToGameRoom(spawnX, spawnY);
   }
@@ -129,23 +151,29 @@ export class GameScene extends Phaser.Scene {
 
   // ── Multiplayer ───────────────────────────────────────────────────────
 
-  private async _connectToGameRoom(spawnX: number, spawnY: number): Promise<void> {
+  private async _connectToGameRoom(
+    spawnX: number,
+    spawnY: number,
+  ): Promise<void> {
     // ObjectiveScene already called joinGame() — reuse that connection.
     // Only call joinGame() if we have no room yet (offline/solo fallback).
     const alreadyConnected = ColyseusService.room !== null;
 
     if (!alreadyConnected) {
       if (!this.gameRoomId) {
-        console.warn("[GameScene] No gameRoomId — running in offline/solo mode.");
+        console.warn(
+          "[GameScene] No gameRoomId — running in offline/solo mode.",
+        );
         return;
       }
+
       try {
         await ColyseusService.joinGame(
           this.gameRoomId,
           this.username,
-          this.roleId,
+          this.roles, // 🔴 نرسل المصفوفة كاملة للسيرفر
           spawnX,
-          spawnY
+          spawnY,
         );
       } catch (e) {
         console.error("[GameScene] Failed to join GameRoom:", e);
@@ -170,14 +198,23 @@ export class GameScene extends Phaser.Scene {
           // Update target position — sprite will lerp there in update()
           existing.updateTarget(serverPlayer.x, serverPlayer.y);
         } else {
+          // 🔴 استخراج مصفوفة الأدوار الخاصة باللاعب الآخر
+          let rolesArray: string[] = ["no-role"];
+          if (serverPlayer.roles) {
+            rolesArray =
+              typeof serverPlayer.roles.toArray === "function"
+                ? serverPlayer.roles.toArray()
+                : Array.from(serverPlayer.roles as Iterable<string>);
+          }
+
           // New remote player appeared — create a controller for them
           const rp = new RemotePlayerController(
             this,
             sessionId,
             serverPlayer.username,
-            serverPlayer.role,
+            rolesArray, // 🔴 نمرر المصفوفة كاملة לـ RemotePlayerController
             serverPlayer.x,
-            serverPlayer.y
+            serverPlayer.y,
           );
           this.remotePlayers.set(sessionId, rp);
         }
@@ -192,7 +229,9 @@ export class GameScene extends Phaser.Scene {
       });
     });
 
-    console.log(`[GameScene] Connected to GameRoom ${this.gameRoomId} as ${mySessionId}`);
+    console.log(
+      `[GameScene] Connected to GameRoom ${this.gameRoomId} as ${mySessionId}`,
+    );
   }
 
   // ── Tilemap ───────────────────────────────────────────────────────────
@@ -232,7 +271,11 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (isCollidable) {
-          const tile = wallsGroup.create(x, y, textureKey) as Phaser.Physics.Arcade.Image;
+          const tile = wallsGroup.create(
+            x,
+            y,
+            textureKey,
+          ) as Phaser.Physics.Arcade.Image;
           tile.setScale(scale);
           tile.refreshBody();
           tile.setDepth(1);

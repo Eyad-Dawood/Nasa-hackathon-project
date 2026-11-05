@@ -26,7 +26,7 @@ import { PLAYER_SPAWN_TILE, TILE_PX } from "../game/data/MapData";
  */
 export class ObjectiveScene extends Phaser.Scene {
   private username: string = "";
-  private roleId: string = "role1";
+  private roles: string[] = ["no-role"];
   private gameRoomId: string = "";
   private hostId: string = "";
   private isHost: boolean = false;
@@ -39,7 +39,7 @@ export class ObjectiveScene extends Phaser.Scene {
 
   init(data: {
     username?: string;
-    roleId?: string;
+    roles?: string[];
     gameRoomId?: string;
     hostId?: string;
     isHost?: boolean;
@@ -50,8 +50,7 @@ export class ObjectiveScene extends Phaser.Scene {
 
     this.username =
       data?.username ?? localStorage.getItem("username") ?? "Player";
-    this.roleId = data?.roleId ?? "role1";
-    this.gameRoomId = data?.gameRoomId ?? "";
+    this.roles = data?.roles ?? ["role1"]; // 🔴 استقبلنا المصفوفة    this.gameRoomId = data?.gameRoomId ?? "";
     this.hostId = data?.hostId ?? "";
     this.isHost = data?.isHost ?? false;
   }
@@ -88,7 +87,7 @@ export class ObjectiveScene extends Phaser.Scene {
       await ColyseusService.joinGame(
         this.gameRoomId,
         this.username,
-        this.roleId,
+        this.roles,
         spawnX,
         spawnY,
         this.isHost, // 🔴 Pass isHost to the server
@@ -147,7 +146,7 @@ export class ObjectiveScene extends Phaser.Scene {
   private _goToGame(objective: Objective | undefined): void {
     this.scene.start("GameScene", {
       username: this.username,
-      roleId: this.roleId,
+      roles: this.roles,
       gameRoomId: this.gameRoomId,
       objective: objective ?? null, // null if none chosen (solo/offline)
     });
