@@ -13,7 +13,7 @@
  */
 
 export const Theme = {
-  // ── Colours ──────────────────────────────────────────────────────────
+  // ── UI Colours ────────────────────────────────────────────────────────
   colors: {
     /** Main page / overlay background */
     background: "#0d0d1a",
@@ -37,6 +37,37 @@ export const Theme = {
     hostBadge: "#f39c12",
     /** Ready / role-locked badge */
     readyBadge: "#27ae60",
+  },
+
+  // ── Game World Colours ────────────────────────────────────────────────
+  // Used both for procedural texture generation (BootScene) and
+  // in-game UI elements (InteractionSystem dialogue, GameHUD).
+  game: {
+    // Tiles
+    tileGrass:      0x3a7d44,  // grass fill      (Phaser hex number)
+    tileGrassLine:  0x2f6636,  // grid line
+    tileWall:       0x4a4a6a,  // wall fill
+    tileWallEdge:   0x6a6a9a,  // wall highlight edge
+    tileWater:      0x1a5276,  // water fill
+    tileWaterSheen: 0x1f618d,  // water sheen stripe
+
+    // Sprites
+    npcFill:        0xf4d03f,  // NPC body colour
+    npcDot:         0x1a1a2e,  // NPC indicator dot
+    playerDot:      0x000000,  // player center dot
+
+    // HUD & dialogue (CSS strings for DOM elements)
+    hudBg:          "rgba(13,13,26,0.85)",
+    hudBorder:      "#2a2a4a",
+    hudText:        "#eaeaea",
+    hudMuted:       "#8888aa",
+
+    // In-game interaction prompt + dialogue (Phaser colour numbers)
+    interactPrompt: 0xf4d03f,  // "E — Talk" label colour
+    dialogueBg:     0x16213e,  // dialogue box fill
+    dialogueBorder: 0xe94560,  // dialogue box border
+    dialogueText:   0xeaeaea,  // dialogue body text
+    dialogueName:   0xf4d03f,  // NPC name in dialogue header
   },
 
   // ── Fonts ─────────────────────────────────────────────────────────────
@@ -74,14 +105,25 @@ export const Theme = {
   },
 
   // ── Role definitions ──────────────────────────────────────────────────
-  // Adding role display info here keeps it co-located with visual config.
   roles: [
-    { id: "role1", label: "Role 1", color: "#e74c3c", description: "Placeholder – gameplay TBD" },
-    { id: "role2", label: "Role 2", color: "#3498db", description: "Placeholder – gameplay TBD" },
-    { id: "role3", label: "Role 3", color: "#2ecc71", description: "Placeholder – gameplay TBD" },
-    { id: "role4", label: "Role 4", color: "#f39c12", description: "Placeholder – gameplay TBD" },
+    { id: "role1", label: "Role 1", color: "#e74c3c", hex: 0xe74c3c, description: "Placeholder – gameplay TBD" },
+    { id: "role2", label: "Role 2", color: "#3498db", hex: 0x3498db, description: "Placeholder – gameplay TBD" },
+    { id: "role3", label: "Role 3", color: "#2ecc71", hex: 0x2ecc71, description: "Placeholder – gameplay TBD" },
+    { id: "role4", label: "Role 4", color: "#f39c12", hex: 0xf39c12, description: "Placeholder – gameplay TBD" },
   ],
 } as const;
 
 export type RoleId = "role1" | "role2" | "role3" | "role4";
 export const ALL_ROLE_IDS: RoleId[] = Theme.roles.map((r) => r.id as RoleId);
+
+/** Returns the hex number for a given roleId (for Phaser tint). */
+export function getRoleHex(roleId: RoleId | string): number {
+  const role = Theme.roles.find((r) => r.id === roleId);
+  return role ? role.hex : 0xffffff;
+}
+
+/** Returns the CSS colour string for a given roleId (for DOM elements). */
+export function getRoleColor(roleId: RoleId | string): string {
+  const role = Theme.roles.find((r) => r.id === roleId);
+  return role ? role.color : "#ffffff";
+}

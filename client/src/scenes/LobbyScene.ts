@@ -132,9 +132,21 @@ export class LobbyScene extends Phaser.Scene {
       });
     }
 
+    // Extract local player's first assigned role to pass to GameScene
+    let localRoleId = "role1";
+    if (room && room.state && room.state.players) {
+      const localPlayer = room.state.players.get(room.sessionId);
+      if (localPlayer && localPlayer.roles) {
+        const roles: string[] = typeof localPlayer.roles.toArray === "function"
+          ? localPlayer.roles.toArray()
+          : Array.from(localPlayer.roles as Iterable<string>);
+        if (roles.length > 0) localRoleId = roles[0];
+      }
+    }
+
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
     ColyseusService.leaveRoom();
-    this.scene.start("GameScene", { username: this.username });
+    this.scene.start("GameScene", { username: this.username, roleId: localRoleId });
   }
 }
