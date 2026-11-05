@@ -6,52 +6,52 @@ import { NPC_LIST } from "../game/data/NpcData";
 import { PlayerController } from "../game/systems/PlayerController";
 import { NpcController } from "../game/systems/NpcController";
 import { InteractionSystem } from "../game/systems/InteractionSystem";
+import { RemotePlayerController } from "../game/systems/RemotePlayerController";
 import { GameHUD } from "../game/ui/GameHUD";
+import { ColyseusService } from "../network/ColyseusService";
+
+/** How often (ms) the local player position is sent to the server. */
+const MOVE_SEND_INTERVAL = 50; // 20 updates/sec
 
 /**
  * GameScene
  * ─────────
- * Top-level orchestrator for the game world. Thin wiring layer only.
+ * Orchestrates the full game world: tilemap, physics, local player,
+ * remote players (synced via GameRoom), NPCs, interaction, and HUD.
  *
- * WHAT LIVES HERE:
- *   - Tilemap building (reads MapData — no hardcoded tile logic)
- *   - Instantiation of all systems (PlayerController, NpcController, etc.)
- *   - Physics collider setup
- *   - Camera configuration
- *   - Per-frame update delegation
- *
- * WHAT DOES NOT LIVE HERE:
- *   - Movement math  → PlayerController
- *   - NPC dialogue   → NpcController + InteractionSystem
- *   - HUD HTML       → GameHUD
- *   - Map/NPC data   → MapData.ts / NpcData.ts
- *
- * DATA PASSED IN via scene.start("GameScene", { username, roleId }):
- *   username  — local player's display name
- *   roleId    — one of "role1" | "role2" | "role3" | "role4"
- *               used to tint the player sprite and show role badge in HUD
+ * DATA PASSED IN via scene.start("GameScene", { ... }):
+ *   username    — local player's display name
+ *   roleId      — "role1" | "role2" | "role3" | "role4"
+ *   gameRoomId  — ID of the GameRoom to join (from LobbyRoom's game-started event)
  */
 export class GameScene extends Phaser.Scene {
-  // ── Scene data ───────────────────────────────────────────────────────
+  // ── Scene init data ──────────────────────────────────────────────────
   private username: string = "";
   private roleId: string = "role1";
+  private gameRoomId: string = "";
 
-  // ── Systems ──────────────────────────────────────────────────────────
+  // ── Local player systems ──────────────────────────────────────────────
   private player!: PlayerController;
   private npcs: NpcController[] = [];
   private interaction!: InteractionSystem;
   private hud!: GameHUD;
-
-  // ── Physics groups ───────────────────────────────────────────────────
   private wallsGroup!: Phaser.Physics.Arcade.StaticGroup;
+
+  // ── Multiplayer ───────────────────────────────────────────────────────
+  /** Remote players keyed by their Colyseus sessionId. */
+  private remotePlayers: Map<string, RemotePlayerController> = new Map();
+
+  // Position-send throttle
+  private moveSendTimer: number = 0;
 
   constructor() {
     super({ key: "GameScene" });
   }
 
-  init(data: { username?: string; roleId?: string }) {
-    this.username = data?.username ?? localStorage.getItem("username") ?? "Player";
-    this.roleId   = data?.roleId   ?? "role1";
+  init(data: { username?: string; roleId?: string; gameRoomId?: string }) {
+    this.username   = data?.username   ?? localStorage.getItem("username") ?? "Player";
+    this.roleId     = data?.roleId     ?? "role1";
+    this.gameRoomId = data?.gameRoomId ?? "";
   }
 
   create() {
@@ -64,12 +64,10 @@ export class GameScene extends Phaser.Scene {
     // ── 2. Tilemap ────────────────────────────────────────────────────
     this.wallsGroup = this._buildTilemap();
 
-    // ── 3. Player ─────────────────────────────────────────────────────
+    // ── 3. Local player ───────────────────────────────────────────────
     const spawnX = PLAYER_SPAWN_TILE.col * TILE_PX + TILE_PX / 2;
     const spawnY = PLAYER_SPAWN_TILE.row * TILE_PX + TILE_PX / 2;
     this.player = new PlayerController(this, spawnX, spawnY, getRoleHex(this.roleId));
-
-    // Player collides with walls
     this.physics.add.collider(this.player.sprite, this.wallsGroup);
 
     // ── 4. NPCs ───────────────────────────────────────────────────────
@@ -85,31 +83,105 @@ export class GameScene extends Phaser.Scene {
     // ── 7. Camera ─────────────────────────────────────────────────────
     this.cameras.main.setBounds(0, 0, worldW, worldH);
     this.cameras.main.startFollow(this.player.sprite, true, 0.1, 0.1);
-    this.cameras.main.setZoom(1);
+
+    // ── 8. Join GameRoom & start multiplayer sync ─────────────────────
+    this._connectToGameRoom(spawnX, spawnY);
   }
 
-  update(_time: number, _delta: number) {
+  update(_time: number, delta: number) {
     this.player.update();
     this.interaction.update();
+
+    // Update all remote player lerp
+    this.remotePlayers.forEach((rp) => rp.update());
+
+    // Throttled position send
+    this.moveSendTimer += delta;
+    if (this.moveSendTimer >= MOVE_SEND_INTERVAL) {
+      this.moveSendTimer = 0;
+      if (ColyseusService.room) {
+        ColyseusService.sendMove(this.player.worldX, this.player.worldY);
+      }
+    }
   }
 
   shutdown() {
     this.hud?.destroy();
+    // Destroy all remote player sprites
+    this.remotePlayers.forEach((rp) => rp.destroy());
+    this.remotePlayers.clear();
     this.npcs = [];
+    ColyseusService.leaveRoom();
   }
 
-  // ── Private ───────────────────────────────────────────────────────────
+  // ── Multiplayer ───────────────────────────────────────────────────────
+
+  private async _connectToGameRoom(spawnX: number, spawnY: number): Promise<void> {
+    if (!this.gameRoomId) {
+      console.warn("[GameScene] No gameRoomId — running in offline/solo mode.");
+      return;
+    }
+
+    try {
+      await ColyseusService.joinGame(
+        this.gameRoomId,
+        this.username,
+        this.roleId,
+        spawnX,
+        spawnY
+      );
+
+      const room = ColyseusService.room!;
+      const mySessionId = room.sessionId;
+
+      // ── State change listener — syncs remote players ─────────────────
+      room.onStateChange((state: any) => {
+        const serverPlayers: Map<string, any> = state.players;
+
+        // Add or update remote players
+        serverPlayers.forEach((serverPlayer: any, sessionId: string) => {
+          if (sessionId === mySessionId) return; // skip self
+
+          const existing = this.remotePlayers.get(sessionId);
+          if (existing) {
+            // Update target position — sprite will lerp there in update()
+            existing.updateTarget(serverPlayer.x, serverPlayer.y);
+          } else {
+            // New remote player appeared — create a controller for them
+            const rp = new RemotePlayerController(
+              this,
+              sessionId,
+              serverPlayer.username,
+              serverPlayer.role,
+              serverPlayer.x,
+              serverPlayer.y
+            );
+            this.remotePlayers.set(sessionId, rp);
+          }
+        });
+
+        // Remove players who left
+        this.remotePlayers.forEach((_rp, sessionId) => {
+          if (!serverPlayers.has(sessionId)) {
+            this.remotePlayers.get(sessionId)?.destroy();
+            this.remotePlayers.delete(sessionId);
+          }
+        });
+      });
+
+      console.log(`[GameScene] Joined GameRoom ${this.gameRoomId} as ${mySessionId}`);
+    } catch (e) {
+      console.error("[GameScene] Failed to join GameRoom:", e);
+    }
+  }
+
+  // ── Tilemap ───────────────────────────────────────────────────────────
 
   /**
    * Reads MAP_GRID and places tile images.
-   * Wall tiles are added to a StaticGroup so physics colliders can be added.
-   * Returns the walls StaticGroup for the caller to set up colliders.
-   *
-   * To add a new tile type:
-   *  1. Add a TILE constant in MapData.ts
-   *  2. Add a texture key in assets.ts
-   *  3. Generate its texture in BootScene._generatePlaceholderTextures()
-   *  4. Add a case in the switch below
+   * Wall/water tiles go into a StaticGroup for physics colliders.
+   * To add a new tile type: add a TILE constant, generate its texture in BootScene,
+   * and add a case in the switch below.
    */
   private _buildTilemap(): Phaser.Physics.Arcade.StaticGroup {
     const wallsGroup = this.physics.add.staticGroup();
@@ -119,6 +191,7 @@ export class GameScene extends Phaser.Scene {
         const tileType = MAP_GRID[row]?.[col] ?? TILE.GRASS;
         const x = col * TILE_PX + TILE_PX / 2;
         const y = row * TILE_PX + TILE_PX / 2;
+        const scale = TILE_PX / 16;
 
         let textureKey: string;
         let isCollidable = false;
@@ -130,7 +203,7 @@ export class GameScene extends Phaser.Scene {
             break;
           case TILE.WATER:
             textureKey = Assets.tileWater.key;
-            isCollidable = true;   // water blocks movement (placeholder)
+            isCollidable = true;
             break;
           case TILE.GRASS:
           default:
@@ -139,16 +212,12 @@ export class GameScene extends Phaser.Scene {
         }
 
         if (isCollidable) {
-          // Add to static physics group so colliders work
           const tile = wallsGroup.create(x, y, textureKey) as Phaser.Physics.Arcade.Image;
-          tile.setScale(MAP_COLS > 0 ? TILE_PX / 16 : 1);
+          tile.setScale(scale);
           tile.refreshBody();
           tile.setDepth(1);
         } else {
-          // Non-collidable floor tile
-          const img = this.add.image(x, y, textureKey);
-          img.setScale(TILE_PX / 16);
-          img.setDepth(0);
+          this.add.image(x, y, textureKey).setScale(scale).setDepth(0);
         }
       }
     }

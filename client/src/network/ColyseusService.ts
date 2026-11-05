@@ -59,9 +59,36 @@ class _ColyseusService {
     this._attachRoomListeners();
   }
 
+  /**
+   * Join a GameRoom by its roomId (received in the "game-started" event).
+   * Passes the player's starting position so the server can initialise them.
+   */
+  async joinGame(
+    gameRoomId: string,
+    username: string,
+    role: string,
+    spawnX: number,
+    spawnY: number
+  ): Promise<void> {
+    this._leaveCurrentRoom();
+    this.currentRoom = await this.client.joinById(gameRoomId, {
+      username,
+      role,
+      x: spawnX,
+      y: spawnY,
+    });
+    this._attachRoomListeners();
+  }
+
+  /** Send the local player's current world position to the GameRoom. */
+  sendMove(x: number, y: number): void {
+    this.send("move", { x, y });
+  }
+
   leaveRoom(): void {
     this._leaveCurrentRoom();
   }
+
 
   // ── Sending messages ──────────────────────────────────────────────────
 

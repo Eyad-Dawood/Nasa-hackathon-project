@@ -1,4 +1,4 @@
-import { Room, Client } from "colyseus";
+import { Room, Client, matchMaker } from "colyseus";
 import type { RoomOptions } from "@colyseus/core";
 import { LobbyState } from "../models/LobbyState";
 import { PlayerSchema } from "../models/PlayerSchema";
@@ -85,7 +85,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
      * startGame – only the host may send this.
      * Validates that all 4 roles are covered before proceeding.
      */
-    this.onMessage("startGame", (client: Client) => {
+    this.onMessage("startGame", async (client: Client) => {
       if (client.sessionId !== this.state.hostId) {
         client.send("startError", { message: "Only the host can start the game." });
         return;
@@ -97,9 +97,16 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
         return;
       }
 
-      this.state.gameStarted = true;
-      // Broadcast empty "game-started" event to all clients
-      this.broadcast("game-started", {});
+      try {
+        // Create a GameRoom for this session and broadcast its ID.
+        // Clients will leave the LobbyRoom and join the GameRoom.
+        const gameRoomCache = await matchMaker.createRoom("game", {});
+        this.state.gameStarted = true;
+        this.broadcast("game-started", { gameRoomId: gameRoomCache.roomId });
+      } catch (e) {
+        console.error("[LobbyRoom] Failed to create GameRoom:", e);
+        client.send("startError", { message: "Failed to start game. Please try again." });
+      }
     });
   }
 

@@ -21,6 +21,7 @@ export class LobbyScene extends Phaser.Scene {
   private lobbyList: LobbyList | null = null;
   private lobbyPanel: LobbyRoomPanel | null = null;
   private stateUnsub: (() => void) | null = null;
+  private gameRoomId: string = "";
 
   constructor() {
     super({ key: "LobbyScene" });
@@ -53,8 +54,8 @@ export class LobbyScene extends Phaser.Scene {
 
     const isHost = room.sessionId === room.state?.hostId;
 
-    this.lobbyPanel = new LobbyRoomPanel(room.sessionId, isHost, () => {
-      this._onGameStarted();
+    this.lobbyPanel = new LobbyRoomPanel(room.sessionId, isHost, (gameRoomId: string) => {
+      this._onGameStarted(gameRoomId);
     });
     this.lobbyPanel.mount();
 
@@ -111,7 +112,7 @@ export class LobbyScene extends Phaser.Scene {
       startBtn.style.display = isHost ? "block" : "none";
     }
   }
-  private _onGameStarted(): void {
+  private _onGameStarted(gameRoomId: string): void {
     const room = ColyseusService.room;
     if (room && room.state && room.state.players) {
       console.log("🎮 Game Started! Players and their roles:");
@@ -146,7 +147,12 @@ export class LobbyScene extends Phaser.Scene {
 
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
-    ColyseusService.leaveRoom();
-    this.scene.start("GameScene", { username: this.username, roleId: localRoleId });
+    // Note: do NOT call ColyseusService.leaveRoom() here — GameScene will
+    // call joinGame() which internally leaves the lobby room first.
+    this.scene.start("GameScene", {
+      username: this.username,
+      roleId: localRoleId,
+      gameRoomId,
+    });
   }
 }

@@ -28,7 +28,7 @@ export class LobbyRoomPanel {
   private container: HTMLDivElement;
   private sessionId: string;
   private isHost: boolean;
-  private onGameStart: () => void;
+  private onGameStart: (gameRoomId: string) => void;
   private rolePicker!: RolePicker;
   private playerListEl!: HTMLDivElement;
   private startBtn!: HTMLButtonElement;
@@ -37,7 +37,7 @@ export class LobbyRoomPanel {
   private unsubRoleError: (() => void) | null = null;
   private unsubStartError: (() => void) | null = null;
 
-  constructor(sessionId: string, isHost: boolean, onGameStart: () => void) {
+  constructor(sessionId: string, isHost: boolean, onGameStart: (gameRoomId: string) => void) {
     this.sessionId = sessionId;
     this.isHost = isHost;
     this.onGameStart = onGameStart;
@@ -47,10 +47,11 @@ export class LobbyRoomPanel {
   mount(): void {
     document.body.appendChild(this.container);
 
-    // Listen for game-started event from server
-    this.unsubGameStarted = ColyseusService.on("game-started", () => {
+    // Listen for game-started event from server (payload contains gameRoomId)
+    this.unsubGameStarted = ColyseusService.on("game-started", (data: unknown) => {
+      const { gameRoomId } = data as { gameRoomId: string };
       this.destroy();
-      this.onGameStart();
+      this.onGameStart(gameRoomId);
     });
 
     // Listen for server-side role errors
