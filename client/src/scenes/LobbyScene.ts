@@ -3,7 +3,6 @@ import { ColyseusService } from "../network/ColyseusService";
 import { LobbyList } from "../ui/LobbyList";
 import { LobbyRoomPanel } from "../ui/LobbyRoomPanel";
 
-
 /**
  * LobbyScene
  * ──────────
@@ -28,7 +27,8 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   init(data: { username?: string }) {
-    this.username = data?.username ?? localStorage.getItem("username") ?? "Player";
+    this.username =
+      data?.username ?? localStorage.getItem("username") ?? "Player";
   }
 
   create() {
@@ -72,10 +72,15 @@ export class LobbyScene extends Phaser.Scene {
     if (!room || !this.lobbyPanel) return;
 
     const state = room.state;
-    if (!state) return;
+
+    if (!state || !state.players) return;
 
     // Convert Colyseus MapSchema to a plain Map for the panel
-    const players = new Map<string, { id: string; username: string; roles: string[]; ready: boolean }>();
+    const players = new Map<
+      string,
+      { id: string; username: string; roles: string[]; ready: boolean }
+    >();
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     state.players.forEach((player: any, sessionId: string) => {
       // ArraySchema may not support spread directly — use Array.from or toArray
@@ -99,14 +104,34 @@ export class LobbyScene extends Phaser.Scene {
 
     // Update isHost dynamically in case host changed
     const isHost = room.sessionId === state.hostId;
-    const startBtn = document.getElementById("start-game-btn") as HTMLButtonElement | null;
+    const startBtn = document.getElementById(
+      "start-game-btn",
+    ) as HTMLButtonElement | null;
     if (startBtn) {
       startBtn.style.display = isHost ? "block" : "none";
     }
   }
-
-
   private _onGameStarted(): void {
+    const room = ColyseusService.room;
+    if (room && room.state && room.state.players) {
+      console.log("🎮 Game Started! Players and their roles:");
+
+      room.state.players.forEach((player: any, sessionId: string) => {
+        let roles: string[] = [];
+        if (player.roles) {
+          if (typeof player.roles.toArray === "function") {
+            roles = player.roles.toArray();
+          } else {
+            roles = Array.from(player.roles as Iterable<string>);
+          }
+        }
+
+        console.log(
+          `- Player: ${player.username} | Roles: [${roles.join(", ")}]`,
+        );
+      });
+    }
+
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
     ColyseusService.leaveRoom();

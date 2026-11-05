@@ -57,14 +57,18 @@ export class LobbyRoomPanel {
     this.unsubRoleError = ColyseusService.on("roleError", (data: unknown) => {
       const msg = (data as { message: string }).message;
       this.startError.textContent = msg;
-      setTimeout(() => { this.startError.textContent = ""; }, 3000);
+      setTimeout(() => {
+        this.startError.textContent = "";
+      }, 3000);
     });
 
     // Listen for start errors
     this.unsubStartError = ColyseusService.on("startError", (data: unknown) => {
       const msg = (data as { message: string }).message;
       this.startError.textContent = msg;
-      setTimeout(() => { this.startError.textContent = ""; }, 4000);
+      setTimeout(() => {
+        this.startError.textContent = "";
+      }, 4000);
     });
   }
 
@@ -80,6 +84,15 @@ export class LobbyRoomPanel {
    * Call this every time `room.onStateChange` fires.
    */
   refresh(players: Map<string, PlayerInfo>, hostId: string): void {
+    this.isHost = this.sessionId === hostId;
+
+    this.startBtn.style.display = this.isHost ? "block" : "none";
+
+    const hostNote = this.container.querySelector("p");
+    if (hostNote) {
+      hostNote.style.display = this.isHost ? "none" : "block";
+    }
+
     // Update player list
     this.playerListEl.innerHTML = "";
     players.forEach((player) => {
@@ -89,7 +102,7 @@ export class LobbyRoomPanel {
 
     // Build role assignments map for RolePicker
     const assignments = Object.fromEntries(
-      ALL_ROLE_IDS.map((rid) => [rid, null as string | null])
+      ALL_ROLE_IDS.map((rid) => [rid, null as string | null]),
     ) as Record<RoleId, string | null>;
 
     players.forEach((player) => {
@@ -113,12 +126,17 @@ export class LobbyRoomPanel {
     if (allAssigned) {
       this.startBtn.textContent = "Start Game";
     } else {
-      const remaining = ALL_ROLE_IDS.filter((rid) => assignments[rid] === null).length;
+      const remaining = ALL_ROLE_IDS.filter(
+        (rid) => assignments[rid] === null,
+      ).length;
       this.startBtn.textContent = `Start Game (${remaining} roles unassigned)`;
     }
   }
 
-  private _buildPlayerRow(player: PlayerInfo, isHostPlayer: boolean): HTMLDivElement {
+  private _buildPlayerRow(
+    player: PlayerInfo,
+    isHostPlayer: boolean,
+  ): HTMLDivElement {
     const { colors, font, spacing, radius } = Theme;
 
     const row = document.createElement("div");
@@ -127,7 +145,8 @@ export class LobbyRoomPanel {
       alignItems: "center",
       gap: spacing.sm,
       padding: `${spacing.xs} ${spacing.sm}`,
-      background: player.id === this.sessionId ? `${colors.accent}18` : "transparent",
+      background:
+        player.id === this.sessionId ? `${colors.accent}18` : "transparent",
       borderRadius: radius.sm,
     });
 
@@ -205,11 +224,20 @@ export class LobbyRoomPanel {
 
     // Header
     const header = document.createElement("div");
-    Object.assign(header.style, { display: "flex", justifyContent: "space-between", alignItems: "center" });
+    Object.assign(header.style, {
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    });
 
     const title = document.createElement("h2");
     title.textContent = "Lobby";
-    Object.assign(title.style, { color: colors.textPrimary, fontSize: font.sizeLg, margin: "0", letterSpacing: "2px" });
+    Object.assign(title.style, {
+      color: colors.textPrimary,
+      fontSize: font.sizeLg,
+      margin: "0",
+      letterSpacing: "2px",
+    });
 
     const leaveBtn = document.createElement("button");
     leaveBtn.textContent = "Leave";
@@ -297,7 +325,9 @@ export class LobbyRoomPanel {
     });
 
     const hostNote = document.createElement("p");
-    hostNote.textContent = this.isHost ? "" : "Waiting for host to start the game…";
+    hostNote.textContent = this.isHost
+      ? ""
+      : "Waiting for host to start the game…";
     Object.assign(hostNote.style, {
       color: colors.textMuted,
       fontSize: font.sizeSm,
@@ -315,7 +345,7 @@ export class LobbyRoomPanel {
       divider2,
       this.startError,
       this.startBtn,
-      hostNote
+      hostNote,
     );
     overlay.appendChild(card);
     return overlay;
