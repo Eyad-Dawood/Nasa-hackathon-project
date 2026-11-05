@@ -1,6 +1,7 @@
 import { Room, Client } from "colyseus";
 import type { RoomOptions } from "@colyseus/core";
-import { GameState, GamePlayerSchema } from "../models/GameState";
+import { GameState, GamePlayerSchema, ShipItemSchema } from "../models/GameState";
+
 
 type GameRoomOptions = RoomOptions & { state: GameState };
 
@@ -82,6 +83,39 @@ export class GameRoom extends Room<GameRoomOptions> {
 
         player.x = Math.max(0, Math.min(payload.x, 10_000));
         player.y = Math.max(0, Math.min(payload.y, 10_000));
+      },
+    );
+
+    // ── addItemToShip ────────────────────────────────────────────────────
+    // Any player can deliver their carried item to the ship.
+    // Key = itemId so each item type appears at most once.
+    this.onMessage(
+      "addItemToShip",
+      (client: Client, payload: { itemId: string; roleId: string }) => {
+        const itemId = String(payload?.itemId ?? "").trim();
+        const roleId = String(payload?.roleId ?? "").trim();
+        if (!itemId || !roleId) return;
+
+        const entry = new ShipItemSchema();
+        entry.itemId  = itemId;
+        entry.roleId  = roleId;
+        entry.addedBy = client.sessionId;
+        this.state.shipItems.set(itemId, entry);
+
+        console.log(`[GameRoom] ${this.roomId} — ship +item "${itemId}" by ${client.sessionId}`);
+      },
+    );
+
+    // ── removeItemFromShip ───────────────────────────────────────────────
+    // Any player can pull an item off the ship to carry it back.
+    this.onMessage(
+      "removeItemFromShip",
+      (client: Client, payload: { itemId: string }) => {
+        const itemId = String(payload?.itemId ?? "").trim();
+        if (!itemId || !this.state.shipItems.has(itemId)) return;
+
+        this.state.shipItems.delete(itemId);
+        console.log(`[GameRoom] ${this.roomId} — ship -item "${itemId}" by ${client.sessionId}`);
       },
     );
   }

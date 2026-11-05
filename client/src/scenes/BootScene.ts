@@ -122,8 +122,57 @@ export class BootScene extends Phaser.Scene {
     g.generateTexture("npc", 16, 16);
     g.clear();
 
+    // ── station ─────────────────────────────────────────────────────────
+    // A crate/locker shape — tinted at runtime with the role colour.
+    // White base so setTint() works correctly.
+    g.fillStyle(0xffffff, 1);
+    g.fillRect(1, 2, 14, 13);        // body
+    g.fillStyle(0xdddddd, 1);
+    g.fillRect(1, 2, 14, 3);         // lid strip
+    g.fillStyle(0xaaaaaa, 1);
+    g.fillRect(6, 4, 4, 2);          // latch
+    g.lineStyle(1, 0x888888, 0.6);
+    g.strokeRect(1, 2, 14, 13);
+    g.generateTexture("station", 16, 16);
+    g.clear();
+
+    // ── ship ─────────────────────────────────────────────────────────────
+    // Simple rocket silhouette — 32×24 procedural.
+    g.fillStyle(0xaaddff, 1);
+    // Body
+    g.fillRect(10, 6, 12, 14);
+    // Nose cone
+    g.fillTriangle(10, 6, 22, 6, 16, 0);
+    // Left fin
+    g.fillTriangle(10, 14, 6, 20, 10, 20);
+    // Right fin
+    g.fillTriangle(22, 14, 26, 20, 22, 20);
+    // Engine glow
+    g.fillStyle(0xff9944, 1);
+    g.fillRect(12, 20, 8, 3);
+    // Cockpit window
+    g.fillStyle(0x224466, 1);
+    g.fillCircle(16, 9, 3);
+    // Outline
+    g.lineStyle(1, 0x446688, 0.8);
+    g.strokeRect(10, 6, 12, 14);
+    g.generateTexture("ship", 32, 24);
+    g.clear();
+
+    // ── item_placeholder ─────────────────────────────────────────────────
+    // Tiny glowing dot — appears above the player when carrying an item.
+    // Tinted at runtime with the item's role colour.
+    g.fillStyle(0xffffff, 1);
+    g.fillCircle(4, 4, 4);
+    // Bright core
+    g.fillStyle(0xffffff, 0.9);
+    g.fillCircle(4, 4, 2);
+    g.generateTexture("item_placeholder", 8, 8);
+    g.clear();
+
     g.destroy();
   }
+
 
   // ── Loading Bar ──────────────────────────────────────────────────────────
 

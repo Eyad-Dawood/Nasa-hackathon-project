@@ -127,3 +127,9 @@ export function getRoleColor(roleId: RoleId | string): string {
   const role = Theme.roles.find((r) => r.id === roleId);
   return role ? role.color : "#ffffff";
 }
+
+/** Returns the human-readable label for a given roleId (e.g. "Role 1"). */
+export function getRoleLabel(roleId: RoleId | string): string {
+  const role = Theme.roles.find((r) => r.id === roleId);
+  return role ? role.label : roleId;
+}

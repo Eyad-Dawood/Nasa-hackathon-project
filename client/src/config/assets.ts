@@ -53,7 +53,25 @@ export const Assets = {
    * NPC sprite — yellow 16×16 square with a dark dot.
    */
   npc: { key: "npc", url: "" } as AssetEntry,
+
+  /**
+   * Station sprite — coloured 16×16 crate shape.
+   * Tinted at runtime with the station's role colour.
+   */
+  station: { key: "station", url: "" } as AssetEntry,
+
+  /**
+   * Spaceship sprite — large central object (32×24 procedural).
+   */
+  ship: { key: "ship", url: "" } as AssetEntry,
+
+  /**
+   * Item carry indicator — tiny 8×8 glowing dot shown above the player.
+   * All items share this until real pixel-art per-item sprites are made.
+   */
+  itemPlaceholder: { key: "item_placeholder", url: "" } as AssetEntry,
 } as const;
+
 
 /** Assets that have a real URL and should be loaded via this.load.image(). */
 export const REMOTE_ASSETS: AssetEntry[] = Object.values(Assets).filter((a) => a.url !== "");

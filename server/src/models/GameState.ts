@@ -26,6 +26,25 @@ export class GamePlayerSchema extends Schema {
 }
 
 /**
+ * ShipItemSchema
+ * ──────────────
+ * Represents one item that has been loaded onto the spaceship.
+ *
+ * Key in GameState.shipItems MapSchema = itemId.
+ * This means each item type can appear at most once on the ship.
+ *
+ * To allow duplicates later: change key to a UUID and add a `count` field.
+ */
+export class ShipItemSchema extends Schema {
+  /** Matches GameItem.id in ItemData.ts (client) — the server only stores the id. */
+  @type("string") itemId: string  = "";
+  /** roleId the item belongs to — used by clients to group items in the ship menu. */
+  @type("string") roleId: string  = "";
+  /** sessionId of the player who added this item. */
+  @type("string") addedBy: string = "";
+}
+
+/**
  * GameState
  * ─────────
  * Top-level state for the GameRoom. Synced to all clients.
@@ -41,9 +60,16 @@ export class GameState extends Schema {
    * The objective chosen by the host.
    * Empty string = not yet selected (players are on the ObjectiveScene).
    * Any non-empty value = objective confirmed, all clients move to GameScene.
-   *
-   * Store only the id here — full data lives in ObjectiveData.ts on the client.
-   * Replace with a richer schema object when real objective data is defined.
    */
   @type("string") selectedObjectiveId: string = "";
+
+  /**
+   * Items currently loaded on the spaceship.
+   * Key = itemId. One entry per unique item type.
+   *
+   * Adding new ship-level data: add a field to ShipItemSchema — no other server
+   * file needs to change. Client reads it via onStateChange.
+   */
+  @type({ map: ShipItemSchema })
+  shipItems = new MapSchema<ShipItemSchema>();
 }

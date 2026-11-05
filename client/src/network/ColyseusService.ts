@@ -91,6 +91,17 @@ class _ColyseusService {
     this.send("move", { x, y });
   }
 
+  /** Tell the server to add an item to the ship inventory. */
+  sendAddItem(itemId: string, roleId: string): void {
+    this.send("addItemToShip", { itemId, roleId });
+  }
+
+  /** Tell the server to remove an item from the ship inventory. */
+  sendRemoveItem(itemId: string): void {
+    this.send("removeItemFromShip", { itemId });
+  }
+
+
   leaveRoom(): void {
     this._leaveCurrentRoom();
   }
