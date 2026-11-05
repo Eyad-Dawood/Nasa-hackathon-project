@@ -16,6 +16,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
   maxClients = MAX_CLIENTS;
 
   onCreate(_options: Record<string, unknown>) {
+    console.log(`[LobbyRoom] Created: ${this.roomId}`);
     this.setState(new LobbyState());
 
     // ------------------------------------------------------------------ //
@@ -103,6 +104,7 @@ export class LobbyRoom extends Room<LobbyRoomOptions> {
   }
 
   onJoin(client: Client, options: { username?: string }) {
+    console.log(`[LobbyRoom] ${this.roomId} — joined: ${client.sessionId} as "${options?.username}"`);
     const player = new PlayerSchema();
     player.id = client.sessionId;
     player.username = String(options?.username ?? "Player").trim().slice(0, 24);

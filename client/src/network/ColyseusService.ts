@@ -77,19 +77,27 @@ class _ColyseusService {
 
   async getLobbies(): Promise<LobbyMeta[]> {
     try {
-      const res = await fetch(`${BACKEND_HTTP_URL}/matchmake/lobby`);
+      const res = await fetch(`${BACKEND_HTTP_URL}/rooms`);
       if (!res.ok) return [];
-      const data = await res.json();
-      // Colyseus returns { rooms: [...] }
-      const rooms: Array<{ roomId: string; clients: number; maxClients: number; metadata?: unknown }> =
-        Array.isArray(data) ? data : (data?.rooms ?? []);
-      return rooms.map((r) => ({
-        roomId: r.roomId,
-        clients: r.clients,
-        maxClients: r.maxClients,
-        metadata: r.metadata as Record<string, unknown> | undefined,
-      }));
-    } catch {
+      const data: Array<{
+        roomId: string;
+        name: string;
+        clients: number;
+        maxClients: number;
+        locked?: boolean;
+        metadata?: Record<string, unknown>;
+      }> = await res.json();
+      // Filter out full/locked rooms
+      return data
+        .filter((r) => !r.locked)
+        .map((r) => ({
+          roomId: r.roomId,
+          clients: r.clients,
+          maxClients: r.maxClients,
+          metadata: r.metadata,
+        }));
+    } catch (e) {
+      console.warn("[ColyseusService] getLobbies failed:", e);
       return [];
     }
   }
