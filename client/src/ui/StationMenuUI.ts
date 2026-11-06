@@ -179,9 +179,9 @@ export class StationMenuUI {
     name.textContent = item.name;
     Object.assign(name.style, { color: colors.textPrimary, fontSize: font.sizeSm, flex: "1" });
 
-    const weight = document.createElement("span");
-    weight.textContent = `${item.weight} kg`;
-    Object.assign(weight.style, { color: colors.textMuted, fontSize: font.sizeXs, whiteSpace: "nowrap" });
+    const massEl = document.createElement("span");
+    massEl.textContent = `${item.mass} kg`;
+    Object.assign(massEl.style, { color: colors.textMuted, fontSize: font.sizeXs, whiteSpace: "nowrap" });
 
     const detailBtn = document.createElement("button");
     detailBtn.textContent = "Detail";
@@ -204,7 +204,7 @@ export class StationMenuUI {
       if (this._carry.pickUp(item)) this.close();
     });
 
-    row.append(name, weight, detailBtn, carryBtn);
+    row.append(name, massEl, detailBtn, carryBtn);
     return row;
   }
 

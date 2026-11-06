@@ -1,147 +1,260 @@
 /**
  * ItemData.ts  —  MASTER ITEM REGISTRY
  * ──────────────────────────────────────
- * Single source of truth for every game item.
+ * Single source of truth for all 100 game components (from game_data.json).
  *
  * HOW TO ADD A NEW ITEM:
- *   1. Add an entry to ITEMS below.
- *   2. That's it. StationEntity, StationMenuUI, ShipMenuUI, CarrySystem
- *      all import from here — nothing else needs changing.
+ *   1. Add an entry to ITEMS below.  That's it.
  *
- * HOW TO ADD A NEW METADATA FIELD (e.g. "description"):
- *   1. Add the field to the GameItem interface.
- *   2. Fill in values on each ITEMS entry.
- *   3. Any UI that wants to display it imports GameItem and reads the field.
- *      No other system files need editing.
+ * HOW TO ADD A NEW METADATA FIELD:
+ *   1. Add optional field to GameItem interface.
+ *   2. Fill in values on each relevant ITEMS entry.
+ *   3. Any UI importing GameItem can read it immediately.
  *
- * WHY THE SERVER ONLY STORES itemId:
- *   The server's ShipItemSchema stores itemId (a string) and roleId.
- *   Full item data is reconstructed client-side via getItemById().
- *   This keeps the schema lean: adding fields here never requires a server deploy.
+ * FIELD NAMING:
+ *   Field names mirror game_data.json exactly (camelCase).
+ *   The server only stores itemId — full data lives here.
+ *
+ * DEPARTMENT → roleId MAP:
+ *   power_thermal        → "powerAndThermal"
+ *   structure_computing  → "structureAndComputing"
+ *   communications       → "Communications"
+ *   science              → "Science"
  */
 
-/** Full definition of a single game item. Zero mechanics code here. */
 export interface GameItem {
   /** Unique identifier — stored on the server as ShipItemSchema.itemId. */
   id: string;
-
-  /** Display name shown in menus and carry indicator. */
+  /** Display name. */
   name: string;
-
-  /** Mass in kilograms — shown in menus and summed for total ship weight. */
-  weight: number;
-
-  /** Which role's station stocks this item. Must match a valid roleId. */
+  /** Department key from game_data.json. */
+  department: string;
+  /** roleId derived from department — which station stocks this item. */
   roleId: string;
-
+  /** Category within the department (e.g. "solar", "engine", "radio"). */
+  category: string;
+  /** Mass in kg — contributes to total ship mass and thrust check. */
+  mass: number;
+  /** Space used inside the frame (frames themselves use 0). */
+  size: number;
+  /** Cost in credits — contributes to budget check. */
+  cost: number;
+  /** Max copies allowed per ship (null = unlimited). */
+  maxPerShip: number | null;
+  /** Tip shown in item detail — what it does well. */
+  good: string;
+  /** Warning shown in item detail — trade-off or risk. */
+  watchOut: string;
   /**
-   * Phaser texture key for the small carry indicator above the player sprite.
-   * All items share "item_placeholder" until real pixel-art assets are made.
-   * To give an item its own sprite:
-   *   1. Add a unique key to assets.ts.
-   *   2. Generate its texture in BootScene.
-   *   3. Set assetKey here.
+   * Phaser texture key for carry indicator.
+   * Replace with per-item key when real sprites are ready.
    */
   assetKey: string;
 
-  // ── Add new metadata below — touch only this interface + ITEMS array ──
-  // description?: string;
-  // rarity?: "common" | "rare" | "legendary";
-  // assemblyTime?: number;  // seconds to install on ship
+  // ── Power & Thermal fields ───────────────────────────────────────────
+  /** Power generated per cycle (solar / nuclear). */
+  powerMade?: number;
+  /** True if power output scales with sunlight%. */
+  solar?: boolean;
+  /** Power consumption per cycle (engines, radios, instruments). */
+  powerUse?: number;
+  /** Power saved per cycle (power managers). */
+  powerSaved?: number;
+  /** Night-storage capacity (batteries). */
+  batteryStorage?: number;
+  /** Heat protection rating (insulation). */
+  heatProtection?: number;
+  /** Fuel stored (fuel tanks). */
+  fuelCapacity?: number;
+  /** Thrust produced (engines). */
+  thrust?: number;
+  /** Fuel consumed per distance unit (engines — does NOT stack). */
+  fuelBurn?: number;
+
+  // ── Structure & Computing fields ─────────────────────────────────────
+  /** Space slots the frame provides. */
+  frameSpace?: number;
+  /** Extra space provided (cargo bay extensions). */
+  spaceBonus?: number;
+  /** Radiation shielding (shields, rugged computer). */
+  radiationProtection?: number;
+  /** Brain power provided (computers). */
+  brainPower?: number;
+  /** Extra brain power provided (chip addons). */
+  brainBonus?: number;
+  /** Launch pull reduction (nose cone). */
+  launchPullReduction?: number;
+
+  // ── Communications fields ─────────────────────────────────────────────
+  /** Data rate of a radio (data units sent per cycle). */
+  dataRate?: number;
+  /** Signal range of a radio. */
+  signalRange?: number;
+  /** Range bonus added to best radio (boosters). */
+  rangeBonus?: number;
+  /** Data rate bonus added to all radios (antenna motor). */
+  rateBonus?: number;
+  /** Data reduction amount (compressors). */
+  dataReduction?: number;
+
+  // ── Science fields ────────────────────────────────────────────────────
+  /** Data generated by this instrument per cycle. */
+  dataMade?: number;
+  /** Brain power consumed by this instrument. */
+  brainUse?: number;
+  /** Science points contributed to the science check. */
+  sciencePoints?: number;
+}
+
+// ── Department → roleId helper (not exported — used only in this file) ──
+function dept(d: string): string {
+  const map: Record<string, string> = {
+    power_thermal:        "powerAndThermal",
+    structure_computing:  "structureAndComputing",
+    communications:       "Communications",
+    science:              "Science",
+  };
+  return map[d] ?? d;
 }
 
 export const ITEMS: GameItem[] = [
-  // ── Power And Thermal — Engineering ──────────────────────────────────────────────
-  {
-    id: "engine_core",
-    name: "Engine Core",
-    weight: 50,
-    roleId: "powerAndThermal",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "fuel_cell",
-    name: "Fuel Cell",
-    weight: 20,
-    roleId: "powerAndThermal",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "thruster",
-    name: "Thruster",
-    weight: 35,
-    roleId: "powerAndThermal",
-    assetKey: "item_placeholder",
-  },
+  // ════════════════════════════════════════════════════════════════════════
+  // POWER & THERMAL
+  // ════════════════════════════════════════════════════════════════════════
 
-  // ── Structure And Computing — Navigation ───────────────────────────────────────────────
-  {
-    id: "nav_system",
-    name: "Nav System",
-    weight: 15,
-    roleId: "structureAndComputing",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "radar_dish",
-    name: "Radar Dish",
-    weight: 25,
-    roleId: "structureAndComputing",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "comms_array",
-    name: "Comms Array",
-    weight: 10,
-    roleId: "structureAndComputing",
-    assetKey: "item_placeholder",
-  },
+  // ── Solar panels ─────────────────────────────────────────────────────
+  { id:"PT01", name:"Small Solar Panel",        department:"power_thermal", roleId:dept("power_thermal"), category:"solar",        mass:4,  size:1, cost:8,   maxPerShip:null, solar:true, powerMade:10,  good:"Cheap and light.",                              watchOut:"Weak far from the Sun. Needs night batteries.",         assetKey:"item_placeholder" },
+  { id:"PT02", name:"Large Solar Panel",        department:"power_thermal", roleId:dept("power_thermal"), category:"solar",        mass:10, size:2, cost:20,  maxPerShip:null, solar:true, powerMade:30,  good:"Best power for the price near the Sun.",         watchOut:"Big, and fades fast far from the Sun.",                 assetKey:"item_placeholder" },
+  { id:"PT03", name:"Folding Solar Wing",       department:"power_thermal", roleId:dept("power_thermal"), category:"solar",        mass:8,  size:1, cost:35,  maxPerShip:null, solar:true, powerMade:20,  good:"Packs lots of power into just 1 Space.",         watchOut:"Costs almost twice as much per Power.",                 assetKey:"item_placeholder" },
+  { id:"PT04", name:"Giant Solar Array",        department:"power_thermal", roleId:dept("power_thermal"), category:"solar",        mass:24, size:4, cost:60,  maxPerShip:null, solar:true, powerMade:90,  good:"Huge power for Moon missions.",                  watchOut:"Takes 4 Space. At Europa it makes only 9 Power.",       assetKey:"item_placeholder" },
 
-  // ── Communications — Structure ────────────────────────────────────────────────
-  {
-    id: "hull_plate",
-    name: "Hull Plate",
-    weight: 60,
-    roleId: "Communications",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "shield_gen",
-    name: "Shield Generator",
-    weight: 45,
-    roleId: "Communications",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "armor_slab",
-    name: "Armor Slab",
-    weight: 70,
-    roleId: "Communications",
-    assetKey: "item_placeholder",
-  },
+  // ── Nuclear power ─────────────────────────────────────────────────────
+  { id:"PT05", name:"Mini Nuclear Cell",        department:"power_thermal", roleId:dept("power_thermal"), category:"nuclear",      mass:10, size:1, cost:30,  maxPerShip:null, powerMade:15,  good:"Tiny, and works in the dark and far from the Sun.",  watchOut:"Low power for its price.",                              assetKey:"item_placeholder" },
+  { id:"PT06", name:"Simple Nuclear Reactor",   department:"power_thermal", roleId:dept("power_thermal"), category:"nuclear",      mass:25, size:2, cost:45,  maxPerShip:null, powerMade:40,  good:"Steady power anywhere. No batteries needed.",        watchOut:"Heavy for the power it gives.",                         assetKey:"item_placeholder" },
+  { id:"PT07", name:"Advanced Nuclear Reactor", department:"power_thermal", roleId:dept("power_thermal"), category:"nuclear",      mass:40, size:3, cost:110, maxPerShip:null, powerMade:100, good:"Powers big, hungry spacecraft.",                      watchOut:"Heavy and expensive.",                                  assetKey:"item_placeholder" },
 
-  // ── Science — Weapons ──────────────────────────────────────────────────
-  {
-    id: "laser_cannon",
-    name: "Laser Cannon",
-    weight: 40,
-    roleId: "Science",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "ammo_crate",
-    name: "Ammo Crate",
-    weight: 30,
-    roleId: "Science",
-    assetKey: "item_placeholder",
-  },
-  {
-    id: "targeting_sys",
-    name: "Targeting System",
-    weight: 20,
-    roleId: "Science",
-    assetKey: "item_placeholder",
-  },
+  // ── Batteries ─────────────────────────────────────────────────────────
+  { id:"PT08", name:"Small Battery",            department:"power_thermal", roleId:dept("power_thermal"), category:"battery",      mass:3,  size:1, cost:6,   maxPerShip:null, batteryStorage:20,  good:"Cheap night-time storage.",                        watchOut:"Only 20 storage.",                                      assetKey:"item_placeholder" },
+  { id:"PT09", name:"Large Battery",            department:"power_thermal", roleId:dept("power_thermal"), category:"battery",      mass:7,  size:2, cost:14,  maxPerShip:null, batteryStorage:50,  good:"Good storage for the price.",                      watchOut:"Takes 2 Space.",                                        assetKey:"item_placeholder" },
+  { id:"PT10", name:"Super Battery",            department:"power_thermal", roleId:dept("power_thermal"), category:"battery",      mass:12, size:2, cost:40,  maxPerShip:null, batteryStorage:90,  good:"Most storage per Space.",                          watchOut:"Pricey.",                                               assetKey:"item_placeholder" },
+
+  // ── Power managers ────────────────────────────────────────────────────
+  { id:"PT11", name:"Basic Power Controller",   department:"power_thermal", roleId:dept("power_thermal"), category:"power_manager", mass:2,  size:1, cost:10,  maxPerShip:null, powerSaved:5,  good:"Cheap way to save a little power.",                  watchOut:"Small saving.",                                         assetKey:"item_placeholder" },
+  { id:"PT12", name:"Smart Power Controller",   department:"power_thermal", roleId:dept("power_thermal"), category:"power_manager", mass:3,  size:1, cost:25,  maxPerShip:null, powerSaved:12, good:"Saves a good chunk of power.",                      watchOut:"Costs 2.5× the basic one.",                             assetKey:"item_placeholder" },
+  { id:"PT13", name:"Super Power Controller",   department:"power_thermal", roleId:dept("power_thermal"), category:"power_manager", mass:4,  size:1, cost:55,  maxPerShip:null, powerSaved:20, good:"Cuts power use hugely in 1 Space.",                 watchOut:"Wasted if your ship uses little power.",                 assetKey:"item_placeholder" },
+
+  // ── Insulation ────────────────────────────────────────────────────────
+  { id:"PT14", name:"Basic Insulation Blanket", department:"power_thermal", roleId:dept("power_thermal"), category:"insulation",   mass:5,  size:1, cost:8,   maxPerShip:null, heatProtection:2, good:"Cheap and light.",                                 watchOut:"Only Heat Protection 2.",                               assetKey:"item_placeholder" },
+  { id:"PT15", name:"Super Insulation",         department:"power_thermal", roleId:dept("power_thermal"), category:"insulation",   mass:10, size:2, cost:25,  maxPerShip:null, heatProtection:5, good:"Strong protection for the weight.",                 watchOut:"Takes 2 Space.",                                        assetKey:"item_placeholder" },
+  { id:"PT16", name:"Ice-Proof Shell",          department:"power_thermal", roleId:dept("power_thermal"), category:"insulation",   mass:16, size:2, cost:60,  maxPerShip:null, heatProtection:9, good:"Handles freezing places in just 2 Space.",          watchOut:"Too expensive for warm missions.",                       assetKey:"item_placeholder" },
+
+  // ── Fuel tanks ────────────────────────────────────────────────────────
+  { id:"PT17", name:"Small Fuel Tank",          department:"power_thermal", roleId:dept("power_thermal"), category:"fuel_tank",    mass:6,  size:1, cost:5,   maxPerShip:null, fuelCapacity:20,  good:"Cheap and small.",                                 watchOut:"Only 20 fuel.",                                         assetKey:"item_placeholder" },
+  { id:"PT18", name:"Large Fuel Tank",          department:"power_thermal", roleId:dept("power_thermal"), category:"fuel_tank",    mass:12, size:2, cost:11,  maxPerShip:null, fuelCapacity:50,  good:"Good fuel for the price.",                         watchOut:"Takes 2 Space.",                                        assetKey:"item_placeholder" },
+  { id:"PT19", name:"Mega Fuel Tank",           department:"power_thermal", roleId:dept("power_thermal"), category:"fuel_tank",    mass:26, size:4, cost:26,  maxPerShip:null, fuelCapacity:120, good:"Cheapest fuel per unit.",                          watchOut:"Heavy and uses 4 Space.",                               assetKey:"item_placeholder" },
+
+  // ── Engines ───────────────────────────────────────────────────────────
+  { id:"PT20", name:"Rocket Engine",            department:"power_thermal", roleId:dept("power_thermal"), category:"engine",       mass:20, size:2, cost:30,  maxPerShip:4, powerUse:0,  thrust:100, fuelBurn:2,   good:"Reliable push at a fair price.",               watchOut:"Burns lots of fuel.",                                    assetKey:"item_placeholder" },
+  { id:"PT21", name:"Heavy Rocket Engine",      department:"power_thermal", roleId:dept("power_thermal"), category:"engine",       mass:35, size:3, cost:60,  maxPerShip:4, powerUse:0,  thrust:220, fuelBurn:3,   good:"Big push in one part.",                        watchOut:"Burns even more fuel.",                                  assetKey:"item_placeholder" },
+  { id:"PT22", name:"Efficient Rocket",         department:"power_thermal", roleId:dept("power_thermal"), category:"engine",       mass:24, size:2, cost:48,  maxPerShip:4, powerUse:0,  thrust:90,  fuelBurn:1.5, good:"Sips fuel.",                                   watchOut:"Less push for its mass, and pricier.",                   assetKey:"item_placeholder" },
+  { id:"PT23", name:"Ion Engine",              department:"power_thermal", roleId:dept("power_thermal"), category:"engine",       mass:12, size:2, cost:55,  maxPerShip:4, powerUse:15, thrust:70,  fuelBurn:1,   good:"Very light and uses little fuel.",              watchOut:"Weak push and needs 15 Power.",                          assetKey:"item_placeholder" },
+  { id:"PT24", name:"Super Ion Engine",         department:"power_thermal", roleId:dept("power_thermal"), category:"engine",       mass:25, size:3, cost:130, maxPerShip:4, powerUse:30, thrust:150, fuelBurn:1,   good:"Strong push AND little fuel.",                 watchOut:"Costs a lot and needs 30 Power.",                        assetKey:"item_placeholder" },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // STRUCTURE & COMPUTING
+  // ════════════════════════════════════════════════════════════════════════
+
+  // ── Frames ────────────────────────────────────────────────────────────
+  { id:"SC01", name:"Cube Frame (Aluminum)",    department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:6,  size:0, cost:5,  maxPerShip:1, frameSpace:10, good:"Super light and cheap.",                             watchOut:"Tiny: only 10 Space.",                                  assetKey:"item_placeholder" },
+  { id:"SC02", name:"Mini Frame (Aluminum)",    department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:12, size:0, cost:10, maxPerShip:1, frameSpace:16, good:"Light and cheap.",                                   watchOut:"Only 16 Space.",                                        assetKey:"item_placeholder" },
+  { id:"SC03", name:"Standard Frame (Aluminum)",department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:24, size:0, cost:25, maxPerShip:1, frameSpace:22, good:"Good room for a fair price.",                        watchOut:"Fairly heavy.",                                         assetKey:"item_placeholder" },
+  { id:"SC04", name:"Standard Carbon Frame",    department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:16, size:0, cost:50, maxPerShip:1, frameSpace:22, good:"Same room, 8 less Mass.",                            watchOut:"Costs double.",                                         assetKey:"item_placeholder" },
+  { id:"SC05", name:"Heavy Frame (Aluminum)",   department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:40, size:0, cost:45, maxPerShip:1, frameSpace:34, good:"Lots of room for big missions.",                     watchOut:"Very heavy.",                                           assetKey:"item_placeholder" },
+  { id:"SC06", name:"Heavy Carbon Frame",       department:"structure_computing", roleId:dept("structure_computing"), category:"frame",    mass:28, size:0, cost:90, maxPerShip:1, frameSpace:34, good:"Big room, 12 less Mass.",                            watchOut:"Very expensive.",                                       assetKey:"item_placeholder" },
+
+  // ── Radiation shields ─────────────────────────────────────────────────
+  { id:"SC07", name:"Light Shield",             department:"structure_computing", roleId:dept("structure_computing"), category:"shield",   mass:5,  size:1, cost:6,   maxPerShip:null, radiationProtection:1,  good:"Cheap and small.",                            watchOut:"Radiation Protection 1 only.",                          assetKey:"item_placeholder" },
+  { id:"SC08", name:"Water Wall",               department:"structure_computing", roleId:dept("structure_computing"), category:"shield",   mass:18, size:3, cost:12,  maxPerShip:null, radiationProtection:4,  good:"Cheap protection. Water blocks radiation!",   watchOut:"Heavy and takes 3 Space.",                              assetKey:"item_placeholder" },
+  { id:"SC09", name:"Medium Shield",            department:"structure_computing", roleId:dept("structure_computing"), category:"shield",   mass:12, size:1, cost:20,  maxPerShip:null, radiationProtection:3,  good:"Solid protection in 1 Space.",                watchOut:"Costs more than a Water Wall.",                          assetKey:"item_placeholder" },
+  { id:"SC10", name:"Heavy Shield",             department:"structure_computing", roleId:dept("structure_computing"), category:"shield",   mass:24, size:2, cost:50,  maxPerShip:null, radiationProtection:7,  good:"Best protection per Mass.",                   watchOut:"Heavy and costly.",                                     assetKey:"item_placeholder" },
+  { id:"SC11", name:"Super Shield",             department:"structure_computing", roleId:dept("structure_computing"), category:"shield",   mass:40, size:3, cost:100, maxPerShip:null, radiationProtection:12, good:"Survives the harshest places.",                watchOut:"Very heavy and very expensive.",                         assetKey:"item_placeholder" },
+
+  // ── Computers ─────────────────────────────────────────────────────────
+  { id:"SC12", name:"Pocket Computer",          department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:1,  size:1, cost:5,  maxPerShip:1, powerUse:1,  brainPower:6,  good:"Tiny, cheap, almost no power.",                watchOut:"Only 6 Brain Power.",                                    assetKey:"item_placeholder" },
+  { id:"SC13", name:"Basic Computer",           department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:3,  size:1, cost:10, maxPerShip:1, powerUse:3,  brainPower:10, good:"Cheap and light.",                              watchOut:"Only 10 Brain Power.",                                   assetKey:"item_placeholder" },
+  { id:"SC14", name:"Smart Computer",           department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:5,  size:1, cost:30, maxPerShip:1, powerUse:6,  brainPower:25, good:"Good Brain Power for the price.",               watchOut:"Costs 3× the basic one.",                                assetKey:"item_placeholder" },
+  { id:"SC15", name:"Rugged Computer",          department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:6,  size:1, cost:45, maxPerShip:1, powerUse:7,  brainPower:25, radiationProtection:1, good:"Same Brain as Smart, plus 1 Radiation Protection.", watchOut:"Costs 15 more than Smart.",            assetKey:"item_placeholder" },
+  { id:"SC16", name:"Dual-Core Computer",       department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:6,  size:1, cost:50, maxPerShip:1, powerUse:8,  brainPower:35, good:"Lots of Brain in 1 Space.",                     watchOut:"Uses 8 Power.",                                          assetKey:"item_placeholder" },
+  { id:"SC17", name:"Super Computer",           department:"structure_computing", roleId:dept("structure_computing"), category:"computer", mass:8,  size:2, cost:70, maxPerShip:1, powerUse:12, brainPower:50, good:"The most Brain Power.",                         watchOut:"Takes 2 Space and 12 Power.",                            assetKey:"item_placeholder" },
+
+  // ── Add-ons ───────────────────────────────────────────────────────────
+  { id:"SC18", name:"Cargo Bay Extension",      department:"structure_computing", roleId:dept("structure_computing"), category:"addon",    mass:10, size:0, cost:15, maxPerShip:2, spaceBonus:5,              good:"More room without a new frame.",                watchOut:"Adds Mass. Max 2.",                                      assetKey:"item_placeholder" },
+  { id:"SC19", name:"Smooth Nose Cone",         department:"structure_computing", roleId:dept("structure_computing"), category:"addon",    mass:3,  size:1, cost:20, maxPerShip:1, launchPullReduction:0.1,   good:"Needs less thrust to launch.",                  watchOut:"Helps big ships most. Max 1.",                           assetKey:"item_placeholder" },
+  { id:"SC20", name:"Extra Brain Chip",         department:"structure_computing", roleId:dept("structure_computing"), category:"addon",    mass:2,  size:1, cost:12, maxPerShip:3, powerUse:2, brainBonus:8,  good:"Cheap Brain boost.",                            watchOut:"Each chip takes 1 Space and 2 Power. Max 3.",            assetKey:"item_placeholder" },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // COMMUNICATIONS
+  // ════════════════════════════════════════════════════════════════════════
+
+  // ── Radios ────────────────────────────────────────────────────────────
+  { id:"CM01", name:"Stick Antenna",            department:"communications", roleId:dept("communications"), category:"radio",      mass:1,  size:1, cost:2,   maxPerShip:2, powerUse:0,  dataRate:2,  signalRange:2, good:"Almost free. Uses no power.",                   watchOut:"Only 2 Data Rate.",                                     assetKey:"item_placeholder" },
+  { id:"CM02", name:"Tiny Radio",               department:"communications", roleId:dept("communications"), category:"radio",      mass:1,  size:1, cost:4,   maxPerShip:2, powerUse:1,  dataRate:4,  signalRange:1, good:"Super cheap and light.",                        watchOut:"Short range, slow.",                                    assetKey:"item_placeholder" },
+  { id:"CM03", name:"Patch Antenna",            department:"communications", roleId:dept("communications"), category:"radio",      mass:2,  size:1, cost:9,   maxPerShip:2, powerUse:2,  dataRate:8,  signalRange:2, good:"Cheap, with a little range.",                  watchOut:"Slow.",                                                  assetKey:"item_placeholder" },
+  { id:"CM04", name:"Small Radio Dish",         department:"communications", roleId:dept("communications"), category:"radio",      mass:3,  size:1, cost:10,  maxPerShip:2, powerUse:3,  dataRate:10, signalRange:1, good:"Good speed for tiny cost.",                     watchOut:"Short range (1).",                                      assetKey:"item_placeholder" },
+  { id:"CM05", name:"Emergency Radio",          department:"communications", roleId:dept("communications"), category:"radio",      mass:2,  size:1, cost:20,  maxPerShip:2, powerUse:1,  dataRate:3,  signalRange:4, good:"Long range for a small part.",                 watchOut:"Super slow (3).",                                       assetKey:"item_placeholder" },
+  { id:"CM06", name:"Folding Mesh Dish",        department:"communications", roleId:dept("communications"), category:"radio",      mass:5,  size:1, cost:55,  maxPerShip:2, powerUse:9,  dataRate:20, signalRange:3, good:"Light and small for a dish.",                  watchOut:"Pricey for its speed.",                                 assetKey:"item_placeholder" },
+  { id:"CM07", name:"Medium Dish",              department:"communications", roleId:dept("communications"), category:"radio",      mass:8,  size:2, cost:28,  maxPerShip:2, powerUse:8,  dataRate:25, signalRange:3, good:"Balanced speed and range.",                    watchOut:"Not enough for deep space.",                            assetKey:"item_placeholder" },
+  { id:"CM08", name:"Deep Space Antenna",       department:"communications", roleId:dept("communications"), category:"radio",      mass:12, size:2, cost:60,  maxPerShip:2, powerUse:10, dataRate:12, signalRange:6, good:"Reaches very far (6).",                        watchOut:"Slow (12).",                                            assetKey:"item_placeholder" },
+  { id:"CM09", name:"Large Dish",               department:"communications", roleId:dept("communications"), category:"radio",      mass:16, size:3, cost:65,  maxPerShip:2, powerUse:15, dataRate:50, signalRange:5, good:"Fast AND long range.",                         watchOut:"Heavy, 3 Space, 15 Power.",                             assetKey:"item_placeholder" },
+  { id:"CM10", name:"Laser Link",               department:"communications", roleId:dept("communications"), category:"radio",      mass:6,  size:1, cost:110, maxPerShip:2, powerUse:20, dataRate:70, signalRange:2, good:"Super fast and light.",                        watchOut:"Short range (2), costly, 20 Power.",                    assetKey:"item_placeholder" },
+  { id:"CM11", name:"Giant Dish",               department:"communications", roleId:dept("communications"), category:"radio",      mass:30, size:5, cost:140, maxPerShip:2, powerUse:28, dataRate:90, signalRange:7, good:"Huge speed and range for big missions.",       watchOut:"Very heavy, 5 Space, 28 Power.",                        assetKey:"item_placeholder" },
+
+  // ── Boosters ─────────────────────────────────────────────────────────
+  { id:"CM12", name:"Mini Booster",             department:"communications", roleId:dept("communications"), category:"booster",    mass:3,  size:1, cost:10,  maxPerShip:2, powerUse:1,  rangeBonus:1, good:"Cheap +1 Range.",                                  watchOut:"Small boost.",                                          assetKey:"item_placeholder" },
+  { id:"CM13", name:"Signal Booster",           department:"communications", roleId:dept("communications"), category:"booster",    mass:4,  size:1, cost:20,  maxPerShip:2, powerUse:6,  rangeBonus:2, good:"+2 Range.",                                        watchOut:"Uses 6 Power.",                                         assetKey:"item_placeholder" },
+  { id:"CM14", name:"Super Booster",            department:"communications", roleId:dept("communications"), category:"booster",    mass:7,  size:1, cost:50,  maxPerShip:2, powerUse:14, rangeBonus:4, good:"+4 Range.",                                        watchOut:"Costly, uses 14 Power.",                                assetKey:"item_placeholder" },
+  { id:"CM15", name:"Antenna Pointer Motor",    department:"communications", roleId:dept("communications"), category:"booster",    mass:3,  size:1, cost:22,  maxPerShip:2, powerUse:4,  rateBonus:8,  good:"+8 Data Rate to your radios.",                     watchOut:"Adds no Range.",                                        assetKey:"item_placeholder" },
+
+  // ── Compressors ───────────────────────────────────────────────────────
+  { id:"CM16", name:"Photo Squisher",           department:"communications", roleId:dept("communications"), category:"compressor", mass:1,  size:1, cost:6,   maxPerShip:2, powerUse:1,  dataReduction:3,  good:"Cheap and tiny.",                              watchOut:"Only removes 3 Data.",                                  assetKey:"item_placeholder" },
+  { id:"CM17", name:"Data Compressor",          department:"communications", roleId:dept("communications"), category:"compressor", mass:2,  size:1, cost:15,  maxPerShip:2, powerUse:2,  dataReduction:6,  good:"Removes 6 Data.",                              watchOut:"Uses 2 Power.",                                         assetKey:"item_placeholder" },
+  { id:"CM18", name:"Smart Compressor",         department:"communications", roleId:dept("communications"), category:"compressor", mass:3,  size:1, cost:40,  maxPerShip:2, powerUse:5,  dataReduction:14, good:"Removes 14 Data.",                              watchOut:"Costs more and uses 5 Power.",                           assetKey:"item_placeholder" },
+  { id:"CM19", name:"Super Compressor",         department:"communications", roleId:dept("communications"), category:"compressor", mass:5,  size:1, cost:85,  maxPerShip:2, powerUse:10, dataReduction:26, good:"Removes 26 Data.",                              watchOut:"Very costly, uses 10 Power.",                           assetKey:"item_placeholder" },
+  { id:"CM20", name:"Memory Buffer",            department:"communications", roleId:dept("communications"), category:"compressor", mass:5,  size:2, cost:18,  maxPerShip:2, powerUse:1,  dataReduction:10, good:"Removes 10 Data on a tiny power budget.",      watchOut:"Bulky: 2 Space and 5 Mass.",                            assetKey:"item_placeholder" },
+
+  // ════════════════════════════════════════════════════════════════════════
+  // SCIENCE
+  // ════════════════════════════════════════════════════════════════════════
+
+  // ── Cameras ───────────────────────────────────────────────────────────
+  { id:"SI01", name:"Basic Camera",             department:"science", roleId:dept("science"), category:"camera",   mass:3,  size:1, cost:12,  maxPerShip:2, powerUse:5,  dataMade:6,  brainUse:3,  sciencePoints:10, good:"Cheap and easy to power.",                    watchOut:"Low science.",                                          assetKey:"item_placeholder" },
+  { id:"SI02", name:"Wide-Angle Camera",        department:"science", roleId:dept("science"), category:"camera",   mass:4,  size:1, cost:20,  maxPerShip:2, powerUse:7,  dataMade:10, brainUse:4,  sciencePoints:16, good:"Sees a big area.",                            watchOut:"More data than a basic camera.",                        assetKey:"item_placeholder" },
+  { id:"SI03", name:"Night Vision Camera",      department:"science", roleId:dept("science"), category:"camera",   mass:5,  size:1, cost:24,  maxPerShip:2, powerUse:8,  dataMade:10, brainUse:4,  sciencePoints:18, good:"Great for dark places.",                      watchOut:"Uses 8 Power.",                                         assetKey:"item_placeholder" },
+  { id:"SI04", name:"HD Camera",                department:"science", roleId:dept("science"), category:"camera",   mass:6,  size:1, cost:30,  maxPerShip:2, powerUse:10, dataMade:15, brainUse:6,  sciencePoints:25, good:"Great science for 1 Space.",                  watchOut:"15 Data to send.",                                      assetKey:"item_placeholder" },
+  { id:"SI05", name:"Ultra HD Telescope Camera",department:"science", roleId:dept("science"), category:"camera",   mass:12, size:2, cost:75,  maxPerShip:2, powerUse:18, dataMade:30, brainUse:12, sciencePoints:55, good:"Big science in a small spot.",                watchOut:"30 Data and 18 Power!",                                  assetKey:"item_placeholder" },
+
+  // ── Sensors ───────────────────────────────────────────────────────────
+  { id:"SI06", name:"Dust Counter",             department:"science", roleId:dept("science"), category:"sensor",   mass:2,  size:1, cost:6,   maxPerShip:2, powerUse:2,  dataMade:2,  brainUse:1,  sciencePoints:5,  good:"Tiny and cheap.",                             watchOut:"Very low science.",                                     assetKey:"item_placeholder" },
+  { id:"SI07", name:"Radiation Detector",       department:"science", roleId:dept("science"), category:"sensor",   mass:3,  size:1, cost:11,  maxPerShip:2, powerUse:3,  dataMade:3,  brainUse:2,  sciencePoints:9,  good:"Cheap, tiny data.",                           watchOut:"Low science.",                                          assetKey:"item_placeholder" },
+  { id:"SI08", name:"Magnet Sensor",            department:"science", roleId:dept("science"), category:"sensor",   mass:3,  size:1, cost:10,  maxPerShip:2, powerUse:4,  dataMade:4,  brainUse:2,  sciencePoints:8,  good:"Cheap and light.",                            watchOut:"Low science.",                                          assetKey:"item_placeholder" },
+  { id:"SI09", name:"Heat Scanner",             department:"science", roleId:dept("science"), category:"sensor",   mass:4,  size:1, cost:15,  maxPerShip:2, powerUse:6,  dataMade:5,  brainUse:3,  sciencePoints:12, good:"Solid science per Mass.",                     watchOut:"Uses 6 Power.",                                         assetKey:"item_placeholder" },
+  { id:"SI10", name:"Weather Station",          department:"science", roleId:dept("science"), category:"sensor",   mass:5,  size:1, cost:18,  maxPerShip:2, powerUse:5,  dataMade:4,  brainUse:3,  sciencePoints:14, good:"Good science for little data.",               watchOut:"Needs 3 Brain.",                                        assetKey:"item_placeholder" },
+  { id:"SI11", name:"Gravity Sensor",           department:"science", roleId:dept("science"), category:"sensor",   mass:6,  size:1, cost:20,  maxPerShip:2, powerUse:5,  dataMade:5,  brainUse:4,  sciencePoints:15, good:"Low data, good science.",                    watchOut:"Heavier than other sensors.",                           assetKey:"item_placeholder" },
+  { id:"SI12", name:"Spectrometer",             department:"science", roleId:dept("science"), category:"sensor",   mass:6,  size:1, cost:30,  maxPerShip:2, powerUse:6,  dataMade:8,  brainUse:6,  sciencePoints:22, good:"Great science in 1 Space.",                  watchOut:"Needs 6 Brain.",                                        assetKey:"item_placeholder" },
+
+  // ── Analyzers ─────────────────────────────────────────────────────────
+  { id:"SI13", name:"Gas Sniffer",              department:"science", roleId:dept("science"), category:"analyzer", mass:7,  size:1, cost:25,  maxPerShip:2, powerUse:7,  dataMade:6,  brainUse:5,  sciencePoints:18, good:"Smells the air for clues.",                   watchOut:"Medium science for 7 Mass.",                            assetKey:"item_placeholder" },
+  { id:"SI14", name:"Rock & Soil Analyzer",     department:"science", roleId:dept("science"), category:"analyzer", mass:8,  size:2, cost:28,  maxPerShip:2, powerUse:8,  dataMade:8,  brainUse:5,  sciencePoints:20, good:"Good science for the cost.",                  watchOut:"Takes 2 Space.",                                        assetKey:"item_placeholder" },
+  { id:"SI15", name:"Drill Sampler",            department:"science", roleId:dept("science"), category:"analyzer", mass:18, size:3, cost:50,  maxPerShip:2, powerUse:12, dataMade:6,  brainUse:6,  sciencePoints:32, good:"Digs deep for big science.",                  watchOut:"Heavy, 3 Space.",                                       assetKey:"item_placeholder" },
+  { id:"SI16", name:"Mini Chemistry Lab",       department:"science", roleId:dept("science"), category:"analyzer", mass:14, size:2, cost:55,  maxPerShip:2, powerUse:14, dataMade:12, brainUse:8,  sciencePoints:35, good:"Lots of science in 2 Space.",                 watchOut:"Heavy and 14 Power.",                                   assetKey:"item_placeholder" },
+  { id:"SI17", name:"Sample Return Capsule",    department:"science", roleId:dept("science"), category:"analyzer", mass:16, size:3, cost:60,  maxPerShip:2, powerUse:4,  dataMade:2,  brainUse:4,  sciencePoints:30, good:"Almost no data! Samples come home in person.", watchOut:"Heavy, 3 Space, low science for the cost.",             assetKey:"item_placeholder" },
+
+  // ── Radar ─────────────────────────────────────────────────────────────
+  { id:"SI18", name:"Surface Radar Mapper",     department:"science", roleId:dept("science"), category:"radar",    mass:7,  size:2, cost:32,  maxPerShip:2, powerUse:10, dataMade:14, brainUse:6,  sciencePoints:26, good:"Maps the ground at a good price.",            watchOut:"14 Data to send.",                                      assetKey:"item_placeholder" },
+  { id:"SI19", name:"Ice Radar",                department:"science", roleId:dept("science"), category:"radar",    mass:10, size:2, cost:45,  maxPerShip:2, powerUse:15, dataMade:20, brainUse:8,  sciencePoints:40, good:"Best science per cost.",                     watchOut:"15 Power and 20 Data.",                                 assetKey:"item_placeholder" },
+
+  // ── Rover ─────────────────────────────────────────────────────────────
+  { id:"SI20", name:"Mini Rover",               department:"science", roleId:dept("science"), category:"rover",    mass:25, size:4, cost:100, maxPerShip:2, powerUse:20, dataMade:20, brainUse:12, sciencePoints:55, good:"Big science and exploring on the ground.",    watchOut:"Very heavy, 4 Space, 20 Power.",                        assetKey:"item_placeholder" },
 ];
 
 /** Look up a full GameItem by its id. Returns undefined if not found. */

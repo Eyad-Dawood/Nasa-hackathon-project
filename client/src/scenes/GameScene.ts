@@ -40,6 +40,7 @@ export class GameScene extends Phaser.Scene {
   private roles:      string[]  = ["no-role"];
   private gameRoomId: string    = "";
   private objective:  Objective | null = null;
+  private isHost:     boolean   = false;
 
   // ── World ─────────────────────────────────────────────────────────────
   private wallsGroup!:    Phaser.Physics.Arcade.StaticGroup;
@@ -64,11 +65,13 @@ export class GameScene extends Phaser.Scene {
     roles?:      string[];
     gameRoomId?: string;
     objective?:  Objective | null;
+    isHost?:     boolean;
   }) {
     this.username   = data?.username   ?? localStorage.getItem("username") ?? "Player";
     this.roles      = data?.roles      ?? ["no-role"];
     this.gameRoomId = data?.gameRoomId ?? "";
     this.objective  = data?.objective  ?? null;
+    this.isHost     = data?.isHost     ?? false;
   }
 
   create() {
@@ -99,7 +102,7 @@ export class GameScene extends Phaser.Scene {
     );
 
     // ── 6. Spaceship (center) ─────────────────────────────────────────────
-    this.ship = new ShipEntity(this, this.carry, this.roles);
+    this.ship = new ShipEntity(this, this.carry, this.roles, this.objective, this.isHost);
 
     // ── 7. InteractionSystem — receives ALL interactables ─────────────────
     const interactables: IInteractable[] = [

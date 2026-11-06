@@ -6,6 +6,7 @@ import { SHIP_WORLD_POS } from "../data/StationData";
 import { CarrySystem } from "../systems/CarrySystem";
 import { ShipMenuUI } from "../../ui/ShipMenuUI";
 import { ColyseusService } from "../../network/ColyseusService";
+import { Objective } from "../data/ObjectiveData";
 
 /**
  * ShipEntity
@@ -23,13 +24,15 @@ import { ColyseusService } from "../../network/ColyseusService";
  * state snapshot passed in via refreshState() on every onStateChange.
  */
 export class ShipEntity implements IInteractable {
-  private _worldX: number;
-  private _worldY: number;
-  private _sprite: Phaser.GameObjects.Image;
-  private _label: Phaser.GameObjects.Text;
-  private _carry: CarrySystem;
+  private _worldX:      number;
+  private _worldY:      number;
+  private _sprite:      Phaser.GameObjects.Image;
+  private _label:       Phaser.GameObjects.Text;
+  private _carry:       CarrySystem;
   private _playerRoles: string[];
-  private _menu: ShipMenuUI | null = null;
+  private _objective:   Objective | null;
+  private _isHost:      boolean;
+  private _menu:        ShipMenuUI | null = null;
 
   /** Latest snapshot of ship items from the server. Updated by GameScene. */
   private _shipItemsSnapshot: Map<
@@ -37,9 +40,17 @@ export class ShipEntity implements IInteractable {
     { itemId: string; roleId: string; addedBy: string }
   > = new Map();
 
-  constructor(scene: Phaser.Scene, carry: CarrySystem, playerRoles: string[]) {
-    this._carry = carry;
+  constructor(
+    scene:       Phaser.Scene,
+    carry:       CarrySystem,
+    playerRoles: string[],
+    objective:   Objective | null,
+    isHost:      boolean,
+  ) {
+    this._carry       = carry;
     this._playerRoles = playerRoles;
+    this._objective   = objective;
+    this._isHost      = isHost;
     this._worldX = SHIP_WORLD_POS.x;
     this._worldY = SHIP_WORLD_POS.y;
 
@@ -80,9 +91,9 @@ export class ShipEntity implements IInteractable {
       this._shipItemsSnapshot,
       this._carry,
       this._playerRoles,
-      () => {
-        this._menu = null;
-      },
+      this._objective,
+      this._isHost,
+      () => { this._menu = null; },
     );
     this._menu.mount();
   }

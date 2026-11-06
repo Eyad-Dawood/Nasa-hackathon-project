@@ -1,9 +1,12 @@
 import { Theme, getRoleLabel } from "../config/theme";
-import { getItemById } from "../game/data/ItemData";
+import { getItemById, GameItem } from "../game/data/ItemData";
 import { STATIONS } from "../game/data/StationData";
 import { CarrySystem } from "../game/systems/CarrySystem";
 import { ColyseusService } from "../network/ColyseusService";
 import { ItemDetailUI } from "./ItemDetailUI";
+import { LaunchResultUI } from "./LaunchResultUI";
+import { runLaunchChecks } from "../game/data/LaunchSystem";
+import { Objective } from "../game/data/ObjectiveData";
 
 type ShipEntry = { itemId: string; roleId: string; addedBy: string };
 
@@ -13,23 +16,28 @@ type ShipEntry = { itemId: string; roleId: string; addedBy: string };
  * DOM overlay shown when a player interacts with the spaceship.
  *
  * DISPLAYS:
- *   - Total ship weight (sum of all added items).
- *   - Items grouped by role section. Each section shows all 4 roles.
- *   - [Detail] button on each item → opens ItemDetailUI.
- *   - [Remove] button → sends removeItemFromShip to server + player carries it back.
- *   - [Add carried item] button at the bottom → sends addItemToShip to server.
+ *   - Total mass / cost / science / size used (live totals).
+ *   - Items grouped by role section.
+ *   - [Detail] → ItemDetailUI,  [Remove] → role-gated.
+ *   - [Add carried item] when player is holding something.
+ *   - [🚀 Launch] button (host only) → runs 12-rule check → LaunchResultUI.
  *
  * REFRESH:
- *   refresh(newSnapshot) is called by ShipEntity whenever the server state
- *   patches arrive, so the menu stays live while open.
+ *   refresh(newSnapshot) is called by ShipEntity whenever server state patches
+ *   arrive, so the menu stays live while open.
  */
 export class ShipMenuUI {
-  private _container:  HTMLDivElement;
-  private _carry:      CarrySystem;
-  private _onClose:    () => void;
-  private _openDetail: ItemDetailUI | null = null;
-  /** roleIds this local player has — used to gate the Remove button. */
+  private _container:   HTMLDivElement;
+  private _carry:       CarrySystem;
+  private _onClose:     () => void;
+  private _openDetail:  ItemDetailUI | null = null;
+  private _openResult:  LaunchResultUI | null = null;
+  /** roleIds this local player has — gates the Remove button. */
   private _playerRoles: string[];
+  /** Selected mission — used by LaunchSystem. Null if not yet chosen. */
+  private _objective:   Objective | null;
+  /** True if the local player is the lobby host. */
+  private _isHost:      boolean;
 
   // The main content area re-rendered on refresh
   private _contentEl!: HTMLDivElement;
@@ -39,11 +47,15 @@ export class ShipMenuUI {
     snapshot:    Map<string, ShipEntry>,
     carry:       CarrySystem,
     playerRoles: string[],
+    objective:   Objective | null,
+    isHost:      boolean,
     onClose:     () => void,
   ) {
     this._snapshot    = snapshot;
     this._carry       = carry;
     this._playerRoles = playerRoles;
+    this._objective   = objective;
+    this._isHost      = isHost;
     this._onClose     = onClose;
     this._container   = this._buildDOM();
   }
@@ -52,6 +64,7 @@ export class ShipMenuUI {
 
   close(): void {
     this._openDetail?.close();
+    this._openResult?.close();
     this._container.remove();
     this._onClose();
   }
@@ -80,10 +93,9 @@ export class ShipMenuUI {
     Object.assign(panel.style, {
       background: colors.surface, border: `1px solid ${colors.border}`,
       borderRadius: radius.lg, padding: spacing.lg,
-      width: "480px", maxHeight: "80vh", maxWidth: "92vw",
+      width: "520px", maxHeight: "86vh", maxWidth: "95vw",
       display: "flex", flexDirection: "column", gap: spacing.sm,
-      boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-      overflowY: "auto",
+      boxShadow: "0 8px 40px rgba(0,0,0,0.6)", overflowY: "auto",
     });
 
     // Header
@@ -106,11 +118,26 @@ export class ShipMenuUI {
     const hr = document.createElement("hr");
     hr.style.borderColor = colors.border; hr.style.margin = "0";
 
+    // Objective banner
+    if (this._objective) {
+      const objBanner = document.createElement("div");
+      Object.assign(objBanner.style, {
+        background: "rgba(170,255,204,0.08)", border: "1px solid #aaffcc33",
+        borderRadius: "6px", padding: "5px 10px",
+        color: "#aaffcc", fontSize: "11px",
+        display: "flex", justifyContent: "space-between",
+      });
+      objBanner.textContent = `Mission: ${this._objective.label}  ·  Budget: ${this._objective.budget}  ·  Science goal: ${this._objective.scienceGoal}`;
+      panel.append(header, hr, objBanner);
+    } else {
+      panel.append(header, hr);
+    }
+
     // Content (re-rendered on refresh)
     this._contentEl = document.createElement("div");
     Object.assign(this._contentEl.style, { display: "flex", flexDirection: "column", gap: spacing.sm });
 
-    panel.append(header, hr, this._contentEl);
+    panel.appendChild(this._contentEl);
     overlay.appendChild(panel);
 
     this._rebuildContent();
@@ -121,34 +148,49 @@ export class ShipMenuUI {
     const { colors, font, spacing } = Theme;
     this._contentEl.innerHTML = "";
 
-    // ── Total weight ──
-    const total = [...this._snapshot.values()].reduce((sum, e) => {
+    // Gather all items
+    const allItems: GameItem[] = [];
+    this._snapshot.forEach((e) => {
       const item = getItemById(e.itemId);
-      return sum + (item?.weight ?? 0);
-    }, 0);
-
-    const weightBar = document.createElement("div");
-    Object.assign(weightBar.style, {
-      display: "flex", justifyContent: "space-between", alignItems: "center",
-      background: colors.background, borderRadius: "6px", padding: `${spacing.xs} ${spacing.sm}`,
+      if (item) allItems.push(item);
     });
-    const wLabel = document.createElement("span");
-    wLabel.textContent = "Total Weight";
-    wLabel.style.color = colors.textMuted; wLabel.style.fontSize = font.sizeSm;
-    const wValue = document.createElement("span");
-    wValue.textContent = `${total} kg`;
-    Object.assign(wValue.style, { color: "#aaffcc", fontSize: font.sizeMd, fontWeight: "bold" });
-    weightBar.append(wLabel, wValue);
-    this._contentEl.appendChild(weightBar);
 
-    // ── Role sections — labels come from Theme.roles (single source of truth) ──
+    // ── Totals bar ──
+    const totalMass    = allItems.reduce((s, i) => s + i.mass, 0);
+    const totalCost    = allItems.reduce((s, i) => s + i.cost, 0);
+    const totalScience = allItems.reduce((s, i) => s + (i.sciencePoints ?? 0), 0);
+    const totalSize    = allItems.reduce((s, i) => s + i.size, 0);
+
+    const totalsBar = document.createElement("div");
+    Object.assign(totalsBar.style, {
+      display: "flex", gap: spacing.sm, flexWrap: "wrap",
+      background: colors.background, borderRadius: "6px",
+      padding: `${spacing.xs} ${spacing.sm}`,
+    });
+
+    const stat = (label: string, val: string, color = "#aaffcc") => {
+      const el = document.createElement("span");
+      el.textContent = `${label}: ${val}`;
+      Object.assign(el.style, { color, fontSize: font.sizeXs, fontWeight: "bold" });
+      return el;
+    };
+
+    const budgetColor = this._objective && totalCost > this._objective.budget ? "#e94560" : "#aaffcc";
+    totalsBar.append(
+      stat("Mass",    `${totalMass} kg`),
+      stat("Cost",    `${totalCost}`,    budgetColor),
+      stat("Science", `${totalScience} pts`, "#3498db"),
+      stat("Size",    `${totalSize} Space`),
+    );
+    this._contentEl.appendChild(totalsBar);
+
+    // ── Role sections ──
     const allRoles = STATIONS.map((s) => ({ roleId: s.roleId }));
     for (const { roleId } of allRoles) {
-      const section = this._buildRoleSection(roleId);
-      this._contentEl.appendChild(section);
+      this._contentEl.appendChild(this._buildRoleSection(roleId, allItems));
     }
 
-    // ── Add carried item button ──
+    // ── Add carried item ──
     const held = this._carry.heldItem;
     if (held) {
       const addBar = document.createElement("div");
@@ -158,7 +200,7 @@ export class ShipMenuUI {
         borderRadius: "6px", padding: `${spacing.xs} ${spacing.sm}`,
       });
       const addLabel = document.createElement("span");
-      addLabel.textContent = `➕ Add: ${held.name} (${held.weight} kg)`;
+      addLabel.textContent = `➕ Add: ${held.name} (${held.mass} kg)`;
       Object.assign(addLabel.style, { color: colors.success, fontSize: font.sizeSm, flex: "1" });
 
       const addBtn = document.createElement("button");
@@ -166,22 +208,55 @@ export class ShipMenuUI {
       this._styleBtn(addBtn, colors.success);
       addBtn.addEventListener("click", () => {
         const item = this._carry.putDown();
-        if (item) {
-          ColyseusService.send("addItemToShip", { itemId: item.id, roleId: item.roleId });
-        }
-        // Menu stays open — server state patch will trigger refresh()
+        if (item) ColyseusService.send("addItemToShip", { itemId: item.id, roleId: item.roleId });
       });
 
       addBar.append(addLabel, addBtn);
       this._contentEl.appendChild(addBar);
     }
+
+    // ── Launch button (host only) ──
+    if (this._isHost) {
+      const launchBar = document.createElement("div");
+      Object.assign(launchBar.style, {
+        display: "flex", justifyContent: "center",
+        marginTop: spacing.xs,
+      });
+
+      const launchBtn = document.createElement("button");
+      launchBtn.textContent = "🚀  Launch Spaceship";
+      Object.assign(launchBtn.style, {
+        background:   "linear-gradient(135deg, #2ecc71, #27ae60)",
+        border:       "none",
+        borderRadius: "8px",
+        color:        "#fff",
+        cursor:       "pointer",
+        fontFamily:   font.family,
+        fontSize:     font.sizeMd,
+        fontWeight:   "bold",
+        padding:      `${spacing.sm} ${spacing.xl}`,
+        letterSpacing: "1px",
+        boxShadow:    "0 4px 16px rgba(46,204,113,0.4)",
+        transition:   "opacity 0.15s ease",
+      });
+      launchBtn.addEventListener("mouseenter", () => { launchBtn.style.opacity = "0.85"; });
+      launchBtn.addEventListener("mouseleave", () => { launchBtn.style.opacity = "1"; });
+
+      launchBtn.addEventListener("click", () => {
+        if (this._openResult) return;
+        const result = runLaunchChecks(allItems, this._objective);
+        this._openResult = new LaunchResultUI(result, () => { this._openResult = null; });
+        this._openResult.mount();
+      });
+
+      launchBar.appendChild(launchBtn);
+      this._contentEl.appendChild(launchBar);
+    }
   }
 
-  private _buildRoleSection(roleId: string): HTMLDivElement {
+  private _buildRoleSection(roleId: string, allItems: GameItem[]): HTMLDivElement {
     const { colors, font, spacing, radius } = Theme;
-    // Label comes from Theme.roles — single source of truth for role names
-    const label = getRoleLabel(roleId);
-    // Whether this local player can remove items from this role's section
+    const label        = getRoleLabel(roleId);
     const playerOwnsRole = this._playerRoles.includes(roleId);
 
     const section = document.createElement("div");
@@ -191,11 +266,11 @@ export class ShipMenuUI {
     sectionLabel.textContent = `── ${label} ──`;
     Object.assign(sectionLabel.style, {
       color: colors.textMuted, fontSize: font.sizeXs,
-      letterSpacing: "1px", textTransform: "uppercase", padding: `${spacing.xs} 0 2px 0`,
+      letterSpacing: "1px", textTransform: "uppercase",
+      padding: `${spacing.xs} 0 2px 0`,
     });
     section.appendChild(sectionLabel);
 
-    // Find items in ship for this role
     const roleEntries = [...this._snapshot.values()].filter((e) => e.roleId === roleId);
 
     if (roleEntries.length === 0) {
@@ -222,7 +297,7 @@ export class ShipMenuUI {
       Object.assign(name.style, { color: colors.textPrimary, fontSize: font.sizeSm, flex: "1" });
 
       const kg = document.createElement("span");
-      kg.textContent = `${item.weight} kg`;
+      kg.textContent = `${item.mass} kg`;
       Object.assign(kg.style, { color: colors.textMuted, fontSize: font.sizeXs, whiteSpace: "nowrap" });
 
       const detailBtn = document.createElement("button");
@@ -236,8 +311,6 @@ export class ShipMenuUI {
 
       const removeBtn = document.createElement("button");
       removeBtn.textContent = "Remove";
-      // Disabled if: (a) player is already carrying something, or
-      //              (b) player doesn't have the role that owns this item
       const canRemove = !this._carry.isHolding && playerOwnsRole;
       removeBtn.disabled = !canRemove;
       this._styleBtn(removeBtn, "#e94560");
@@ -251,8 +324,6 @@ export class ShipMenuUI {
       removeBtn.addEventListener("click", () => {
         if (this._carry.isHolding) return;
         ColyseusService.send("removeItemFromShip", { itemId: item.id });
-        // Server removes it → state patch → refresh() re-renders
-        // Also give it back to the player to carry
         this._carry.pickUp(item);
       });
 

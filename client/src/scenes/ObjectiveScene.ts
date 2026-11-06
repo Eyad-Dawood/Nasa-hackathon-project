@@ -146,10 +146,11 @@ export class ObjectiveScene extends Phaser.Scene {
 
   private _goToGame(objective: Objective | undefined): void {
     this.scene.start("GameScene", {
-      username: this.username,
-      roles: this.roles,
+      username:  this.username,
+      roles:     this.roles,
       gameRoomId: this.gameRoomId,
-      objective: objective ?? null, // null if none chosen (solo/offline)
+      objective: objective ?? null,
+      isHost:    this.isHost,
     });
   }
 }
