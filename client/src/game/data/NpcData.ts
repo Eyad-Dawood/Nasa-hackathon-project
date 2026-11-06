@@ -46,15 +46,14 @@ export interface NpcDefinition {
 export const NPC_LIST: NpcDefinition[] = [
   {
     id: "npc_guard",
-    name: "Guard",
+    name: "Control Droid",
     tileCol: 5,
     tileRow: 4,
     dialogue: [
-      "Halt! Who goes there?",
-      "...Oh, just another adventurer.",
-      "This map is a placeholder.",
-      "Real content is coming soon.",
-      "Move along.",
+      "Greetings, Operator. Artemis Assembly Bay is active.",
+      "Fetch your subsystem modules from the 4 research stations.",
+      "Install all required hardware onto the rocket to authorize flight.",
+      "Telemetry systems nominal. Standing by for launch directive.",
     ],
   },
 ];

@@ -56,11 +56,24 @@ export const Assets = {
     key: "Science_icon",
     url: "assets/icons/Science_Engineer.png",
   } as AssetEntry,
+  spaceBendersLogo: {
+    key: "space_benders_logo",
+    url: "assets/space_benders_logo.png",
+  } as AssetEntry,
 
-  // ── World tiles (procedurally generated — url is intentionally empty) ──
-  tileGrass: { key: "tile_grass", url: "" } as AssetEntry,
-  tileWall: { key: "tile_wall", url: "" } as AssetEntry,
-  tileWater: { key: "tile_water", url: "" } as AssetEntry,
+  // ── World tiles (NASA Cleanroom Sci-Fi Assets) ────────────────────────
+  tileGrass: {
+    key: "tile_floor",
+    url: "assets/space_benders_pixel_assets/floor_tile_32x32.png",
+  } as AssetEntry,
+  tileWall: {
+    key: "tile_wall",
+    url: "assets/space_benders_pixel_assets/wall_tile_32x32.png",
+  } as AssetEntry,
+  tileWater: {
+    key: "tile_water",
+    url: "assets/space_benders_pixel_assets/floor_tile_32x32.png",
+  } as AssetEntry,
 
   // ── Player spritesheets (real pixel-art files) ─────────────────────────
   /**
@@ -87,19 +100,50 @@ export const Assets = {
     frameHeight: 16,
   } as AssetEntry,
 
-  // ── World sprites (procedurally generated) ────────────────────────────
-  /** NPC sprite — yellow 16×16 procedural. */
-  npc: { key: "npc", url: "" } as AssetEntry,
+  // ── World sprites (Production-ready Space Benders Assets) ─────────────
+  /** Mission Control Droid NPC sprite. */
+  npc: {
+    key: "npc",
+    url: "assets/space_benders_pixel_assets/mission_control_droid_32x32.png",
+  } as AssetEntry,
+
+  /** Generic station fallback. */
+  station: {
+    key: "station",
+    url: "assets/space_benders_pixel_assets/power_thermal_station_64x64.png",
+  } as AssetEntry,
+
+  /** 4 Dedicated Subsystem Workstations (64×64) */
+  stationPower: {
+    key: "station_power",
+    url: "assets/space_benders_pixel_assets/power_thermal_station_64x64.png",
+  } as AssetEntry,
+  stationStructure: {
+    key: "station_structure",
+    url: "assets/space_benders_pixel_assets/structure_computing_station_64x64.png",
+  } as AssetEntry,
+  stationCommunications: {
+    key: "station_communications",
+    url: "assets/space_benders_pixel_assets/communications_station_64x64.png",
+  } as AssetEntry,
+  stationScience: {
+    key: "station_science",
+    url: "assets/space_benders_pixel_assets/science_station_64x64.png",
+  } as AssetEntry,
 
   /**
-   * Station sprite — 16×16 crate shape, tinted by role colour at runtime.
+   * Artemis Exploration Rocket & Assembly Bay (96×160).
    */
-  station: { key: "station", url: "" } as AssetEntry,
+  ship: {
+    key: "ship",
+    url: "assets/space_benders_pixel_assets/artemis_assembly_bay_96x160.png",
+  } as AssetEntry,
 
-  /**
-   * Spaceship sprite — 32×24 procedural rocket silhouette.
-   */
-  ship: { key: "ship", url: "assets/spaceShip/SpaceShip.png" } as AssetEntry,
+  /** Floating interaction key badge "[E]" (32×32). */
+  interactionBadge: {
+    key: "interaction_badge",
+    url: "assets/space_benders_pixel_assets/interaction_badge_E_32x32.png",
+  } as AssetEntry,
 
   /**
    * Item carry indicator — tiny 8×8 glowing dot above the player.

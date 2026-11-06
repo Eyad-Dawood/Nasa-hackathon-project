@@ -4,9 +4,8 @@ import { GameItem } from "../game/data/ItemData";
 /**
  * ItemDetailUI
  * ────────────
- * Floating panel (right side) showing one component's full data.
- * Non-blocking — the game continues behind it.
- * Closed by clicking the × button or calling close().
+ * Compact side panel showing full component specifications.
+ * Styled with Liquid Glass dark aesthetics.
  */
 export class ItemDetailUI {
   private _container: HTMLDivElement;
@@ -29,22 +28,24 @@ export class ItemDetailUI {
     const panel = document.createElement("div");
     panel.id = `item-detail-${item.id}`;
     Object.assign(panel.style, {
-      position:      "fixed",
-      top:           "80px",
-      right:         "16px",
-      width:         "260px",
-      background:    colors.surface,
-      border:        `1px solid ${colors.border}`,
-      borderRadius:  radius.lg,
-      padding:       spacing.md,
-      zIndex:        "2000",
-      fontFamily:    font.family,
-      boxShadow:     "0 4px 24px rgba(0,0,0,0.6)",
-      display:       "flex",
+      position: "fixed",
+      top: "80px",
+      right: "24px",
+      width: "280px",
+      background: "rgba(12, 16, 26, 0.88)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 20px 40px rgba(0, 0, 0, 0.6)",
+      backdropFilter: "blur(16px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(16px) saturate(1.4)",
+      border: "none",
+      borderRadius: "14px",
+      padding: "16px",
+      zIndex: "2000",
+      fontFamily: font.family,
+      display: "flex",
       flexDirection: "column",
-      gap:           spacing.sm,
-      maxHeight:     "80vh",
-      overflowY:     "auto",
+      gap: "10px",
+      maxHeight: "80vh",
+      overflowY: "auto",
     });
 
     // ── Header ──
@@ -56,34 +57,44 @@ export class ItemDetailUI {
 
     const title = document.createElement("div");
     title.textContent = item.name;
-    Object.assign(title.style, { color: colors.textPrimary, fontSize: font.sizeMd, fontWeight: "bold", lineHeight: "1.3" });
+    Object.assign(title.style, { color: "#ffffff", fontSize: "14px", fontWeight: "600", lineHeight: "1.3" });
 
     const idTag = document.createElement("div");
     idTag.textContent = `${item.id}  ·  ${item.category}`;
-    Object.assign(idTag.style, { color: colors.textMuted, fontSize: "10px", marginTop: "2px" });
+    Object.assign(idTag.style, { color: "rgba(255, 255, 255, 0.4)", fontSize: "10px", marginTop: "2px" });
 
     const roleTag = document.createElement("div");
     roleTag.textContent = getRoleLabel(item.roleId);
-    Object.assign(roleTag.style, { color: getRoleColor(item.roleId), fontSize: "10px", fontWeight: "bold", marginTop: "2px" });
+    Object.assign(roleTag.style, { color: "rgba(255, 255, 255, 0.85)", fontSize: "10px", fontWeight: "500", marginTop: "2px" });
 
     titleWrap.append(title, idTag, roleTag);
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
     Object.assign(closeBtn.style, {
-      background: "transparent", border: "none",
-      color: colors.textMuted, cursor: "pointer",
-      fontSize: "18px", lineHeight: "1", padding: "0 2px", flexShrink: "0",
+      background: "transparent",
+      border: "none",
+      color: "rgba(255, 255, 255, 0.5)",
+      cursor: "pointer",
+      fontSize: "18px",
+      lineHeight: "1",
+      padding: "0 2px",
+      flexShrink: "0",
     });
     closeBtn.addEventListener("click", () => this.close());
     header.append(titleWrap, closeBtn);
 
     // ── Divider ──
-    const hr = () => { const h = document.createElement("hr"); h.style.borderColor = colors.border; h.style.margin = "0"; return h; };
+    const hr = () => {
+      const h = document.createElement("hr");
+      h.style.borderColor = "rgba(255, 255, 255, 0.08)";
+      h.style.margin = "0";
+      return h;
+    };
 
     // ── Core stats (every component has these) ──
     const coreStats = document.createElement("div");
-    Object.assign(coreStats.style, { display: "flex", flexDirection: "column", gap: "3px" });
+    Object.assign(coreStats.style, { display: "flex", flexDirection: "column", gap: "4px" });
     coreStats.append(
       this._stat("Mass",        `${item.mass} kg`),
       this._stat("Size",        `${item.size} Space`),
@@ -93,7 +104,7 @@ export class ItemDetailUI {
 
     // ── Specialised stats ──
     const specStats = document.createElement("div");
-    Object.assign(specStats.style, { display: "flex", flexDirection: "column", gap: "3px" });
+    Object.assign(specStats.style, { display: "flex", flexDirection: "column", gap: "4px" });
 
     const addStat = (label: string, val: number | undefined, suffix = "") => {
       if (val !== undefined && val !== 0) specStats.appendChild(this._stat(label, `${val}${suffix}`));
@@ -128,21 +139,29 @@ export class ItemDetailUI {
 
     // ── Good / Watch out ──
     const tipsBlock = document.createElement("div");
-    Object.assign(tipsBlock.style, { display: "flex", flexDirection: "column", gap: "4px" });
+    Object.assign(tipsBlock.style, { display: "flex", flexDirection: "column", gap: "6px" });
 
     const goodDiv = document.createElement("div");
     Object.assign(goodDiv.style, {
-      background: `${colors.success}14`, borderLeft: `3px solid ${colors.success}`,
-      borderRadius: "3px", padding: `3px ${spacing.sm}`,
-      color: colors.success, fontSize: "10px",
+      background: "rgba(52, 211, 153, 0.08)",
+      borderLeft: "2px solid #34d399",
+      borderRadius: "4px",
+      padding: "4px 8px",
+      color: "rgba(255, 255, 255, 0.9)",
+      fontSize: "10.5px",
+      lineHeight: "1.4",
     });
     goodDiv.textContent = `✓ ${item.good}`;
 
     const warnDiv = document.createElement("div");
     Object.assign(warnDiv.style, {
-      background: "#e9456018", borderLeft: "3px solid #e94560",
-      borderRadius: "3px", padding: `3px ${spacing.sm}`,
-      color: "#e94560", fontSize: "10px",
+      background: "rgba(239, 68, 68, 0.08)",
+      borderLeft: "2px solid #ef4444",
+      borderRadius: "4px",
+      padding: "4px 8px",
+      color: "rgba(255, 255, 255, 0.9)",
+      fontSize: "10.5px",
+      lineHeight: "1.4",
     });
     warnDiv.textContent = `⚠ ${item.watchOut}`;
 
@@ -158,17 +177,17 @@ export class ItemDetailUI {
   }
 
   private _stat(label: string, value: string): HTMLDivElement {
-    const { colors, font } = Theme;
+    const { font } = Theme;
     const row = document.createElement("div");
     Object.assign(row.style, { display: "flex", justifyContent: "space-between", gap: "8px" });
 
     const lbl = document.createElement("span");
     lbl.textContent = label;
-    Object.assign(lbl.style, { color: colors.textMuted, fontSize: font.sizeXs, flexShrink: "0" });
+    Object.assign(lbl.style, { color: "rgba(255, 255, 255, 0.5)", fontSize: "11px", flexShrink: "0" });
 
     const val = document.createElement("span");
     val.textContent = value;
-    Object.assign(val.style, { color: colors.textPrimary, fontSize: font.sizeXs, fontWeight: "bold", textAlign: "right" });
+    Object.assign(val.style, { color: "#ffffff", fontFamily: font.mono, fontSize: "11px", fontWeight: "600", textAlign: "right" });
 
     row.append(lbl, val);
     return row;

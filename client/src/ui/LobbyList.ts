@@ -47,11 +47,17 @@ export class LobbyList {
     const lobbies: LobbyMeta[] = await ColyseusService.getLobbies();
 
     if (lobbies.length === 0) {
-      const empty = document.createElement("p");
-      empty.textContent = "No lobbies available. Create one!";
-      empty.style.color = Theme.colors.textMuted;
-      empty.style.textAlign = "center";
-      empty.style.fontSize = Theme.font.sizeSm;
+      const empty = document.createElement("div");
+      Object.assign(empty.style, {
+        padding: "24px 0",
+        display: "flex",
+        flexDirection: "column",
+        gap: "6px",
+      });
+      empty.innerHTML = `
+        <div style="color: rgba(255, 255, 255, 0.9); font-size: 16px; font-weight: 500;">No active flight bays detected.</div>
+        <div style="color: rgba(255, 255, 255, 0.45); font-size: 13px; line-height: 1.5;">Establish an orbital staging bay below to assemble your co-op crew.</div>
+      `;
       list.appendChild(empty);
       return;
     }
@@ -63,46 +69,76 @@ export class LobbyList {
   }
 
   private _buildLobbyRow(lobby: LobbyMeta): HTMLDivElement {
-    const { colors, font, spacing, radius, transition } = Theme;
+    const { font, transition } = Theme;
 
     const row = document.createElement("div");
     Object.assign(row.style, {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      background: colors.background,
-      border: `1px solid ${colors.border}`,
-      borderRadius: radius.md,
-      padding: `${spacing.sm} ${spacing.md}`,
-      marginBottom: spacing.sm,
+      background: "rgba(255, 255, 255, 0.04)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)",
+      backdropFilter: "blur(12px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+      border: "none",
+      borderRadius: "12px",
+      padding: "12px 16px",
+      marginBottom: "8px",
+      transition: `all ${transition.fast}`,
     });
 
-    const info = document.createElement("span");
-    info.textContent = `Room ${lobby.roomId.slice(0, 8)} · ${lobby.clients}/${lobby.maxClients} players`;
-    info.style.color = colors.textPrimary;
-    info.style.fontSize = font.sizeSm;
+    const info = document.createElement("div");
+    info.style.display = "flex";
+    info.style.flexDirection = "column";
+    info.style.gap = "3px";
+
+    const title = document.createElement("span");
+    title.textContent = `Mission Bay ${lobby.roomId.slice(0, 6).toUpperCase()}`;
+    title.style.color = "#ffffff";
+    title.style.fontSize = "14px";
+    title.style.fontWeight = "600";
+    title.style.fontFamily = "'JetBrains Mono', monospace";
+
+    const meta = document.createElement("span");
+    meta.textContent = `${lobby.clients}/${lobby.maxClients} Crew Members Staged`;
+    meta.style.color = "rgba(255, 255, 255, 0.45)";
+    meta.style.fontSize = "12px";
+
+    info.append(title, meta);
 
     const joinBtn = document.createElement("button");
-    joinBtn.textContent = "Join";
+    joinBtn.textContent = "Dock & Join";
     joinBtn.disabled = lobby.clients >= lobby.maxClients;
     Object.assign(joinBtn.style, {
-      background: joinBtn.disabled ? colors.disabled : colors.accent,
+      background: joinBtn.disabled
+        ? "rgba(255,255,255,0.04)"
+        : "rgba(255, 255, 255, 0.1)",
+      boxShadow: joinBtn.disabled
+        ? "inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)"
+        : "inset 0 1px 0.5px rgba(255, 255, 255, 0.22), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1)",
       border: "none",
-      borderRadius: radius.sm,
-      color: "#fff",
+      borderRadius: "8px",
+      color: joinBtn.disabled ? "rgba(255, 255, 255, 0.3)" : "#ffffff",
       cursor: joinBtn.disabled ? "not-allowed" : "pointer",
       fontFamily: font.family,
-      fontSize: font.sizeSm,
-      padding: `${spacing.xs} ${spacing.md}`,
-      transition: `background ${transition.fast}`,
+      fontSize: "13px",
+      fontWeight: "500",
+      padding: "8px 16px",
+      transition: `all ${transition.fast}`,
     });
 
     if (!joinBtn.disabled) {
-      joinBtn.addEventListener("mouseenter", () => { joinBtn.style.background = colors.accentHover; });
-      joinBtn.addEventListener("mouseleave", () => { joinBtn.style.background = colors.accent; });
+      joinBtn.addEventListener("mouseenter", () => {
+        joinBtn.style.background = "rgba(255, 255, 255, 0.18)";
+        joinBtn.style.boxShadow = "inset 0 1px 1px rgba(255, 255, 255, 0.35)";
+      });
+      joinBtn.addEventListener("mouseleave", () => {
+        joinBtn.style.background = "rgba(255, 255, 255, 0.1)";
+        joinBtn.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.22), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1)";
+      });
       joinBtn.addEventListener("click", async () => {
         joinBtn.disabled = true;
-        joinBtn.textContent = "Joining…";
+        joinBtn.textContent = "Connecting…";
         try {
           await ColyseusService.joinLobby(lobby.roomId, this.username);
           this.destroy();
@@ -110,7 +146,7 @@ export class LobbyList {
         } catch (e) {
           console.error("Failed to join lobby", e);
           joinBtn.disabled = false;
-          joinBtn.textContent = "Join";
+          joinBtn.textContent = "Dock & Join";
         }
       });
     }
@@ -120,7 +156,7 @@ export class LobbyList {
   }
 
   private _buildDOM(): HTMLDivElement {
-    const { colors, font, spacing, radius } = Theme;
+    const { font } = Theme;
 
     const overlay = document.createElement("div");
     overlay.id = "lobby-list-overlay";
@@ -129,46 +165,70 @@ export class LobbyList {
       inset: "0",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center",
-      background: "rgba(0,0,0,0.85)",
+      justifyContent: "flex-end", // Placed in the dark Earth space on the right
+      paddingRight: "min(8vw, 96px)",
+      paddingLeft: "24px",
+      boxSizing: "border-box",
+      background: "transparent",
       zIndex: "1000",
       fontFamily: font.family,
+      pointerEvents: "none",
     });
 
+    // Floating frameless container - NO enclosed card box!
     const card = document.createElement("div");
     Object.assign(card.style, {
-      background: colors.surface,
-      border: `1px solid ${colors.border}`,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
+      background: "transparent",
+      border: "none",
+      boxShadow: "none",
+      padding: "0",
       width: "460px",
-      maxWidth: "90vw",
+      maxWidth: "100%",
       display: "flex",
       flexDirection: "column",
-      gap: spacing.md,
-      boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+      gap: "20px",
+      pointerEvents: "auto",
     });
 
+    // Top Mission Telemetry Eyebrow - Monochrome Glisse
+    const tag = document.createElement("div");
+    Object.assign(tag.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "11px",
+      color: "rgba(255, 255, 255, 0.45)",
+      letterSpacing: "1.5px",
+      textTransform: "uppercase",
+    });
+    tag.innerHTML = `<span>NASA DEEP SPACE CO-OP &middot; ORBITAL STAGING</span>`;
+
+    // Title & Subtitle block
     const header = document.createElement("div");
     Object.assign(header.style, {
       display: "flex",
-      alignItems: "center",
-      justifyContent: "space-between",
+      flexDirection: "column",
+      gap: "6px",
     });
 
-    const title = document.createElement("h2");
-    title.textContent = "Lobbies";
+    const title = document.createElement("h1");
+    title.textContent = "Flight Lobbies";
     Object.assign(title.style, {
-      color: colors.textPrimary,
-      fontSize: font.sizeLg,
+      background: "linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.65) 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      fontSize: "38px",
+      fontWeight: "700",
+      letterSpacing: "-0.6px",
       margin: "0",
-      letterSpacing: "2px",
+      lineHeight: "1.1",
     });
 
     const greeting = document.createElement("span");
-    greeting.textContent = `Hello, ${this.username}`;
-    greeting.style.color = colors.textMuted;
-    greeting.style.fontSize = font.sizeSm;
+    greeting.textContent = `Astronaut ${this.username} · Ready for deployment`;
+    greeting.style.color = "rgba(255, 255, 255, 0.45)";
+    greeting.style.fontSize = "14px";
 
     header.append(title, greeting);
 
@@ -176,36 +236,40 @@ export class LobbyList {
     listContainer.id = "lobby-list-items";
     Object.assign(listContainer.style, {
       minHeight: "80px",
-      maxHeight: "240px",
+      maxHeight: "260px",
       overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
     });
-
-    const divider = document.createElement("hr");
-    divider.style.borderColor = colors.border;
-    divider.style.margin = "0";
 
     const createBtn = document.createElement("button");
     createBtn.id = "create-lobby-btn";
-    createBtn.textContent = "+ Create New Lobby";
+    createBtn.textContent = "+ Establish New Mission Bay";
     Object.assign(createBtn.style, {
-      background: colors.accent,
+      background: "#ffffff",
       border: "none",
-      borderRadius: radius.md,
-      color: "#fff",
+      borderRadius: "12px",
+      color: "#04060a",
       cursor: "pointer",
       fontFamily: font.family,
-      fontSize: font.sizeMd,
-      fontWeight: "bold",
-      padding: `${spacing.sm} ${spacing.md}`,
-      transition: `background 0.15s ease`,
-      letterSpacing: "1px",
+      fontSize: "15px",
+      fontWeight: "600",
+      padding: "14px 20px",
+      transition: `all 0.15s ease`,
+      letterSpacing: "0.2px",
       alignSelf: "stretch",
+      boxShadow: "0 4px 24px rgba(255, 255, 255, 0.25), inset 0 1px 1px #ffffff",
     });
-    createBtn.addEventListener("mouseenter", () => { createBtn.style.background = colors.accentHover; });
-    createBtn.addEventListener("mouseleave", () => { createBtn.style.background = colors.accent; });
+    createBtn.addEventListener("mouseenter", () => {
+      createBtn.style.boxShadow = "0 6px 32px rgba(255, 255, 255, 0.45)";
+    });
+    createBtn.addEventListener("mouseleave", () => {
+      createBtn.style.boxShadow = "0 4px 24px rgba(255, 255, 255, 0.25)";
+    });
     createBtn.addEventListener("click", async () => {
       createBtn.disabled = true;
-      createBtn.textContent = "Creating…";
+      createBtn.textContent = "Deploying Bay…";
       try {
         await ColyseusService.createLobby(this.username);
         this.destroy();
@@ -213,11 +277,11 @@ export class LobbyList {
       } catch (e) {
         console.error("Failed to create lobby", e);
         createBtn.disabled = false;
-        createBtn.textContent = "+ Create New Lobby";
+        createBtn.textContent = "+ Establish New Mission Bay";
       }
     });
 
-    card.append(header, listContainer, divider, createBtn);
+    card.append(tag, header, listContainer, createBtn);
     overlay.appendChild(card);
     return overlay;
   }

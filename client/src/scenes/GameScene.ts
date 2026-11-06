@@ -18,6 +18,12 @@ import { StationEntity } from "../game/entities/StationEntity";
 import { ShipEntity } from "../game/entities/ShipEntity";
 import { IInteractable } from "../game/interfaces/IInteractable";
 import { ColyseusService } from "../network/ColyseusService";
+import { MissionAiTerminal } from "../ui/MissionAiTerminal";
+import { MissionVictoryUI } from "../ui/MissionVictoryUI";
+import { HyperspaceLaunchOverlay } from "../ui/HyperspaceLaunchOverlay";
+import { OBJECTIVES } from "../game/data/ObjectiveData";
+import { getItemById } from "../game/data/ItemData";
+import { SHIP_WORLD_POS } from "../game/data/StationData";
 
 /** How often (ms) the local player position is sent to the server. */
 const MOVE_SEND_INTERVAL = 50; // 20 updates/sec
@@ -39,8 +45,8 @@ export class GameScene extends Phaser.Scene {
   private username:   string    = "";
   private roles:      string[]  = ["no-role"];
   private gameRoomId: string    = "";
-  private objective:  Objective | null = null;
   private isHost:     boolean   = false;
+  private objective:  Objective | null = null;
 
   // ── World ─────────────────────────────────────────────────────────────
   private wallsGroup!:    Phaser.Physics.Arcade.StaticGroup;
@@ -53,6 +59,7 @@ export class GameScene extends Phaser.Scene {
   private ship!:          ShipEntity;
   private interaction!:   InteractionSystem;
   private hud!:           GameHUD;
+  private aiTerminal!:    MissionAiTerminal;
 
   // ── Multiplayer ───────────────────────────────────────────────────────
   private remotePlayers:  Map<string, RemotePlayerController> = new Map();
@@ -64,17 +71,19 @@ export class GameScene extends Phaser.Scene {
     username?:   string;
     roles?:      string[];
     gameRoomId?: string;
-    objective?:  Objective | null;
     isHost?:     boolean;
+    objective?:  Objective | null;
   }) {
     this.username   = data?.username   ?? localStorage.getItem("username") ?? "Player";
     this.roles      = data?.roles      ?? ["no-role"];
     this.gameRoomId = data?.gameRoomId ?? "";
-    this.objective  = data?.objective  ?? null;
     this.isHost     = data?.isHost     ?? false;
+    this.objective  = data?.objective  ?? null;
   }
 
   create() {
+    this.cameras.main.setBackgroundColor("#080a10");
+    this.game.canvas.style.pointerEvents = "auto";
     const worldW = MAP_COLS * TILE_PX;
     const worldH = MAP_ROWS * TILE_PX;
     this.physics.world.setBounds(0, 0, worldW, worldH);
@@ -102,7 +111,19 @@ export class GameScene extends Phaser.Scene {
     );
 
     // ── 6. Spaceship (center) ─────────────────────────────────────────────
-    this.ship = new ShipEntity(this, this.carry, this.roles, this.objective, this.isHost);
+    this.ship = new ShipEntity(
+      this,
+      this.carry,
+      this.roles,
+      this.objective,
+      this.isHost,
+      () => {
+        this.aiTerminal.open();
+      },
+      () => {
+        this._handleLaunchSequence();
+      },
+    );
 
     // ── 7. InteractionSystem — receives ALL interactables ─────────────────
     const interactables: IInteractable[] = [
@@ -113,8 +134,23 @@ export class GameScene extends Phaser.Scene {
     this.interaction = new InteractionSystem(this, this.player, interactables);
 
     // ── 8. HUD ────────────────────────────────────────────────────────────
-    this.hud = new GameHUD(this.username, this.roles);
+    this.hud = new GameHUD(this.username, this.roles, this.objective?.label);
     this.hud.mount();
+
+    // ── 8b. NASA AI Mission Director Terminal ─────────────────────────────
+    this.aiTerminal = new MissionAiTerminal({
+      objective: this.objective,
+      playerRoles: this.roles,
+      username: this.username,
+      getShipEntity: () => this.ship,
+      onFocusChange: (isFocused) => {
+        this.player.setInputEnabled(!isFocused);
+      },
+      onLaunchMission: () => {
+        this._handleLaunchSequence();
+      },
+    });
+    this.aiTerminal.mount();
 
     // ── 9. Camera ─────────────────────────────────────────────────────────
     this.cameras.main.setBounds(0, 0, worldW, worldH);
@@ -150,6 +186,7 @@ export class GameScene extends Phaser.Scene {
 
   shutdown() {
     this.hud?.destroy();
+    this.aiTerminal?.destroy();
     this.remotePlayers.forEach((rp) => rp.destroy());
     this.remotePlayers.clear();
     this.npcs = [];
@@ -160,9 +197,10 @@ export class GameScene extends Phaser.Scene {
   // ── Multiplayer ────────────────────────────────────────────────────────
 
   private async _connectToGameRoom(spawnX: number, spawnY: number): Promise<void> {
-    // ObjectiveScene already called joinGame() — reuse that connection.
-    // Only call joinGame() in solo/offline mode (no room yet).
-    const alreadyConnected = ColyseusService.room !== null;
+    // Only reuse connection if already in a GameRoom ("game").
+    // If still in the lobby room ("lobby"), we must leave it and join the game room.
+    const alreadyConnected =
+      ColyseusService.room !== null && ColyseusService.room.name === "game";
 
     if (!alreadyConnected) {
       if (!this.gameRoomId) {
@@ -176,6 +214,7 @@ export class GameScene extends Phaser.Scene {
           this.roles,
           spawnX,
           spawnY,
+          this.isHost,
         );
       } catch (e) {
         console.error("[GameScene] Failed to join GameRoom:", e);
@@ -221,10 +260,58 @@ export class GameScene extends Phaser.Scene {
       // ── Ship inventory ──────────────────────────────────────────────
       if (state.shipItems) {
         this.ship?.refreshState(state.shipItems);
+        this.aiTerminal?.refreshTelemetry();
       }
     });
 
     console.log(`[GameScene] Connected to GameRoom ${this.gameRoomId} as ${mySessionId}`);
+  }
+
+  private _handleLaunchSequence(): void {
+    // Dramatic launch vibration in cleanroom
+    this.cameras.main.shake(1600, 0.015);
+
+    // Launch rocket upwards into space
+    this.tweens.add({
+      targets: this.ship.sprite,
+      y: -350,
+      duration: 1800,
+      ease: "Power2.easeIn",
+      onComplete: () => {
+        const items = Array.from(this.ship.shipItemsSnapshot.values());
+        const totalWeight = items.reduce((sum, e) => {
+          const def = getItemById(e.itemId);
+          return sum + (def?.weight ?? 0);
+        }, 0);
+
+        const currentObjective = this.objective ?? OBJECTIVES[0];
+
+        // Trigger Cinematic LightSpeed Hyperspace Launch Overlay!
+        const hyperspaceOverlay = new HyperspaceLaunchOverlay({
+          missionLabel: currentObjective.label,
+          totalWeight,
+          onComplete: () => {
+            const victoryUI = new MissionVictoryUI({
+              objective: currentObjective,
+              totalWeight,
+              username: this.username,
+              onNextMission: (nextObj) => {
+                this.objective = nextObj;
+                this.hud.refresh(this.username, this.roles, nextObj.label);
+                this.aiTerminal.setObjective(nextObj);
+                // Reset ship position for the new mission
+                this.ship.sprite.setPosition(SHIP_WORLD_POS.x, SHIP_WORLD_POS.y);
+              },
+              onClose: () => {
+                this.ship.sprite.setPosition(SHIP_WORLD_POS.x, SHIP_WORLD_POS.y);
+              },
+            });
+            victoryUI.mount();
+          },
+        });
+        hyperspaceOverlay.mount();
+      },
+    });
   }
 
   // ── Tilemap ────────────────────────────────────────────────────────────
@@ -237,7 +324,7 @@ export class GameScene extends Phaser.Scene {
         const tileType = MAP_GRID[row]?.[col] ?? TILE.GRASS;
         const x        = col * TILE_PX + TILE_PX / 2;
         const y        = row * TILE_PX + TILE_PX / 2;
-        const scale    = TILE_PX / 16;
+        const scale    = 1; // 32×32 tiles mapped 1:1 to 32px grid
 
         let textureKey: string;
         let isCollidable = false;
@@ -247,12 +334,9 @@ export class GameScene extends Phaser.Scene {
             textureKey   = Assets.tileWall.key;
             isCollidable = true;
             break;
-          case TILE.WATER:
-            textureKey   = Assets.tileWater.key;
-            isCollidable = true;
-            break;
           default:
-            textureKey = Assets.tileGrass.key;
+            textureKey   = Assets.tileGrass.key;
+            isCollidable = false;
         }
 
         if (isCollidable) {

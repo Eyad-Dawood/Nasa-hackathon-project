@@ -39,36 +39,69 @@ export class RolePicker {
 
       card.disabled = isTakenByOther;
 
+      const label = card.querySelector(".role-label") as HTMLSpanElement | null;
+      const statusBadge = card.querySelector(".role-status") as HTMLSpanElement | null;
+
       if (isMine) {
-        card.style.borderColor = roleDef.color;
-        card.style.background = `${roleDef.color}22`;
-        card.style.color = Theme.colors.textPrimary;
+        card.style.background = "rgba(255, 255, 255, 0.14)";
+        card.style.boxShadow = "inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35)";
         card.style.cursor = "pointer";
+        card.style.opacity = "1";
         card.setAttribute("data-state", "mine");
+        if (label) {
+          label.style.background = "linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.85) 100%)";
+          label.style.webkitBackgroundClip = "text";
+          label.style.webkitTextFillColor = "transparent";
+        }
+        if (statusBadge) {
+          statusBadge.textContent = "ASSIGNED";
+          statusBadge.style.display = "inline-block";
+          statusBadge.style.background = "rgba(255, 255, 255, 0.16)";
+          statusBadge.style.color = "#ffffff";
+        }
       } else if (isTakenByOther) {
-        card.style.borderColor = Theme.colors.disabled;
-        card.style.background = "transparent";
-        card.style.color = Theme.colors.textMuted;
+        card.style.background = "rgba(255, 255, 255, 0.02)";
+        card.style.boxShadow = "inset 0 0 0 0.5px rgba(255, 255, 255, 0.04)";
         card.style.cursor = "not-allowed";
+        card.style.opacity = "0.35";
         card.setAttribute("data-state", "taken");
+        if (label) {
+          label.style.background = "none";
+          label.style.webkitBackgroundClip = "unset";
+          label.style.webkitTextFillColor = "rgba(255, 255, 255, 0.35)";
+        }
+        if (statusBadge) {
+          statusBadge.textContent = "OCCUPIED";
+          statusBadge.style.display = "inline-block";
+          statusBadge.style.background = "rgba(255, 255, 255, 0.04)";
+          statusBadge.style.color = "rgba(255, 255, 255, 0.35)";
+        }
       } else {
-        card.style.borderColor = Theme.colors.border;
-        card.style.background = "transparent";
-        card.style.color = Theme.colors.textPrimary;
+        card.style.background = "rgba(255, 255, 255, 0.04)";
+        card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
         card.style.cursor = "pointer";
+        card.style.opacity = "1";
         card.setAttribute("data-state", "free");
+        if (label) {
+          label.style.background = "none";
+          label.style.webkitBackgroundClip = "unset";
+          label.style.webkitTextFillColor = "rgba(255, 255, 255, 0.9)";
+        }
+        if (statusBadge) {
+          statusBadge.style.display = "none";
+        }
       }
     }
   }
 
   private _buildDOM(): void {
-    const { colors, font, spacing, radius, transition } = Theme;
+    const { colors, font, transition } = Theme;
 
     const grid = document.createElement("div");
     Object.assign(grid.style, {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",
-      gap: spacing.md,
+      gap: "10px",
     });
 
     const roleIconUrls: Record<string, string> = {
@@ -83,50 +116,71 @@ export class RolePicker {
 
       const card = document.createElement("button");
       Object.assign(card.style, {
-        background: "transparent",
-        border: `2px solid ${colors.border}`,
-        borderRadius: radius.md,
+        background: "rgba(255, 255, 255, 0.04)",
+        boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
+        backdropFilter: "blur(12px) saturate(1.4)",
+        WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+        border: "none",
+        borderRadius: "12px",
         color: colors.textPrimary,
         cursor: "pointer",
         fontFamily: font.family,
-        padding: spacing.md,
+        padding: "12px 14px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: spacing.xs,
+        textAlign: "center",
+        gap: "4px",
         transition: `all ${transition.fast}`,
+        boxSizing: "border-box",
       });
 
-      // [جديد]: استبدال الـ div بـ img
       const icon = document.createElement("img");
-      icon.src = roleIconUrls[roleId as string] || ""; // هنسحب المسار من الماب
+      icon.src = roleIconUrls[roleId as string] || "";
       Object.assign(icon.style, {
-        width: "32px",
-        height: "32px",
+        width: "28px",
+        height: "28px",
         objectFit: "contain",
       });
 
       const label = document.createElement("span");
+      label.className = "role-label";
       label.textContent = roleDef.label;
-      label.style.fontSize = font.sizeMd;
-      label.style.fontWeight = "bold";
+      label.style.fontSize = font.sizeSm;
+      label.style.fontWeight = "600";
+      label.style.letterSpacing = "0.2px";
+
+      const statusBadge = document.createElement("span");
+      statusBadge.className = "role-status";
+      Object.assign(statusBadge.style, {
+        display: "none",
+        fontSize: "9px",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontWeight: "600",
+        letterSpacing: "0.8px",
+        padding: "2px 6px",
+        borderRadius: "4px",
+        textTransform: "uppercase",
+      });
 
       const desc = document.createElement("span");
       desc.textContent = roleDef.description;
-      desc.style.fontSize = font.sizeXs;
-      desc.style.color = colors.textMuted;
+      desc.style.fontSize = "10px";
+      desc.style.color = "rgba(255, 255, 255, 0.45)";
+      desc.style.lineHeight = "1.3";
 
-      // ضفنا icon بدل dot
-      card.append(icon, label, desc);
+      card.append(icon, label, statusBadge, desc);
 
       card.addEventListener("mouseenter", () => {
         if (!card.disabled && card.getAttribute("data-state") !== "mine") {
-          card.style.borderColor = roleDef.color;
+          card.style.background = "rgba(255, 255, 255, 0.08)";
+          card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12)";
         }
       });
       card.addEventListener("mouseleave", () => {
         if (card.getAttribute("data-state") === "free") {
-          card.style.borderColor = colors.border;
+          card.style.background = "rgba(255, 255, 255, 0.04)";
+          card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
         }
       });
 
@@ -146,13 +200,13 @@ export class RolePicker {
     }
 
     const sectionLabel = document.createElement("h3");
-    sectionLabel.textContent = "Select Your Role(s)";
+    sectionLabel.textContent = "Subsystem Specialization";
     Object.assign(sectionLabel.style, {
-      color: colors.textMuted,
-      fontSize: font.sizeSm,
-      margin: "0 0 4px 0",
-      letterSpacing: "1px",
-      textTransform: "uppercase",
+      color: colors.textSecondary,
+      fontSize: "12px",
+      fontWeight: "500",
+      margin: "0 0 8px 0",
+      letterSpacing: "0.5px",
     });
 
     this.mountEl.append(sectionLabel, grid);

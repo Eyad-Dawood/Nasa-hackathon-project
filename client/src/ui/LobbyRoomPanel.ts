@@ -118,19 +118,25 @@ export class LobbyRoomPanel {
 
     // Enable start button only if all 4 roles are assigned
     const allAssigned = ALL_ROLE_IDS.every((rid) => assignments[rid] !== null);
-    this.startBtn.disabled = !allAssigned;
-    this.startBtn.style.background = allAssigned
-      ? Theme.colors.success
-      : Theme.colors.disabled;
-    this.startBtn.style.cursor = allAssigned ? "pointer" : "not-allowed";
-
     if (allAssigned) {
-      this.startBtn.textContent = "Start Game";
+      this.startBtn.disabled = false;
+      this.startBtn.style.background = "#ffffff";
+      this.startBtn.style.color = "#04060a";
+      this.startBtn.style.border = "none";
+      this.startBtn.style.boxShadow = "0 4px 24px rgba(255, 255, 255, 0.3), inset 0 1px 1px #ffffff";
+      this.startBtn.style.cursor = "pointer";
+      this.startBtn.textContent = "Authorize Mission Launch";
     } else {
       const remaining = ALL_ROLE_IDS.filter(
         (rid) => assignments[rid] === null,
       ).length;
-      this.startBtn.textContent = `Start Game (${remaining} roles unassigned)`;
+      this.startBtn.disabled = true;
+      this.startBtn.style.background = "rgba(255, 255, 255, 0.04)";
+      this.startBtn.style.color = "rgba(255, 255, 255, 0.3)";
+      this.startBtn.style.border = "none";
+      this.startBtn.style.boxShadow = "inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)";
+      this.startBtn.style.cursor = "not-allowed";
+      this.startBtn.textContent = `Authorize Launch (${remaining} unassigned)`;
     }
   }
 
@@ -138,59 +144,92 @@ export class LobbyRoomPanel {
     player: PlayerInfo,
     isHostPlayer: boolean,
   ): HTMLDivElement {
-    const { colors, font, spacing, radius } = Theme;
-
     const row = document.createElement("div");
     Object.assign(row.style, {
       display: "flex",
       alignItems: "center",
-      gap: spacing.sm,
-      padding: `${spacing.xs} ${spacing.sm}`,
-      background:
-        player.id === this.sessionId ? `${colors.accent}18` : "transparent",
-      borderRadius: radius.sm,
+      justifyContent: "space-between",
+      gap: "12px",
+      padding: "10px 14px",
+      background: "rgba(255, 255, 255, 0.04)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)",
+      backdropFilter: "blur(12px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+      borderRadius: "12px",
+      transition: "all 0.15s ease",
+    });
+
+    const left = document.createElement("div");
+    Object.assign(left.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      minWidth: "0",
     });
 
     const name = document.createElement("span");
     name.textContent = player.username;
-    name.style.color = colors.textPrimary;
-    name.style.fontSize = font.sizeMd;
-    name.style.flex = "1";
+    name.style.color = "#ffffff";
+    name.style.fontSize = "14px";
+    name.style.fontWeight = "600";
+    name.style.whiteSpace = "nowrap";
 
-    const badges = document.createElement("div");
-    badges.style.display = "flex";
-    badges.style.gap = spacing.xs;
+    left.appendChild(name);
 
     if (isHostPlayer) {
       const hostBadge = document.createElement("span");
       hostBadge.textContent = "HOST";
-      this._styleBadge(hostBadge, colors.hostBadge);
-      badges.appendChild(hostBadge);
+      Object.assign(hostBadge.style, {
+        background: "rgba(255, 255, 255, 0.12)",
+        boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.25), inset 0 0 0 0.5px rgba(255, 255, 255, 0.1)",
+        borderRadius: "6px",
+        color: "#ffffff",
+        fontSize: "10px",
+        fontWeight: "600",
+        padding: "2px 7px",
+        fontFamily: "'JetBrains Mono', monospace",
+        letterSpacing: "0.5px",
+        flexShrink: "0",
+      });
+      left.appendChild(hostBadge);
     }
+
+    const right = document.createElement("div");
+    Object.assign(right.style, {
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "5px",
+      alignItems: "center",
+      justifyContent: "flex-end",
+    });
 
     if (player.roles.length > 0) {
-      const rolesBadge = document.createElement("span");
-      rolesBadge.textContent = player.roles
-        .map((r) => Theme.roles.find((d) => d.id === r)?.label ?? r)
-        .join(", ");
-      this._styleBadge(rolesBadge, colors.readyBadge);
-      badges.appendChild(rolesBadge);
+      player.roles.forEach((r) => {
+        const roleDef = Theme.roles.find((d) => d.id === r);
+        const chip = document.createElement("span");
+        chip.textContent = roleDef ? roleDef.label.replace("And", "&") : r;
+        Object.assign(chip.style, {
+          background: "rgba(255, 255, 255, 0.08)",
+          boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.18), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
+          borderRadius: "6px",
+          color: "rgba(255, 255, 255, 0.9)",
+          fontSize: "11px",
+          fontWeight: "500",
+          padding: "3px 8px",
+          whiteSpace: "nowrap",
+        });
+        right.appendChild(chip);
+      });
+    } else {
+      const pending = document.createElement("span");
+      pending.textContent = "Selecting station…";
+      pending.style.color = "rgba(255, 255, 255, 0.35)";
+      pending.style.fontSize = "12px";
+      right.appendChild(pending);
     }
 
-    row.append(name, badges);
+    row.append(left, right);
     return row;
-  }
-
-  private _styleBadge(el: HTMLSpanElement, color: string): void {
-    Object.assign(el.style, {
-      background: `${color}33`,
-      border: `1px solid ${color}`,
-      borderRadius: Theme.radius.full,
-      color: color,
-      fontSize: Theme.font.sizeXs,
-      padding: `1px ${Theme.spacing.sm}`,
-      whiteSpace: "nowrap",
-    });
   }
 
   private _buildDOM(): HTMLDivElement {
@@ -203,119 +242,190 @@ export class LobbyRoomPanel {
       inset: "0",
       display: "flex",
       alignItems: "center",
-      justifyContent: "center",
-      background: "rgba(0,0,0,0.85)",
+      justifyContent: "flex-end", // Dock to the dark Earth area on the right
+      paddingRight: "min(8vw, 96px)",
+      paddingLeft: "24px",
+      boxSizing: "border-box",
+      background: "transparent",
       zIndex: "1000",
       fontFamily: font.family,
+      pointerEvents: "none",
     });
 
+    // Floating frameless container - NO enclosed card box!
     const card = document.createElement("div");
     Object.assign(card.style, {
-      background: colors.surface,
-      border: `1px solid ${colors.border}`,
-      borderRadius: radius.lg,
-      padding: spacing.xl,
-      width: "520px",
-      maxWidth: "92vw",
+      background: "transparent",
+      border: "none",
+      boxShadow: "none",
+      padding: "0",
+      width: "480px",
+      maxWidth: "100%",
       display: "flex",
       flexDirection: "column",
-      gap: spacing.md,
-      boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+      gap: "18px",
+      pointerEvents: "auto",
     });
+
+    // Top Mission Telemetry Tag - Monochrome Glisse
+    const tag = document.createElement("div");
+    Object.assign(tag.style, {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "11px",
+      color: "rgba(255, 255, 255, 0.45)",
+      letterSpacing: "1.5px",
+      textTransform: "uppercase",
+    });
+    tag.innerHTML = `
+      <span>CREW MANIFEST &middot; MISSION STAGING</span>
+      <span style="color: rgba(255,255,255,0.35);">ORBITAL BAY ACTIVE</span>
+    `;
 
     // Header
     const header = document.createElement("div");
     Object.assign(header.style, {
       display: "flex",
       justifyContent: "space-between",
-      alignItems: "center",
+      alignItems: "flex-start",
     });
 
-    const title = document.createElement("h2");
-    title.textContent = "Lobby";
+    const titleBlock = document.createElement("div");
+    titleBlock.style.display = "flex";
+    titleBlock.style.flexDirection = "column";
+    titleBlock.style.gap = "4px";
+
+    const title = document.createElement("h1");
+    title.textContent = "Flight Operations";
     Object.assign(title.style, {
-      color: colors.textPrimary,
-      fontSize: font.sizeLg,
+      background: "linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.65) 100%)",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      fontSize: "38px",
       margin: "0",
-      letterSpacing: "2px",
+      letterSpacing: "-0.6px",
+      fontWeight: "700",
+      lineHeight: "1.1",
     });
+
+    const roomSub = document.createElement("span");
+    roomSub.textContent = "Configure crew roles before pre-flight authorization";
+    roomSub.style.color = "rgba(255, 255, 255, 0.45)";
+    roomSub.style.fontSize = "13px";
+
+    titleBlock.append(title, roomSub);
 
     const leaveBtn = document.createElement("button");
-    leaveBtn.textContent = "Leave";
+    leaveBtn.textContent = "Abort & Leave";
     Object.assign(leaveBtn.style, {
-      background: "transparent",
-      border: `1px solid ${colors.border}`,
-      borderRadius: radius.sm,
-      color: colors.textMuted,
+      background: "rgba(255, 255, 255, 0.06)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.18), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
+      border: "none",
+      borderRadius: "8px",
+      color: "rgba(255, 255, 255, 0.7)",
       cursor: "pointer",
       fontFamily: font.family,
-      fontSize: font.sizeSm,
-      padding: `${spacing.xs} ${spacing.md}`,
+      fontSize: "12px",
+      fontWeight: "500",
+      padding: "6px 14px",
+      transition: "all 0.15s ease",
+      whiteSpace: "nowrap",
+    });
+    leaveBtn.addEventListener("mouseenter", () => {
+      leaveBtn.style.background = "rgba(255, 255, 255, 0.12)";
+      leaveBtn.style.color = "#ffffff";
+    });
+    leaveBtn.addEventListener("mouseleave", () => {
+      leaveBtn.style.background = "rgba(255, 255, 255, 0.06)";
+      leaveBtn.style.color = "rgba(255, 255, 255, 0.7)";
     });
     leaveBtn.addEventListener("click", () => {
       ColyseusService.leaveRoom();
       this.destroy();
-      // Reload to go back to lobby list
       window.location.reload();
     });
-    header.append(title, leaveBtn);
+    header.append(titleBlock, leaveBtn);
 
     // Player list section
-    const playersLabel = document.createElement("h3");
-    playersLabel.textContent = "Players";
+    const playersSection = document.createElement("div");
+    playersSection.style.display = "flex";
+    playersSection.style.flexDirection = "column";
+    playersSection.style.gap = "8px";
+
+    const playersLabel = document.createElement("div");
     Object.assign(playersLabel.style, {
-      color: colors.textMuted,
-      fontSize: font.sizeSm,
-      margin: "0",
-      letterSpacing: "1px",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      color: "rgba(255, 255, 255, 0.5)",
+      fontSize: "11px",
+      fontFamily: "'JetBrains Mono', monospace",
+      letterSpacing: "0.5px",
       textTransform: "uppercase",
     });
+    playersLabel.innerHTML = `<span>Active Astronauts</span><span id="player-count-badge">READY CHECK</span>`;
 
     this.playerListEl = document.createElement("div");
     Object.assign(this.playerListEl.style, {
       display: "flex",
       flexDirection: "column",
-      gap: spacing.xs,
-      minHeight: "60px",
+      gap: "6px",
+      minHeight: "48px",
+      maxHeight: "140px",
+      overflowY: "auto",
     });
 
-    const divider = document.createElement("hr");
-    divider.style.borderColor = colors.border;
-    divider.style.margin = "0";
+    playersSection.append(playersLabel, this.playerListEl);
 
-    // Role picker
+    // Role picker section
+    const roleSection = document.createElement("div");
+    roleSection.style.display = "flex";
+    roleSection.style.flexDirection = "column";
+    roleSection.style.gap = "8px";
+
+    const rolePickerLabel = document.createElement("div");
+    Object.assign(rolePickerLabel.style, {
+      color: "rgba(255, 255, 255, 0.5)",
+      fontSize: "11px",
+      fontFamily: "'JetBrains Mono', monospace",
+      letterSpacing: "0.5px",
+      textTransform: "uppercase",
+    });
+    rolePickerLabel.textContent = "Assign Subsystem Station";
+
     const rolePickerMount = document.createElement("div");
     this.rolePicker = new RolePicker(rolePickerMount, this.sessionId);
 
-    const divider2 = document.createElement("hr");
-    divider2.style.borderColor = colors.border;
-    divider2.style.margin = "0";
+    roleSection.append(rolePickerLabel, rolePickerMount);
 
     // Start button (host only)
     this.startError = document.createElement("span");
     Object.assign(this.startError.style, {
-      color: colors.accent,
+      color: "#fbbf24",
       fontSize: font.sizeXs,
       minHeight: "16px",
       textAlign: "center",
+      fontFamily: "'JetBrains Mono', monospace",
     });
 
     this.startBtn = document.createElement("button");
     this.startBtn.id = "start-game-btn";
-    this.startBtn.textContent = "Start Game";
+    this.startBtn.textContent = "Authorize Mission Launch";
     this.startBtn.disabled = true;
     Object.assign(this.startBtn.style, {
-      background: colors.disabled,
-      border: "none",
-      borderRadius: radius.md,
-      color: "#fff",
+      background: "rgba(255, 255, 255, 0.08)",
+      border: "1px solid rgba(255, 255, 255, 0.1)",
+      borderRadius: "10px",
+      color: "rgba(255, 255, 255, 0.4)",
       cursor: "not-allowed",
       fontFamily: font.family,
-      fontSize: font.sizeLg,
-      fontWeight: "bold",
-      padding: `${spacing.sm} ${spacing.md}`,
-      letterSpacing: "1px",
-      transition: `background 0.2s ease`,
+      fontSize: "15px",
+      fontWeight: "600",
+      padding: "14px 20px",
+      letterSpacing: "0.2px",
+      transition: `all 0.2s ease`,
       display: this.isHost ? "block" : "none",
       width: "100%",
     });
@@ -328,7 +438,7 @@ export class LobbyRoomPanel {
     const hostNote = document.createElement("p");
     hostNote.textContent = this.isHost
       ? ""
-      : "Waiting for host to start the game…";
+      : "Waiting for Mission Commander to authorize launch…";
     Object.assign(hostNote.style, {
       color: colors.textMuted,
       fontSize: font.sizeSm,
@@ -338,12 +448,10 @@ export class LobbyRoomPanel {
     });
 
     card.append(
+      tag,
       header,
-      playersLabel,
-      this.playerListEl,
-      divider,
-      rolePickerMount,
-      divider2,
+      playersSection,
+      roleSection,
       this.startError,
       this.startBtn,
       hostNote,

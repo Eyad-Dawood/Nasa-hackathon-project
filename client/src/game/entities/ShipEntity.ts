@@ -5,7 +5,6 @@ import { IInteractable } from "../interfaces/IInteractable";
 import { SHIP_WORLD_POS } from "../data/StationData";
 import { CarrySystem } from "../systems/CarrySystem";
 import { ShipMenuUI } from "../../ui/ShipMenuUI";
-import { ColyseusService } from "../../network/ColyseusService";
 import { Objective } from "../data/ObjectiveData";
 
 /**
@@ -33,6 +32,8 @@ export class ShipEntity implements IInteractable {
   private _objective:   Objective | null;
   private _isHost:      boolean;
   private _menu:        ShipMenuUI | null = null;
+  private _onConsultAi?: () => void;
+  private _onLaunchMission?: () => void;
 
   /** Latest snapshot of ship items from the server. Updated by GameScene. */
   private _shipItemsSnapshot: Map<
@@ -46,25 +47,29 @@ export class ShipEntity implements IInteractable {
     playerRoles: string[],
     objective:   Objective | null,
     isHost:      boolean,
+    onConsultAi?: () => void,
+    onLaunchMission?: () => void,
   ) {
     this._carry       = carry;
     this._playerRoles = playerRoles;
     this._objective   = objective;
     this._isHost      = isHost;
+    this._onConsultAi = onConsultAi;
+    this._onLaunchMission = onLaunchMission;
     this._worldX = SHIP_WORLD_POS.x;
     this._worldY = SHIP_WORLD_POS.y;
 
     this._sprite = scene.add.image(this._worldX, this._worldY, Assets.ship.key);
-    this._sprite.setScale(3).setDepth(5);
+    this._sprite.setScale(1).setDepth(5);
 
     this._label = scene.add.text(
       this._worldX,
-      this._worldY - 48,
-      "🚀 Spaceship",
+      this._worldY - 88,
+      "Artemis Assembly Bay",
       {
         fontFamily: Theme.font.family,
-        fontSize: "11px",
-        color: "#aaffcc",
+        fontSize: "10px",
+        color: "#ffffff",
         stroke: "#000000",
         strokeThickness: 3,
       },
@@ -80,6 +85,13 @@ export class ShipEntity implements IInteractable {
   get worldY(): number {
     return this._worldY;
   }
+  get shipItemsSnapshot(): Map<string, { itemId: string; roleId: string; addedBy: string }> {
+    return this._shipItemsSnapshot;
+  }
+  get sprite(): Phaser.GameObjects.Image {
+    return this._sprite;
+  }
+
   get interactionLabel(): string {
     return "E  —  Access Ship";
   }
@@ -93,7 +105,11 @@ export class ShipEntity implements IInteractable {
       this._playerRoles,
       this._objective,
       this._isHost,
-      () => { this._menu = null; },
+      () => {
+        this._menu = null;
+      },
+      this._onConsultAi,
+      this._onLaunchMission,
     );
     this._menu.mount();
   }
@@ -103,23 +119,14 @@ export class ShipEntity implements IInteractable {
     this._menu = null;
   }
 
-  // ── State sync (called by GameScene on every onStateChange) ─────────────
-
   /**
-   * Updates the local snapshot of ship items from the server state.
-   * If the ship menu is currently open, refreshes it immediately.
+   * Called by GameScene whenever Colyseus room state patches arrive.
+   * Keeps the open menu in sync with server state.
    */
-  refreshState(shipItems: Map<string, any>): void {
-    this._shipItemsSnapshot = new Map();
-    shipItems.forEach((entry: any, key: string) => {
-      this._shipItemsSnapshot.set(key, {
-        itemId: entry.itemId,
-        roleId: entry.roleId,
-        addedBy: entry.addedBy,
-      });
-    });
-
-    // Live-refresh the open menu if any
-    this._menu?.refresh(this._shipItemsSnapshot);
+  refreshState(
+    snapshot: Map<string, { itemId: string; roleId: string; addedBy: string }>,
+  ): void {
+    this._shipItemsSnapshot = snapshot;
+    this._menu?.refresh(snapshot);
   }
 }

@@ -49,13 +49,14 @@ export class InteractionSystem {
     this.keyE = scene.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.E);
 
     this.promptLabel = scene.add.text(0, 0, "", {
-      fontFamily:      Theme.font.family,
-      fontSize:        "11px",
-      color:           "#f4d03f",
-      stroke:          "#000000",
-      strokeThickness: 3,
+      fontFamily:      "'JetBrains Mono', monospace",
+      fontSize:        "10px",
+      color:           "#ffffff",
+      backgroundColor: "rgba(8, 12, 20, 0.85)",
+      padding:         { x: 8, y: 4 },
     });
-    this.promptLabel.setOrigin(0.5, 1).setDepth(20).setVisible(false);
+    this.promptLabel.setOrigin(0.5, 1).setDepth(25).setVisible(false);
+    this.promptLabel.setStroke("rgba(255, 255, 255, 0.25)", 1);
   }
 
   /** Call every frame from GameScene.update(). */
@@ -85,7 +86,7 @@ export class InteractionSystem {
       } else {
         // Keep prompt updated (label text may have changed, e.g. npc dialogue advancing)
         this.promptLabel
-          .setPosition(this.activeTarget.worldX, this.activeTarget.worldY - 28)
+          .setPosition(this.activeTarget.worldX, this.activeTarget.worldY - 32)
           .setText(this.activeTarget.interactionLabel);
       }
       return;
@@ -110,7 +111,7 @@ export class InteractionSystem {
 
     if (nearest) {
       this.promptLabel
-        .setPosition(nearest.worldX, nearest.worldY - 28)
+        .setPosition(nearest.worldX, nearest.worldY - 32)
         .setText(nearest.interactionLabel)
         .setVisible(true);
     } else {

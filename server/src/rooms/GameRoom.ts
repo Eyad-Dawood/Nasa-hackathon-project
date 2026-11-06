@@ -41,6 +41,7 @@ export class GameRoom extends Room<GameRoomOptions> {
     // Store the lobby host's sessionId so the room can gate actions to them.
     // hostId is passed by LobbyRoom when creating this room.
     state.hostId = String(options?.hostId ?? "");
+    state.selectedObjectiveId = "artemis_lunar_relay";
 
     this.setState(state);
 

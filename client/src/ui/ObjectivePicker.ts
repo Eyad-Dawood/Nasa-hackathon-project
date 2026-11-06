@@ -1,3 +1,4 @@
+import { createElement, Rocket, Compass, Scale, Check, Clock } from "lucide";
 import { Theme } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
 import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
@@ -5,192 +6,281 @@ import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
 /**
  * ObjectivePicker
  * ───────────────
- * DOM overlay shown between the lobby and the game.
- *
- * HOST VIEW:   Shows mission cards; clicking "Select" sends "selectObjective".
- * NON-HOST VIEW: Shows cards (read-only) + "Waiting for host…" message.
- *
- * HOW TO CHANGE CARD LAYOUT:
- *   Edit _buildCard() — it reads full Objective data from ObjectiveData.ts.
+ * Pre-flight Mission Directive Selection.
+ * Unslopped aerospace design:
+ *   - Clean cards with destination, payload ceiling, and difficulty profile.
+ *   - Quiet hairlines, tabular monospace numbers.
+ *   - Clear distinction between Host controls and crew waiting state.
  */
 export class ObjectivePicker {
   private container: HTMLDivElement;
   private isHost: boolean;
 
   constructor(isHost: boolean) {
-    this.isHost    = isHost;
+    this.isHost = isHost;
     this.container = this._buildDOM();
   }
 
-  mount():   void { document.body.appendChild(this.container); }
-  destroy(): void { this.container.remove(); }
+  mount(): void {
+    document.body.appendChild(this.container);
+  }
+
+  destroy(): void {
+    this.container.remove();
+  }
 
   // ── Private ──────────────────────────────────────────────────────────
 
   private _buildDOM(): HTMLDivElement {
-    const { colors, font, spacing, radius } = Theme;
+    const { colors, font } = Theme;
 
+    // Full-screen overlay
     const overlay = document.createElement("div");
     overlay.id = "objective-picker-overlay";
     Object.assign(overlay.style, {
-      position: "fixed", inset: "0",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(0,0,0,0.90)", zIndex: "1000", fontFamily: font.family,
+      position: "fixed",
+      inset: "0",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "rgba(8, 10, 16, 0.92)",
+      backdropFilter: "blur(8px)",
+      zIndex: "1000",
+      fontFamily: font.family,
     });
 
+    // Main Card Panel
     const panel = document.createElement("div");
     Object.assign(panel.style, {
-      background: colors.surface, border: `1px solid ${colors.border}`,
-      borderRadius: radius.lg, padding: spacing.xl,
-      width: "600px", maxWidth: "95vw", maxHeight: "88vh",
-      display: "flex", flexDirection: "column", gap: spacing.md,
-      boxShadow: "0 8px 60px rgba(0,0,0,0.7)", overflowY: "auto",
+      background: colors.surface,
+      border: `1px solid ${colors.border}`,
+      borderRadius: "10px",
+      padding: "24px 28px",
+      width: "560px",
+      maxWidth: "92vw",
+      display: "flex",
+      flexDirection: "column",
+      gap: "16px",
+      boxShadow: "0 16px 40px rgba(0, 0, 0, 0.5)",
     });
 
-    // Header
+    // Header Row
+    const header = document.createElement("div");
+    Object.assign(header.style, {
+      display: "flex",
+      flexDirection: "column",
+      gap: "4px",
+    });
+
+    const titleRow = document.createElement("div");
+    Object.assign(titleRow.style, {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+    });
+
     const title = document.createElement("h2");
-    title.textContent = "🌌 Select Mission";
-    Object.assign(title.style, { color: colors.textPrimary, fontSize: font.sizeXl, margin: "0", letterSpacing: "2px" });
+    title.textContent = "NASA Flight Directives";
+    Object.assign(title.style, {
+      color: colors.textPrimary,
+      fontSize: "18px",
+      fontWeight: "600",
+      letterSpacing: "0.5px",
+      margin: "0",
+    });
+
+    const statusPill = document.createElement("span");
+    statusPill.style.display = "flex";
+    statusPill.style.alignItems = "center";
+    statusPill.style.gap = "6px";
+    statusPill.style.fontSize = "11px";
+    statusPill.style.fontFamily = font.mono;
+    statusPill.style.color = this.isHost ? colors.accent : colors.textMuted;
+    statusPill.style.background = colors.surfaceRaised;
+    statusPill.style.border = `1px solid ${colors.border}`;
+    statusPill.style.padding = "3px 8px";
+    statusPill.style.borderRadius = "4px";
+
+    if (this.isHost) {
+      statusPill.appendChild(createElement(Rocket, { width: 12, height: 12, "stroke-width": 1.5 }));
+      const hostLabel = document.createElement("span");
+      hostLabel.textContent = "MISSION COMMANDER";
+      statusPill.appendChild(hostLabel);
+    } else {
+      statusPill.appendChild(createElement(Clock, { width: 12, height: 12, "stroke-width": 1.5 }));
+      const waitLabel = document.createElement("span");
+      waitLabel.textContent = "AWAITING COMMAND";
+      statusPill.appendChild(waitLabel);
+    }
+
+    titleRow.append(title, statusPill);
 
     const subtitle = document.createElement("p");
     subtitle.textContent = this.isHost
-      ? "Choose a mission for your crew."
-      : "Waiting for the host to select a mission…";
-    Object.assign(subtitle.style, { color: colors.textMuted, fontSize: font.sizeSm, margin: "0" });
+      ? "Select the primary mission profile for your engineering team."
+      : "Mission Commander is configuring the mission flight profile...";
+    Object.assign(subtitle.style, {
+      color: colors.textSecondary,
+      fontSize: "13px",
+      margin: "0",
+    });
+
+    header.append(titleRow, subtitle);
 
     const divider = document.createElement("hr");
-    divider.style.borderColor = colors.border; divider.style.margin = "0";
+    divider.style.borderColor = colors.border as string;
+    divider.style.margin = "0";
 
+    // Cards Container
     const cardsContainer = document.createElement("div");
-    Object.assign(cardsContainer.style, { display: "flex", flexDirection: "column", gap: spacing.sm });
+    Object.assign(cardsContainer.style, {
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
+    });
 
-    OBJECTIVES.forEach((obj) => cardsContainer.appendChild(this._buildCard(obj)));
+    OBJECTIVES.forEach((obj) => {
+      cardsContainer.appendChild(this._buildCard(obj));
+    });
 
-    panel.append(title, subtitle, divider, cardsContainer);
+    panel.append(header, divider, cardsContainer);
     overlay.appendChild(panel);
     return overlay;
   }
 
   private _buildCard(obj: Objective): HTMLDivElement {
-    const { colors, font, spacing, radius, transition } = Theme;
-
-    // Difficulty badge color
-    const diffColor: Record<string, string> = {
-      Easy:   "#2ecc71",
-      Medium: "#f39c12",
-      Hard:   "#e94560",
-      Expert: "#9b59b6",
-    };
-    const badgeColor = diffColor[obj.difficulty] ?? "#888";
-
-    // Stars string
-    const stars = "★".repeat(obj.stars) + "☆".repeat(4 - obj.stars);
+    const { colors, font } = Theme;
 
     const card = document.createElement("div");
     Object.assign(card.style, {
-      display: "flex", flexDirection: "column", gap: spacing.sm,
-      background: colors.background, border: `1px solid ${colors.border}`,
-      borderRadius: radius.md, padding: spacing.md,
-      transition: `border-color ${transition.fast}`,
+      display: "flex",
+      flexDirection: "column",
+      background: colors.surfaceRaised,
+      border: `1px solid ${colors.border}`,
+      borderRadius: "8px",
+      padding: "14px 16px",
+      gap: "10px",
+      transition: "border-color 0.15s ease",
     });
 
-    // ── Top row: title + stars + difficulty + select button ──
+    // Top Row: Title + Destination + Difficulty
     const topRow = document.createElement("div");
-    Object.assign(topRow.style, { display: "flex", alignItems: "center", gap: spacing.sm });
-
-    const titleEl = document.createElement("span");
-    titleEl.textContent = obj.label;
-    Object.assign(titleEl.style, { color: colors.textPrimary, fontSize: font.sizeMd, fontWeight: "bold", flex: "1" });
-
-    const starsEl = document.createElement("span");
-    starsEl.textContent = stars;
-    Object.assign(starsEl.style, { color: "#f39c12", fontSize: font.sizeSm, letterSpacing: "2px", flexShrink: "0" });
-
-    const badge = document.createElement("span");
-    badge.textContent = obj.difficulty;
-    Object.assign(badge.style, {
-      background: `${badgeColor}22`, border: `1px solid ${badgeColor}`,
-      borderRadius: "4px", padding: "1px 7px",
-      color: badgeColor, fontSize: "10px", fontWeight: "bold", flexShrink: "0",
+    Object.assign(topRow.style, {
+      display: "flex",
+      alignItems: "flex-start",
+      justifyContent: "space-between",
+      gap: "12px",
     });
 
-    topRow.append(titleEl, starsEl, badge);
-
-    // ── Destination + travel time ──
-    const destRow = document.createElement("div");
-    Object.assign(destRow.style, { display: "flex", gap: spacing.md, flexWrap: "wrap" });
-
-    const dest = this._chip("📍", obj.destination, colors.textMuted);
-    const dist = this._chip("📏", obj.distanceKm, colors.textMuted);
-    const time = this._chip("⏱", obj.travelTime, colors.textMuted);
-    destRow.append(dest, dist, time);
-
-    // ── Mission parameters summary ──
-    const paramsRow = document.createElement("div");
-    Object.assign(paramsRow.style, { display: "flex", gap: spacing.sm, flexWrap: "wrap" });
-
-    if (obj.radiation > 0)   paramsRow.appendChild(this._chip("☢", `Radiation ${obj.radiation}`, "#e94560"));
-    if (obj.heatDanger > 0)  paramsRow.appendChild(this._chip("🔥", `Heat ${obj.heatDanger}`, "#f39c12"));
-    paramsRow.appendChild(this._chip("💰", `Budget ${obj.budget}`, "#2ecc71"));
-    paramsRow.appendChild(this._chip("🔬", `Science goal ${obj.scienceGoal}`, "#3498db"));
-    if (obj.sunlightPct !== 100) paramsRow.appendChild(this._chip("☀", `${obj.sunlightPct}% sunlight`, "#f39c12"));
-
-    // ── Fun fact ──
-    const funFact = document.createElement("div");
-    Object.assign(funFact.style, {
-      color: colors.textMuted, fontSize: "10px", fontStyle: "italic",
-      borderLeft: `3px solid ${colors.border}`, paddingLeft: spacing.sm,
+    const infoLeft = document.createElement("div");
+    Object.assign(infoLeft.style, {
+      display: "flex",
+      flexDirection: "column",
+      gap: "3px",
     });
-    funFact.textContent = `💡 ${obj.funFact}`;
 
-    // ── Star instrument hint ──
-    const starHint = document.createElement("div");
-    Object.assign(starHint.style, { color: "#f39c12", fontSize: "10px" });
-    starHint.textContent = `⭐ Star Instrument: ${obj.starInstrument} (+10 science bonus)`;
+    const label = document.createElement("span");
+    label.textContent = obj.label;
+    Object.assign(label.style, {
+      color: colors.textPrimary,
+      fontSize: "14px",
+      fontWeight: "600",
+    });
 
-    // ── Select button (host only) ──
-    const bottomRow = document.createElement("div");
-    Object.assign(bottomRow.style, { display: "flex", justifyContent: "flex-end" });
+    const metaRow = document.createElement("div");
+    Object.assign(metaRow.style, {
+      display: "flex",
+      gap: "10px",
+      fontSize: "11px",
+      color: colors.textMuted,
+      fontFamily: font.mono,
+    });
 
+    metaRow.innerHTML = `
+      <span>Target: <b style="color:${colors.accent};">${obj.target}</b></span>
+      <span>Payload Ceiling: <b style="color:${colors.textPrimary};">${obj.maxWeight} kg</b></span>
+    `;
+
+    infoLeft.append(label, metaRow);
+
+    // Difficulty badge
+    const diffBadge = document.createElement("span");
+    diffBadge.textContent = obj.difficulty;
+    let diffColor = colors.success;
+    if (obj.difficulty === "Challenging") diffColor = colors.warning;
+    if (obj.difficulty === "Extreme") diffColor = colors.danger;
+
+    Object.assign(diffBadge.style, {
+      fontSize: "10px",
+      fontFamily: font.mono,
+      fontWeight: "500",
+      color: diffColor,
+      background: "#080a10",
+      border: `1px solid ${colors.border}`,
+      padding: "2px 8px",
+      borderRadius: "4px",
+    });
+
+    topRow.append(infoLeft, diffBadge);
+
+    // Description
+    const desc = document.createElement("p");
+    desc.textContent = obj.description;
+    Object.assign(desc.style, {
+      color: colors.textSecondary,
+      fontSize: "12px",
+      lineHeight: "1.45",
+      margin: "0",
+    });
+
+    card.append(topRow, desc);
+
+    // If host: add select button
     if (this.isHost) {
+      const actionRow = document.createElement("div");
+      Object.assign(actionRow.style, {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: "4px",
+      });
+
       const btn = document.createElement("button");
-      btn.textContent = "Select Mission";
+      btn.style.display = "flex";
+      btn.style.alignItems = "center";
+      btn.style.gap = "6px";
+      btn.appendChild(createElement(Check, { width: 13, height: 13, "stroke-width": 2 }));
+      const btnLabel = document.createElement("span");
+      btnLabel.textContent = "Select Directive";
+      btn.appendChild(btnLabel);
+
       Object.assign(btn.style, {
-        background: colors.accent, border: "none", borderRadius: radius.sm,
-        color: "#fff", cursor: "pointer", fontFamily: font.family,
-        fontSize: font.sizeSm, fontWeight: "bold",
-        padding: `${spacing.xs} ${spacing.md}`,
-        transition: `background ${transition.fast}`,
+        background: colors.accent,
+        border: "none",
+        borderRadius: "4px",
+        color: "#080a10",
+        fontSize: "12px",
+        fontWeight: "600",
+        fontFamily: font.family,
+        padding: "6px 14px",
+        cursor: "pointer",
+        transition: "background 0.15s ease",
       });
 
-      btn.addEventListener("mouseenter", () => { if (!btn.disabled) btn.style.background = Theme.colors.accentHover; });
-      btn.addEventListener("mouseleave", () => { if (!btn.disabled) btn.style.background = Theme.colors.accent; });
-
+      btn.addEventListener("mouseenter", () => (btn.style.background = colors.accentHover));
+      btn.addEventListener("mouseleave", () => (btn.style.background = colors.accent));
       btn.addEventListener("click", () => {
-        this.container.querySelectorAll("button").forEach((b) => {
-          (b as HTMLButtonElement).disabled = true;
-          (b as HTMLButtonElement).style.background = colors.disabled;
-          (b as HTMLButtonElement).style.cursor = "not-allowed";
-        });
-        btn.textContent = "Confirming…";
-        card.style.borderColor = colors.accent;
-        ColyseusService.send("selectObjective", { objectiveId: obj.id });
+        btn.disabled = true;
+        btnLabel.textContent = "Authorizing...";
+        btn.style.opacity = "0.7";
+        btn.style.cursor = "not-allowed";
+
+        ColyseusService.selectObjective(obj.id);
       });
 
-      bottomRow.appendChild(btn);
+      actionRow.appendChild(btn);
+      card.appendChild(actionRow);
     }
 
-    card.append(topRow, destRow, paramsRow, funFact, starHint);
-    if (this.isHost) card.appendChild(bottomRow);
     return card;
-  }
-
-  private _chip(icon: string, text: string, color: string): HTMLSpanElement {
-    const chip = document.createElement("span");
-    chip.textContent = `${icon} ${text}`;
-    Object.assign(chip.style, {
-      color, fontSize: "10px", whiteSpace: "nowrap",
-    });
-    return chip;
   }
 }

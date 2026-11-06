@@ -55,20 +55,34 @@ export class StationMenuUI {
     const overlay = document.createElement("div");
     overlay.id = "station-menu-overlay";
     Object.assign(overlay.style, {
-      position: "fixed", inset: "0",
-      display: "flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(0,0,0,0.75)", zIndex: "1500", fontFamily: font.family,
+      position: "fixed",
+      inset: "0",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      background: "rgba(0,0,0,0.45)",
+      backdropFilter: "blur(8px)",
+      WebkitBackdropFilter: "blur(8px)",
+      zIndex: "1500",
+      fontFamily: font.family,
     });
     // Click outside to close
     overlay.addEventListener("click", (e) => { if (e.target === overlay) this.close(); });
 
     const panel = document.createElement("div");
     Object.assign(panel.style, {
-      background: colors.surface, border: `1px solid ${colors.border}`,
-      borderRadius: radius.lg, padding: spacing.lg,
-      width: "420px", maxWidth: "92vw",
-      display: "flex", flexDirection: "column", gap: spacing.sm,
-      boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+      background: "rgba(12, 16, 26, 0.85)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.22), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 24px 48px rgba(0, 0, 0, 0.6)",
+      backdropFilter: "blur(20px) saturate(1.5)",
+      WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+      border: "none",
+      borderRadius: "16px",
+      padding: "20px 24px",
+      width: "440px",
+      maxWidth: "92vw",
+      display: "flex",
+      flexDirection: "column",
+      gap: "12px",
     });
 
     // ── Header ──
@@ -76,24 +90,30 @@ export class StationMenuUI {
     Object.assign(header.style, { display: "flex", justifyContent: "space-between", alignItems: "center" });
 
     const title = document.createElement("h3");
-    // Use the role's label from Theme.roles — single source of truth
     title.textContent = getRoleLabel(def.roleId);
     Object.assign(title.style, {
-      color: `#${getRoleHex(def.roleId).toString(16).padStart(6, "0")}`,
-      fontSize: font.sizeLg, margin: "0", letterSpacing: "1px",
+      color: "#ffffff",
+      fontSize: "16px",
+      fontWeight: "600",
+      margin: "0",
+      letterSpacing: "0.2px",
     });
 
     const closeBtn = document.createElement("button");
     closeBtn.textContent = "×";
     Object.assign(closeBtn.style, {
-      background: "transparent", border: "none",
-      color: colors.textMuted, cursor: "pointer", fontSize: "20px",
+      background: "transparent",
+      border: "none",
+      color: "rgba(255, 255, 255, 0.5)",
+      cursor: "pointer",
+      fontSize: "20px",
     });
     closeBtn.addEventListener("click", () => this.close());
     header.append(title, closeBtn);
 
     const hr = document.createElement("hr");
-    hr.style.borderColor = colors.border; hr.style.margin = "0";
+    hr.style.borderColor = "rgba(255, 255, 255, 0.08)";
+    hr.style.margin = "0";
 
     // ── Carry status notice ──
     const notice = this._buildNotice(def);
@@ -170,22 +190,35 @@ export class StationMenuUI {
     const { colors, font, spacing, radius } = Theme;
     const row = document.createElement("div");
     Object.assign(row.style, {
-      display: "flex", alignItems: "center", gap: spacing.sm,
-      background: colors.background, border: `1px solid ${colors.border}`,
-      borderRadius: radius.md, padding: `${spacing.xs} ${spacing.sm}`,
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      background: "rgba(255, 255, 255, 0.04)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)",
+      borderRadius: "8px",
+      padding: "8px 12px",
     });
 
     const name = document.createElement("span");
     name.textContent = item.name;
-    Object.assign(name.style, { color: colors.textPrimary, fontSize: font.sizeSm, flex: "1" });
+    Object.assign(name.style, { color: "#ffffff", fontSize: "13px", fontWeight: "500", flex: "1" });
 
     const massEl = document.createElement("span");
     massEl.textContent = `${item.mass} kg`;
-    Object.assign(massEl.style, { color: colors.textMuted, fontSize: font.sizeXs, whiteSpace: "nowrap" });
+    Object.assign(massEl.style, { color: "rgba(255, 255, 255, 0.5)", fontFamily: font.mono, fontSize: "11px", whiteSpace: "nowrap" });
 
     const detailBtn = document.createElement("button");
     detailBtn.textContent = "Detail";
-    this._styleBtn(detailBtn, colors.textMuted, true);
+    Object.assign(detailBtn.style, {
+      background: "rgba(255, 255, 255, 0.08)",
+      color: "rgba(255, 255, 255, 0.8)",
+      border: "none",
+      borderRadius: "6px",
+      padding: "4px 10px",
+      fontSize: "11px",
+      cursor: "pointer",
+      transition: "all 0.15s ease",
+    });
     detailBtn.addEventListener("click", () => {
       this._openDetail?.close();
       this._openDetail = new ItemDetailUI(item);
@@ -194,12 +227,19 @@ export class StationMenuUI {
 
     const carryBtn = document.createElement("button");
     carryBtn.textContent = "Carry";
-    carryBtn.disabled    = disabled || this._carry.isHolding;
-    this._styleBtn(carryBtn, colors.accent);
-    if (carryBtn.disabled) {
-      carryBtn.style.background = colors.disabled;
-      carryBtn.style.cursor     = "not-allowed";
-    }
+    carryBtn.disabled = disabled || this._carry.isHolding;
+    Object.assign(carryBtn.style, {
+      background: carryBtn.disabled ? "rgba(255, 255, 255, 0.04)" : "#ffffff",
+      color: carryBtn.disabled ? "rgba(255, 255, 255, 0.3)" : "#04060a",
+      border: "none",
+      borderRadius: "6px",
+      padding: "5px 12px",
+      fontSize: "12px",
+      fontWeight: "600",
+      boxShadow: carryBtn.disabled ? "none" : "0 2px 10px rgba(255, 255, 255, 0.25)",
+      cursor: carryBtn.disabled ? "not-allowed" : "pointer",
+      transition: "all 0.15s ease",
+    });
     carryBtn.addEventListener("click", () => {
       if (this._carry.pickUp(item)) this.close();
     });

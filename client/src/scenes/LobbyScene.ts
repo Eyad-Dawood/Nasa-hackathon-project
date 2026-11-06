@@ -2,6 +2,8 @@ import Phaser from "phaser";
 import { ColyseusService } from "../network/ColyseusService";
 import { LobbyList } from "../ui/LobbyList";
 import { LobbyRoomPanel } from "../ui/LobbyRoomPanel";
+import { getObjectiveById } from "../game/data/ObjectiveData";
+import { EarthBlazeBackground } from "../ui/EarthBlazeBackground";
 
 /**
  * LobbyScene
@@ -33,7 +35,12 @@ export class LobbyScene extends Phaser.Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor("#0d0d1a");
+    this.cameras.main.setBackgroundColor("rgba(0, 0, 0, 0)");
+    this.game.canvas.style.pointerEvents = "none";
+    EarthBlazeBackground.get().show();
+
+    // Ensure sign-in form is completely removed from DOM
+    document.getElementById("account-form-overlay")?.remove();
 
     // Show the lobby browser
     this.lobbyList = new LobbyList(this.username, () => this._onEnterRoom());
@@ -154,16 +161,18 @@ export class LobbyScene extends Phaser.Scene {
       }
     }
 
-    // 3. تنظيف الشاشة (إخفاء الـ UI الخاص باللوبي)
+    // 3. تنظيف الشاشة (إخفاء الـ UI الخاص باللوبي وخلفية إيرث بليز)
     this.lobbyPanel?.destroy();
     this.stateUnsub?.();
+    EarthBlazeBackground.get().hide();
 
-    // 4. الانتقال لـ ObjectiveScene مع تمرير المصفوفة (roles) بدلاً من roleId
-    this.scene.start("ObjectiveScene", {
+    // 4. الانتقال مباشرة إلى GameScene وتخطي شاشة الأهداف بناءً على طلب المستخدم
+    this.scene.start("GameScene", {
       username: this.username,
-      roles: localRoles, // 🔴 هنا بنبعت المصفوفة كلها
+      roles: localRoles,
       gameRoomId,
       isHost: isCurrentPlayerHost,
+      objective: getObjectiveById("artemis_lunar_relay"),
     });
   }
 }

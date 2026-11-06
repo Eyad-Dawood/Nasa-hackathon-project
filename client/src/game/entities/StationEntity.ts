@@ -49,17 +49,24 @@ export class StationEntity implements IInteractable {
     this._worldX = x;
     this._worldY = y;
 
-    // Station sprite — tinted with its role colour
-    this._sprite = scene.add.image(x, y, Assets.station.key);
-    this._sprite.setScale(2.5).setDepth(5);
-    this._sprite.setTint(getRoleHex(def.roleId));
+    // Workstation sprite — dedicated 64×64 NASA Console per role
+    const workstationKeyMap: Record<string, string> = {
+      powerAndThermal: Assets.stationPower.key,
+      structureAndComputing: Assets.stationStructure.key,
+      Communications: Assets.stationCommunications.key,
+      Science: Assets.stationScience.key,
+    };
+    const textureKey = workstationKeyMap[def.roleId] || Assets.station.key;
+
+    this._sprite = scene.add.image(x, y, textureKey);
+    this._sprite.setScale(1).setDepth(5);
     if (!this._hasAccess) this._sprite.setAlpha(0.55); // dim if no access
 
-    // Label above sprite — always taken from Theme.roles (single source of truth)
-    this._label = scene.add.text(x, y - 32, getRoleLabel(def.roleId), {
+    // Label above workstation
+    this._label = scene.add.text(x, y - 40, getRoleLabel(def.roleId), {
       fontFamily:      Theme.font.family,
-      fontSize:        "9px",
-      color:           "#ccccff",
+      fontSize:        "10px",
+      color:           "#ffffff",
       stroke:          "#000000",
       strokeThickness: 3,
     });

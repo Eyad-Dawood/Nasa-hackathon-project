@@ -47,6 +47,8 @@ export class PlayerController {
     right: Phaser.Input.Keyboard.Key;
   };
 
+  private _inputEnabled: boolean = true;
+
   /**
    * @param scene      The Phaser scene this controller lives in.
    * @param spawnX     World X in pixels.
@@ -77,8 +79,19 @@ export class PlayerController {
     };
   }
 
+  /** Enable or disable keyboard input (useful when typing in AI chat). */
+  setInputEnabled(enabled: boolean): void {
+    this._inputEnabled = enabled;
+    if (!enabled) {
+      this._sprite.setVelocity(0, 0);
+      this._playIfNotPlaying(ANIM_KEYS.playerIdle);
+    }
+  }
+
   /** Must be called every frame from GameScene.update(). */
   update(): void {
+    if (!this._inputEnabled) return;
+
     const { up, down, left, right } = this.cursors;
     const w = this.wasd;
 

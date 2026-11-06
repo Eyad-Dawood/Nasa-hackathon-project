@@ -13,30 +13,40 @@
  */
 
 export const Theme = {
-  // ── UI Colours ────────────────────────────────────────────────────────
+  // ── UI Colours (Ink / Aerospace Dark Ramp) ─────────────────────────────
   colors: {
     /** Main page / overlay background */
-    background: "#0d0d1a",
+    background: "#080a10",
     /** Panel / card surfaces */
-    surface: "#16213e",
-    /** Accent – buttons, highlights */
-    accent: "#e94560",
+    surface: "#0f131d",
+    /** Raised surface (active row, inputs) */
+    surfaceRaised: "#161c2b",
+    /** Accent – flight telemetry sky/cobalt */
+    accent: "#38bdf8",
     /** Secondary accent – hover states */
-    accentHover: "#c73652",
-    /** Positive / enabled state */
-    success: "#2ecc71",
+    accentHover: "#0284c7",
+    /** Positive / nominal state */
+    success: "#34d399",
+    /** Warning / caution state */
+    warning: "#fbbf24",
+    /** Critical / error state */
+    danger: "#f87171",
     /** Disabled / unavailable state */
-    disabled: "#555577",
+    disabled: "#374151",
     /** Primary text */
-    textPrimary: "#eaeaea",
-    /** Secondary / muted text */
-    textMuted: "#8888aa",
-    /** Border / divider lines */
-    border: "#2a2a4a",
+    textPrimary: "#f0f2f5",
+    /** Secondary text */
+    textSecondary: "#9ca3af",
+    /** Muted text / captions / icons */
+    textMuted: "#6b7280",
+    /** Quiet hairline border */
+    border: "rgba(255, 255, 255, 0.08)",
+    /** Border highlight */
+    borderHighlight: "rgba(56, 189, 248, 0.25)",
     /** Host badge colour */
-    hostBadge: "#f39c12",
+    hostBadge: "#f59e0b",
     /** Ready / role-locked badge */
-    readyBadge: "#27ae60",
+    readyBadge: "#10b981",
   },
 
   // ── Game World Colours ────────────────────────────────────────────────
@@ -44,41 +54,42 @@ export const Theme = {
   // in-game UI elements (InteractionSystem dialogue, GameHUD).
   game: {
     // Tiles
-    tileGrass: 0x3a7d44, // grass fill      (Phaser hex number)
-    tileGrassLine: 0x2f6636, // grid line
-    tileWall: 0x4a4a6a, // wall fill
-    tileWallEdge: 0x6a6a9a, // wall highlight edge
-    tileWater: 0x1a5276, // water fill
-    tileWaterSheen: 0x1f618d, // water sheen stripe
+    tileGrass: 0x1f293d, // dark floor tile
+    tileGrassLine: 0x161d2d, // grid line
+    tileWall: 0x2d3748, // wall fill
+    tileWallEdge: 0x4a5568, // wall highlight edge
+    tileWater: 0x0f172a, // technical gap / trench
+    tileWaterSheen: 0x1e293b,
 
     // Sprites
-    npcFill: 0xf4d03f, // NPC body colour
-    npcDot: 0x1a1a2e, // NPC indicator dot
+    npcFill: 0x38bdf8, // NPC body colour
+    npcDot: 0x080a10, // NPC indicator dot
     playerDot: 0x000000, // player center dot
 
     // HUD & dialogue (CSS strings for DOM elements)
-    hudBg: "rgba(13,13,26,0.85)",
-    hudBorder: "#2a2a4a",
-    hudText: "#eaeaea",
-    hudMuted: "#8888aa",
+    hudBg: "rgba(11, 14, 23, 0.88)",
+    hudBorder: "rgba(255, 255, 255, 0.08)",
+    hudText: "#f0f2f5",
+    hudMuted: "#9ca3af",
 
     // In-game interaction prompt + dialogue (Phaser colour numbers)
-    interactPrompt: 0xf4d03f, // "E — Talk" label colour
-    dialogueBg: 0x16213e, // dialogue box fill
-    dialogueBorder: 0xe94560, // dialogue box border
-    dialogueText: 0xeaeaea, // dialogue body text
-    dialogueName: 0xf4d03f, // NPC name in dialogue header
+    interactPrompt: 0x38bdf8, // "E — Talk" label colour
+    dialogueBg: 0x0f131d, // dialogue box fill
+    dialogueBorder: 0x38bdf8, // dialogue box border
+    dialogueText: 0xf0f2f5, // dialogue body text
+    dialogueName: 0x38bdf8, // NPC name in dialogue header
   },
 
   // ── Fonts ─────────────────────────────────────────────────────────────
   font: {
-    family: "'Courier New', Courier, monospace",
+    family: "'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+    mono: "'JetBrains Mono', monospace",
     sizeXs: "11px",
     sizeSm: "13px",
-    sizeMd: "15px",
-    sizeLg: "20px",
-    sizeXl: "26px",
-    sizeTitle: "36px",
+    sizeMd: "14px",
+    sizeLg: "18px",
+    sizeXl: "24px",
+    sizeTitle: "32px",
   },
 
   // ── Spacing ───────────────────────────────────────────────────────────
@@ -109,30 +120,30 @@ export const Theme = {
     {
       id: "powerAndThermal",
       label: "Power And Thermal",
-      color: "#e74c3c",
-      hex: 0xe74c3c,
-      description: "Placeholder – gameplay TBD",
+      color: "#f87171",
+      hex: 0xf87171,
+      description: "Power bus, solar arrays, and thermal radiator dissipation",
     },
     {
       id: "structureAndComputing",
       label: "Structure And Computing",
-      color: "#3498db",
-      hex: 0x3498db,
-      description: "Placeholder – gameplay TBD",
+      color: "#38bdf8",
+      hex: 0x38bdf8,
+      description: "Flight computers, guidance avionics, and radar systems",
     },
     {
       id: "Communications",
       label: "Communications",
-      color: "#2ecc71",
-      hex: 0x2ecc71,
-      description: "Placeholder – gameplay TBD",
+      color: "#34d399",
+      hex: 0x34d399,
+      description: "High-gain transceivers, telemetry, and shield arrays",
     },
     {
       id: "Science",
       label: "Science",
-      color: "#f39c12",
-      hex: 0xf39c12,
-      description: "Placeholder – gameplay TBD",
+      color: "#fbbf24",
+      hex: 0xfbbf24,
+      description: "Scientific sensor payloads and analytical instruments",
     },
   ],
 } as const;
