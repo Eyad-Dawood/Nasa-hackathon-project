@@ -1,6 +1,7 @@
 import { defineServer, defineRoom, matchMaker, monitor, playground } from "colyseus";
 import { LobbyRoom } from "./rooms/LobbyRoom";
 import { GameRoom } from "./rooms/GameRoom";
+import { aiDirectorService } from "./services/flight-director/AiDirectorService";
 
 const server = defineServer({
   rooms: {
@@ -9,6 +10,13 @@ const server = defineServer({
   },
 
   express: (app) => {
+    const aiSummary = aiDirectorService.getStartupSummary();
+    console.log(
+      `[AI Flight Director] provider=${aiSummary.provider} model=${aiSummary.model} key=${aiSummary.apiKeyMasked} prompt=v${aiSummary.promptVersion}`,
+    );
+    if (aiSummary.warning) {
+      console.warn(`[AI Flight Director] ${aiSummary.warning}`);
+    }
     // ── GET /rooms ────────────────────────────────────────────────────────
     // Colyseus v0.17 has no built-in GET listing endpoint.
     // We expose one using the internal matchMaker.query().

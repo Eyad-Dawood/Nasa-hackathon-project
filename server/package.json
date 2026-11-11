@@ -4,13 +4,13 @@
   "version": "1.0.0",
   "type": "module",
   "description": "npm init template for bootstrapping an empty Colyseus project",
-  "main": "lib/index.js",
+  "main": "build/index.js",
   "scripts": {
     "start": "tsx watch src/index.ts",
     "loadtest": "colyseus-loadtest loadtest/example.ts --room my_room --numClients 2",
     "build": "npm run clean && tsc",
-    "clean": "node node_modules/rimraf/bin lib",
-    "test": "mocha -r tsx test/**_test.ts --exit --timeout 15000"
+    "clean": "node node_modules/rimraf/bin build",
+    "test": "mocha -r tsx \"test/**/*_test.ts\" --exit --timeout 15000"
   },
   "author": "",
   "license": "UNLICENSED",
@@ -35,8 +35,11 @@
     "@colyseus/monitor": "^0.17.0",
     "@colyseus/playground": "^0.17.0",
     "@colyseus/tools": "^0.17.0",
+    "@google/genai": "^3.1.0",
     "colyseus": "^0.17.0",
     "cors": "^2.8.5",
-    "express": "^5.2.1"
+    "dotenv": "^18.0.10",
+    "express": "^5.2.1",
+    "zod": "^4.6.7"
   }
 }

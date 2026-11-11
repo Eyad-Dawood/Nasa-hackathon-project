@@ -1,12 +1,18 @@
 import { Client, Room } from "@colyseus/sdk";
 
 // ─── Backend URL resolution ───────────────────────────────────────────────────
-const isLocalhost = window.location.href.includes("localhost");
-export const BACKEND_WS_URL = isLocalhost
-  ? "ws://localhost:2567"
-  : `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${
-      window.location.port ? `:${window.location.port}` : ""
-    }`;
+const isLocalhost =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
+const envWsUrl = (import.meta as unknown as { env?: Record<string, string | undefined> })
+  .env?.VITE_BACKEND_WS_URL;
+export const BACKEND_WS_URL = envWsUrl?.trim()
+  ? envWsUrl.trim()
+  : isLocalhost
+    ? "ws://localhost:2567"
+    : `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${
+        window.location.port ? `:${window.location.port}` : ""
+      }`;
 
 export const BACKEND_HTTP_URL = BACKEND_WS_URL.replace(
   "ws://",
@@ -20,6 +26,83 @@ export interface LobbyMeta {
   clients: number;
   maxClients: number;
   metadata?: Record<string, unknown>;
+}
+
+export interface ClientAiStatusEvent {
+  requestId: string;
+  phase:
+    | "analyzing"
+    | "gathering_telemetry"
+    | "running_tools"
+    | "optimizing"
+    | "retrieving_knowledge"
+    | "verifying"
+    | "streaming";
+  label: string;
+  toolName?: string;
+}
+
+export interface ClientAiChunkEvent {
+  requestId: string;
+  delta: string;
+}
+
+export interface ClientAiRecommendation {
+  componentId: string;
+  componentName: string;
+  action: "add" | "remove" | "replace";
+  quantity: number;
+  roleId: string;
+  roleLabel: string;
+  stationQuadrant: string;
+  cost: number;
+  mass: number;
+  reason: string;
+}
+
+export interface ClientAiCitation {
+  title: string;
+  organization: string;
+  url: string;
+}
+
+export interface ClientAiDoneEvent {
+  requestId: string;
+  fullText: string;
+  metadata: {
+    requestId: string;
+    provider: string;
+    model: string;
+    language: "en" | "ar";
+    intents: string[];
+    toolsCalled: string[];
+    toolCallCount: number;
+    launchReady: boolean | null;
+    passCount: number | null;
+    totalRules: number;
+    missionId: string | null;
+    recommendations: ClientAiRecommendation[];
+    citations: ClientAiCitation[];
+    warnings: string[];
+    latencyMs: number;
+    tokenUsage?: {
+      promptTokens?: number;
+      outputTokens?: number;
+      totalTokens?: number;
+    };
+  };
+}
+
+export interface ClientAiErrorEvent {
+  requestId: string;
+  code:
+    | "RATE_LIMITED"
+    | "BUSY"
+    | "INVALID_REQUEST"
+    | "TIMEOUT"
+    | "PROVIDER_ERROR"
+    | "ABORTED";
+  message: string;
 }
 
 type MessageHandler = (data: unknown) => void;
@@ -86,6 +169,16 @@ class _ColyseusService {
     this._attachRoomListeners();
   }
 
+  /** Host selects the canonical mission objective ("M01".."M06"). */
+  selectObjective(objectiveId: string): void {
+    this.send("selectObjective", { objectiveId });
+  }
+
+  /** Host advances to the next mission objective ("M01".."M06"). */
+  sendNextMission(objectiveId: string, resetShip = false): void {
+    this.send("nextMission", { objectiveId, resetShip });
+  }
+
   /** Send the local player's current world position to the GameRoom. */
   sendMove(x: number, y: number): void {
     this.send("move", { x, y });
@@ -96,9 +189,24 @@ class _ColyseusService {
     this.send("addItemToShip", { itemId, roleId });
   }
 
-  /** Tell the server to remove an item from the ship inventory. */
-  sendRemoveItem(itemId: string): void {
-    this.send("removeItemFromShip", { itemId });
+  /** Tell the server to remove an item instance from the ship inventory. */
+  sendRemoveItem(instanceId: string, itemId?: string): void {
+    this.send("removeItemFromShip", { instanceId, itemId });
+  }
+
+  /** Ask the server AI Flight Director (streams private responses back via ai:* events). */
+  sendAiAsk(payload: {
+    requestId: string;
+    message: string;
+    localHeldItemId?: string | null;
+    languageHint?: "en" | "ar";
+  }): void {
+    this.send("ai:ask", payload);
+  }
+
+  /** Cancel an in-flight AI Flight Director request on the server. */
+  sendAiCancel(requestId?: string): void {
+    this.send("ai:cancel", requestId ? { requestId } : {});
   }
 
   leaveRoom(): void {

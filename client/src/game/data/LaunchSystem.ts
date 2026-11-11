@@ -75,13 +75,20 @@ function checkSpace(items: GameItem[]): CheckResult {
   const totalSpace   = frameSpace + extraSpace;
   const usedSpace    = sum(items, i => i.size);  // frames have size:0
 
-  const pass = usedSpace <= totalSpace;
+  const pass = frames.length === 1 && usedSpace <= totalSpace;
+  let note: string | undefined;
+  if (frames.length === 0) {
+    note = "⚠ Exactly 1 frame is required on the spacecraft.";
+  } else if (frames.length > 1) {
+    note = `⚠ Too many frames (${frames.length}) — each spacecraft must use exactly 1 frame.`;
+  }
+
   return {
     ruleId: "space", label: "1 — Space",
     pass,
-    actual:   `${usedSpace} Space used`,
-    required: `≤ ${totalSpace} available (${frameSpace} frame + ${extraSpace} cargo)`,
-    note: frames.length === 0 ? "⚠ No frame on ship — no space at all!" : undefined,
+    actual:   `${usedSpace} Space used (${frames.length} frame)`,
+    required: `1 frame & ≤ ${totalSpace} available (${frameSpace} frame + ${extraSpace} cargo)`,
+    note,
   };
 }
 
@@ -90,7 +97,7 @@ function checkThrust(items: GameItem[], obj: Objective): CheckResult {
   const noseCone     = items.find(i => i.launchPullReduction !== undefined);
   const totalThrust  = sum(engines, i => i.thrust ?? 0);
   const totalMass    = sum(items,   i => i.mass);
-  const effectivePull = obj.launchPull - (noseCone?.launchPullReduction ?? 0);
+  const effectivePull = Math.max(0, obj.launchPull - (noseCone?.launchPullReduction ?? 0));
   const needed       = r1(totalMass * effectivePull);
 
   const pass = totalThrust >= needed;
@@ -138,7 +145,7 @@ function checkPower(items: GameItem[], obj: Objective): CheckResult {
   }
   const powerUsed  = sum(items, i => i.powerUse  ?? 0);
   const powerSaved = sum(items, i => i.powerSaved ?? 0);
-  const netNeeded  = powerUsed - powerSaved;
+  const netNeeded  = Math.max(0, powerUsed - powerSaved);
   const eff        = r1(powerMade);
 
   const pass = eff >= netNeeded;
@@ -194,18 +201,27 @@ function checkRadiation(items: GameItem[], obj: Objective): CheckResult {
 }
 
 function checkBrain(items: GameItem[], obj: Objective): CheckResult {
-  const brainPower     = sum(items, i => i.brainPower ?? 0);
-  const brainBonus     = sum(items, i => i.brainBonus ?? 0);
-  const totalBrain     = brainPower + brainBonus;
+  const computers       = items.filter(i => i.category === "computer");
+  const brainPower      = sum(items, i => i.brainPower ?? 0);
+  const brainBonus      = sum(items, i => i.brainBonus ?? 0);
+  const totalBrain      = brainPower + brainBonus;
   const instrumentBrain = sum(items, i => i.brainUse ?? 0);
-  const needed         = obj.navigationBrain + instrumentBrain;
+  const needed          = obj.navigationBrain + instrumentBrain;
 
-  const pass = totalBrain >= needed;
+  const pass = computers.length === 1 && totalBrain >= needed;
+  let note: string | undefined;
+  if (computers.length === 0) {
+    note = "⚠ Exactly 1 flight computer is required on the spacecraft.";
+  } else if (computers.length > 1) {
+    note = `⚠ Too many computers (${computers.length}) — each spacecraft may have only 1 computer.`;
+  }
+
   return {
     ruleId: "brain", label: "8 — Brain",
     pass,
-    actual:   `${totalBrain} Brain Power (${brainPower} + ${brainBonus} chips)`,
-    required: `≥ ${needed} (${obj.navigationBrain} nav + ${instrumentBrain} instruments)`,
+    actual:   `${totalBrain} Brain Power (${computers.length} computer, ${brainBonus} chips)`,
+    required: `1 computer & ≥ ${needed} (${obj.navigationBrain} nav + ${instrumentBrain} instruments)`,
+    note,
   };
 }
 
@@ -216,14 +232,15 @@ function checkDataRate(items: GameItem[]): CheckResult {
   const dataMade     = sum(items,  i => i.dataMade  ?? 0);
   const dataReduced  = sum(items,  i => i.dataReduction ?? 0);
   const effectiveRate = totalRate + rateBonus;
-  const netData      = dataMade - dataReduced;
+  const netData      = Math.max(0, dataMade - dataReduced);
 
-  const pass = effectiveRate >= netData;
+  const pass = radios.length >= 1 && effectiveRate >= netData;
   return {
     ruleId: "datarate", label: "9 — Data Rate",
     pass,
-    actual:   `${effectiveRate} Data Rate (${totalRate} radio + ${rateBonus} bonus)`,
-    required: `≥ ${netData} (${dataMade} data made − ${dataReduced} compressed)`,
+    actual:   `${effectiveRate} Data Rate (${radios.length} radio${radios.length === 1 ? "" : "s"}, ${totalRate} + ${rateBonus} bonus)`,
+    required: `≥ 1 radio & ≥ ${netData} (${dataMade} data made − ${dataReduced} compressed)`,
+    note: radios.length === 0 ? "⚠ At least 1 radio/antenna is required on the spacecraft." : undefined,
   };
 }
 
@@ -233,12 +250,13 @@ function checkSignalRange(items: GameItem[], obj: Objective): CheckResult {
   const totalBoost  = sum(items, i => i.rangeBonus ?? 0);
   const totalRange  = bestRange + totalBoost;
 
-  const pass = totalRange >= obj.signalNeed;
+  const pass = radios.length >= 1 && totalRange >= obj.signalNeed;
   return {
     ruleId: "signal", label: "10 — Signal Range",
     pass,
     actual:   `${totalRange} Range (${bestRange} best radio + ${totalBoost} boosters)`,
-    required: `≥ ${obj.signalNeed} (mission signal need)`,
+    required: `≥ 1 radio & ≥ ${obj.signalNeed} (mission signal need)`,
+    note: radios.length === 0 ? "⚠ At least 1 radio/antenna is required to transmit a signal." : undefined,
   };
 }
 
@@ -272,6 +290,51 @@ function checkBudget(items: GameItem[], obj: Objective): CheckResult {
 }
 
 // ── Main exported function ────────────────────────────────────────────────
+
+export interface ShipStructureValidation {
+  frameCount: number;
+  computerCount: number;
+  radioCount: number;
+  maxPerShipViolations: Array<{ itemId: string; name: string; count: number; limit: number }>;
+  isValid: boolean;
+}
+
+export function validateShipStructure(items: GameItem[]): ShipStructureValidation {
+  const frameCount = items.filter((i) => i.category === "frame").length;
+  const computerCount = items.filter((i) => i.category === "computer").length;
+  const radioCount = items.filter((i) => i.dataRate !== undefined).length;
+
+  const counts = new Map<string, { item: GameItem; count: number }>();
+  for (const item of items) {
+    const prev = counts.get(item.id);
+    if (prev) prev.count += 1;
+    else counts.set(item.id, { item, count: 1 });
+  }
+
+  const maxPerShipViolations: ShipStructureValidation["maxPerShipViolations"] = [];
+  for (const { item, count } of counts.values()) {
+    if (item.maxPerShip !== null && count > item.maxPerShip) {
+      maxPerShipViolations.push({
+        itemId: item.id,
+        name: item.name,
+        count,
+        limit: item.maxPerShip,
+      });
+    }
+  }
+
+  return {
+    frameCount,
+    computerCount,
+    radioCount,
+    maxPerShipViolations,
+    isValid:
+      frameCount === 1 &&
+      computerCount === 1 &&
+      radioCount >= 1 &&
+      maxPerShipViolations.length === 0,
+  };
+}
 
 /**
  * Run all 12 launch rule checks.

@@ -1,0 +1,156 @@
+{
+  "generatedAtIso": "2026-11-11T16:28:00Z",
+  "project": "Space Benders — NASA Deep Space Co-op",
+  "repositoryRoot": "D:/Nasa-Hackathon-Project/Nasa-hackathon-project",
+  "overallStatus": "PARTIAL",
+  "summaryVerdict": "All deterministic physics, optimizer (M01-M06), multiplayer Colyseus synchronization, builds, security guardrails, and all 12 live Gemini tool integrations PASSED. Live Gemini sustained full-suite execution on gemini-2.5-flash/gemini-3.5-flash is PARTIAL due to Google Free Tier 20 RPD quota exhaustion and occasional >30s/45s thinking timeouts; interactive Chrome GUI QA is BLOCKED due to missing Chrome DevToolsActivePort on host.",
+  "environmentAudit": {
+    "clientBuild": {
+      "status": "PASS",
+      "tscErrors": 0,
+      "viteModules": 2135,
+      "buildSeconds": 10.79,
+      "bundleJsBytes": 1877370
+    },
+    "serverBuild": {
+      "status": "PASS",
+      "tscErrors": 0
+    },
+    "catalogIntegrity": {
+      "status": "PASS",
+      "missions": 6,
+      "components": 84,
+      "assetsVerified": 18,
+      "missingAssets": 0
+    },
+    "secretsAudit": {
+      "status": "PASS",
+      "leakedSecretsInSourceOrBuild": 0,
+      "maskedConfiguredKeyPrefixSuffix": "AQ.***Aw",
+      "providerWithoutMockFallbackVerified": true
+    },
+    "hostConstraints": [
+      "Windows wslrelay.exe bound 127.0.0.1:2567 and [::1]:2567; live E2E server used PORT=2568 + VITE_BACKEND_WS_URL=ws://localhost:2568",
+      "Google Gemini API key Free Tier capped at 20 requests/day on gemini-2.5-flash and gemini-3.5-flash (gemini-3.6-flash quota bucket)",
+      "Chrome DevToolsActivePort missing at C:\\Users\\Softlaptop\\AppData\\Local\\Google\\Chrome\\User Data\\DevToolsActivePort"
+    ]
+  },
+  "testSuites": {
+    "clientServerParity": {
+      "status": "PASS",
+      "manifestsTested": 11,
+      "rulesPerManifest": 12,
+      "totalRuleChecks": 132,
+      "mismatches": 0
+    },
+    "mochaNonLiveSuites": {
+      "status": "PASS",
+      "totalTests": 39,
+      "passed": 39,
+      "failed": 0,
+      "durationSeconds": 18,
+      "breakdown": {
+        "AuditAndSimulation_test": { "passed": 7, "failed": 0 },
+        "FlightDirectorEval_test_mock": { "passed": 15, "failed": 0 },
+        "FlightDirectorUnit_test": { "passed": 8, "failed": 0 },
+        "Optimizer_test": { "passed": 4, "failed": 0 },
+        "RoomLifecycle_test": { "passed": 5, "failed": 0 }
+      }
+    },
+    "liveMultiplayerWebSocketE2E": {
+      "status": "PASS",
+      "httpViteRoutesPassed": 4,
+      "missionsReplayedEndToEnd": ["M01", "M02", "M03", "M04", "M05", "M06"],
+      "missionBuildSummary": {
+        "M01": { "items": 12, "cost": 171, "budget": 250, "massKg": 75, "checksPassed": 12 },
+        "M02": { "items": 15, "cost": 306, "budget": 450, "massKg": 157, "checksPassed": 12 },
+        "M03": { "items": 21, "cost": 582, "budget": 750, "massKg": 262, "checksPassed": 12 },
+        "M04": { "items": 13, "cost": 112, "budget": 120, "massKg": 63, "checksPassed": 12 },
+        "M05": { "items": 20, "cost": 441, "budget": 600, "massKg": 236, "checksPassed": 12 },
+        "M06": { "items": 29, "cost": 732, "budget": 850, "massKg": 339, "checksPassed": 12 }
+      }
+    },
+    "liveGeminiAcceptance": {
+      "status": "PARTIAL",
+      "provider": "gemini",
+      "mockUsed": false,
+      "modelsVerifiedLive": [
+        "gemini-2.5-flash",
+        "gemini-3.1-flash-lite",
+        "gemini-3.5-flash"
+      ],
+      "completedLiveTurns": 15,
+      "quotaBlockedRuns": [
+        "gemini-2.5-flash hit Free Tier 20 RPD 429 RESOURCE_EXHAUSTED after S01/S02/probe/debug/Ar-WS passes",
+        "gemini-3.5-flash hit Free Tier 20 RPD 429 RESOURCE_EXHAUSTED after E2E-WS/T05/T06/T07/Int-Test-1 passes"
+      ],
+      "latencyMsStatsAcross15CompletedTurns": {
+        "minMs": 1100,
+        "p50Ms": 17177,
+        "avgMs": 18395,
+        "p95Ms": 38110,
+        "maxMs": 38110
+      },
+      "tokenStatsAcross11LoggedTurns": {
+        "totalTokensSum": 79615,
+        "avgTokensPerTurn": 7238
+      }
+    },
+    "colyseusAiIntegrationLive": {
+      "status": "PARTIAL",
+      "test1PrivateStreamingAndImmutability": {
+        "status": "PASS",
+        "model": "gemini-3.5-flash",
+        "latencyMs": 23845,
+        "teammateLeakedEvents": 0
+      },
+      "test2ArabicRtlAndCancel": {
+        "status": "PARTIAL",
+        "passedEarlierOn": "gemini-2.5-flash (18558ms, 10603ms)",
+        "failedLatestRunReason": "Timed out on gemini-3.5-flash (45000ms), followed by 20 RPD Free Tier quota limit"
+      }
+    },
+    "browserChromeDevToolsQA": {
+      "status": "BLOCKED",
+      "reason": "chrome_devtools MCP failed: DevToolsActivePort ENOENT (remote debugging disabled in host Chrome)"
+    }
+  },
+  "liveToolCoverage": {
+    "coveredCount": 12,
+    "totalRegistered": 12,
+    "tools": [
+      { "name": "get_mission_details", "verifiedLive": true, "models": ["gemini-2.5-flash", "gemini-3.1-flash-lite"] },
+      { "name": "get_ship_status", "verifiedLive": true, "models": ["gemini-2.5-flash", "gemini-3.1-flash-lite"] },
+      { "name": "get_player_role_guidance", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "get_team_coordination_plan", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "run_launch_audit", "verifiedLive": true, "models": ["gemini-2.5-flash", "gemini-3.1-flash-lite", "gemini-3.5-flash"] },
+      { "name": "search_components", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "get_component_details", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "compare_components", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "recommend_next_components", "verifiedLive": true, "models": ["gemini-3.1-flash-lite"] },
+      { "name": "simulate_ship_changes", "verifiedLive": true, "models": ["gemini-3.5-flash"] },
+      { "name": "find_feasible_build_plan", "verifiedLive": true, "models": ["gemini-2.5-flash", "gemini-3.5-flash"] },
+      { "name": "search_space_knowledge", "verifiedLive": true, "models": ["gemini-3.5-flash"] }
+    ]
+  },
+  "defectsFixed": [
+    "D1: GeminiProvider httpOptions apiVersion='v1beta' & omit empty tools array",
+    "D2: GeminiProvider clean non-thought candidateParts extraction preserving thoughtSignature",
+    "D3: GeminiProvider bounded pre-stream 503/network retry excluding daily quota exhaustion",
+    "D4: FlightDirectorGuardrails AQ.* Google key regex redaction",
+    "D5: Client LaunchSystem Signal Booster radio requirement & positive thrust clamp parity with server",
+    "D6: GameRoom ai:ask/ai:cancel private streaming, session/room cleanup, & guest-joins-first hostId race guard",
+    "D7: MissionAiTerminal live Colyseus AI streaming, RTL Arabic, citations, recommendations & ColyseusService WS config",
+    "D8: GameScene/InteractionSystem keyboard focus guard, ObjectiveScene host fallback, & ShipMenuUI shipError rollback",
+    "D9: AiConfig/.env.example default AI_TIMEOUT_MS=45000 & RoomLifecycle_test shared server harness"
+  ],
+  "subsystemsGoNoGo": {
+    "deterministicEngineeringAndPhysics": "GO",
+    "optimizerAndSimulation": "GO",
+    "multiplayerServerAuthority": "GO",
+    "agenticAiAnd12Tools": "GO",
+    "liveGeminiFreeTierKeyOps": "NO_GO_PRODUCTION_FREE_TIER_RPD",
+    "browserVisualGuiQa": "BLOCKED_NEEDS_DEVTOOLS_REMOTE_DEBUGGING"
+  }
+}
+

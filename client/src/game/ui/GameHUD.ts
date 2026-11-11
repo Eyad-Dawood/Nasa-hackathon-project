@@ -22,7 +22,7 @@ export class GameHUD {
     const { usernameEl, rolesContainer, missionEl } = this._buildDOM(
       username,
       roleIds,
-      missionTitle ?? "Artemis Lunar Relay",
+      missionTitle ?? "Awaiting Directive",
     );
     this.usernameEl = usernameEl;
     this.rolesContainer = rolesContainer;

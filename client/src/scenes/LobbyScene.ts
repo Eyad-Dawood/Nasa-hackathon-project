@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import { ColyseusService } from "../network/ColyseusService";
 import { LobbyList } from "../ui/LobbyList";
 import { LobbyRoomPanel } from "../ui/LobbyRoomPanel";
-import { getObjectiveById } from "../game/data/ObjectiveData";
 import { EarthBlazeBackground } from "../ui/EarthBlazeBackground";
 
 /**
@@ -42,6 +41,8 @@ export class LobbyScene extends Phaser.Scene {
     // Ensure sign-in form is completely removed from DOM
     document.getElementById("account-form-overlay")?.remove();
 
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
+
     // Show the lobby browser
     this.lobbyList = new LobbyList(this.username, () => this._onEnterRoom());
     this.lobbyList.mount();
@@ -49,8 +50,11 @@ export class LobbyScene extends Phaser.Scene {
 
   shutdown() {
     this.lobbyList?.destroy();
+    this.lobbyList = null;
     this.lobbyPanel?.destroy();
+    this.lobbyPanel = null;
     this.stateUnsub?.();
+    this.stateUnsub = null;
   }
 
   // ─── Private ─────────────────────────────────────────────────────────
@@ -166,13 +170,13 @@ export class LobbyScene extends Phaser.Scene {
     this.stateUnsub?.();
     EarthBlazeBackground.get().hide();
 
-    // 4. الانتقال مباشرة إلى GameScene وتخطي شاشة الأهداف بناءً على طلب المستخدم
-    this.scene.start("GameScene", {
+    // Transition to ObjectiveScene so the host picks canonical mission M01..M06
+    this.scene.start("ObjectiveScene", {
       username: this.username,
       roles: localRoles,
       gameRoomId,
+      hostId,
       isHost: isCurrentPlayerHost,
-      objective: getObjectiveById("artemis_lunar_relay"),
     });
   }
 }

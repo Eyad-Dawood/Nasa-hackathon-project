@@ -7,16 +7,18 @@ import { CarrySystem } from "../systems/CarrySystem";
 import { ShipMenuUI } from "../../ui/ShipMenuUI";
 import { Objective } from "../data/ObjectiveData";
 
+export interface ShipEntrySnapshot {
+  instanceId: string;
+  itemId: string;
+  roleId: string;
+  addedBy: string;
+}
+
 /**
  * ShipEntity
  * ──────────
  * The central spaceship that players deliver items to.
  * Implements IInteractable — anyone can interact with it.
- *
- * Opening the ship menu allows:
- *   - Adding the carried item to the ship.
- *   - Viewing the ship manifest (grouped by role, with total weight).
- *   - Removing any item (player carries it back to the station).
  *
  * Ship inventory is server-authoritative (GameState.shipItems MapSchema).
  * This entity does NOT own inventory state — it reads from the latest
@@ -32,14 +34,11 @@ export class ShipEntity implements IInteractable {
   private _objective:   Objective | null;
   private _isHost:      boolean;
   private _menu:        ShipMenuUI | null = null;
-  private _onConsultAi?: () => void;
+  private _onConsultAi?: (contextPrompt?: string) => void;
   private _onLaunchMission?: () => void;
 
-  /** Latest snapshot of ship items from the server. Updated by GameScene. */
-  private _shipItemsSnapshot: Map<
-    string,
-    { itemId: string; roleId: string; addedBy: string }
-  > = new Map();
+  /** Latest snapshot of ship items from the server (keyed by instanceId). */
+  private _shipItemsSnapshot: Map<string, ShipEntrySnapshot> = new Map();
 
   constructor(
     scene:       Phaser.Scene,
@@ -47,7 +46,7 @@ export class ShipEntity implements IInteractable {
     playerRoles: string[],
     objective:   Objective | null,
     isHost:      boolean,
-    onConsultAi?: () => void,
+    onConsultAi?: (contextPrompt?: string) => void,
     onLaunchMission?: () => void,
   ) {
     this._carry       = carry;
@@ -85,11 +84,21 @@ export class ShipEntity implements IInteractable {
   get worldY(): number {
     return this._worldY;
   }
-  get shipItemsSnapshot(): Map<string, { itemId: string; roleId: string; addedBy: string }> {
+  get shipItemsSnapshot(): Map<string, ShipEntrySnapshot> {
     return this._shipItemsSnapshot;
   }
   get sprite(): Phaser.GameObjects.Image {
     return this._sprite;
+  }
+
+  setObjective(objective: Objective | null): void {
+    this._objective = objective;
+    this._menu?.setObjective(objective);
+  }
+
+  setIsHost(isHost: boolean): void {
+    this._isHost = isHost;
+    this._menu?.setIsHost(isHost);
   }
 
   get interactionLabel(): string {
@@ -124,7 +133,7 @@ export class ShipEntity implements IInteractable {
    * Keeps the open menu in sync with server state.
    */
   refreshState(
-    snapshot: Map<string, { itemId: string; roleId: string; addedBy: string }>,
+    snapshot: Map<string, ShipEntrySnapshot>,
   ): void {
     this._shipItemsSnapshot = snapshot;
     this._menu?.refresh(snapshot);

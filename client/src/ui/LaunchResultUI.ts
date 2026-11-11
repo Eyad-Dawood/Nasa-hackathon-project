@@ -15,9 +15,15 @@ import { LaunchResult, CheckResult } from "../game/data/LaunchSystem";
 export class LaunchResultUI {
   private _container: HTMLDivElement;
   private _onClose:   () => void;
+  private _onAskAi?:  (result: LaunchResult) => void;
 
-  constructor(result: LaunchResult, onClose: () => void) {
+  constructor(
+    result: LaunchResult,
+    onClose: () => void,
+    onAskAi?: (result: LaunchResult) => void,
+  ) {
     this._onClose    = onClose;
+    this._onAskAi    = onAskAi;
     this._container  = this._buildDOM(result);
     if (result.success) {
       this._onSuccess(result);
@@ -106,6 +112,38 @@ export class LaunchResultUI {
     }
 
     panel.append(header, summaryBar, hr, list);
+
+    if (!result.success && this._onAskAi) {
+      const footer = document.createElement("div");
+      Object.assign(footer.style, {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: spacing.sm,
+      });
+
+      const askAiBtn = document.createElement("button");
+      askAiBtn.textContent = "Ask Flight Director AI How to Fix";
+      Object.assign(askAiBtn.style, {
+        background: colors.accent,
+        border: "none",
+        borderRadius: radius.sm,
+        color: "#080a10",
+        fontSize: font.sizeSm,
+        fontWeight: "600",
+        fontFamily: font.family,
+        padding: "8px 14px",
+        cursor: "pointer",
+      });
+      askAiBtn.addEventListener("click", () => {
+        const handler = this._onAskAi;
+        this.close();
+        handler?.(result);
+      });
+
+      footer.appendChild(askAiBtn);
+      panel.appendChild(footer);
+    }
+
     overlay.appendChild(panel);
     return overlay;
   }

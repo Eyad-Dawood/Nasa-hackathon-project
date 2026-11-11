@@ -5,21 +5,24 @@ import { Objective, OBJECTIVES } from "../game/data/ObjectiveData";
 export class MissionVictoryUI {
   private _container: HTMLDivElement;
   private _objective: Objective;
-  private _totalWeight: number;
+  private _totalMass: number;
   private _username: string;
+  private _isHost: boolean;
   private _onNextMission: (nextObjective: Objective) => void;
   private _onClose: () => void;
 
   constructor(options: {
     objective: Objective;
-    totalWeight: number;
+    totalMass: number;
     username: string;
+    isHost?: boolean;
     onNextMission: (nextObjective: Objective) => void;
     onClose: () => void;
   }) {
     this._objective = options.objective;
-    this._totalWeight = options.totalWeight;
+    this._totalMass = options.totalMass;
     this._username = options.username;
+    this._isHost = options.isHost ?? true;
     this._onNextMission = options.onNextMission;
     this._onClose = options.onClose;
 
@@ -126,10 +129,10 @@ export class MissionVictoryUI {
     };
 
     statsBox.append(
-      createStat("PAYLOAD CEILING", `${this._objective.maxWeight} kg`),
-      createStat("LAUNCH MASS", `${this._totalWeight} kg`, colors.accent),
-      createStat("TELEMETRY EFFICIENCY", "100% NOMINAL", colors.success),
-      createStat("FLIGHT COMMANDER", this._username),
+      createStat("DESTINATION", `${this._objective.destination}`),
+      createStat("LAUNCH MASS", `${this._totalMass} kg`, colors.accent),
+      createStat("SCIENCE TARGET", `≥ ${this._objective.scienceGoal} pts`, colors.success),
+      createStat("MISSION BUDGET", `${this._objective.budget} cr`),
     );
 
     // AI Debriefing Message
@@ -213,7 +216,10 @@ export class MissionVictoryUI {
     });
     closeBtn.addEventListener("click", () => this.close());
 
-    btnRow.append(closeBtn, nextBtn);
+    btnRow.append(closeBtn);
+    if (this._isHost) {
+      btnRow.append(nextBtn);
+    }
 
     card.append(iconBadge, title, sub, statsBox, debriefBox, btnRow);
     overlay.appendChild(card);

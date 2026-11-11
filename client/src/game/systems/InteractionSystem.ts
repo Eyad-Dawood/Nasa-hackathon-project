@@ -36,6 +36,7 @@ export class InteractionSystem {
 
   private activeTarget:  IInteractable | null = null;
   private eWasDown:      boolean = false;
+  private inputEnabled:  boolean = true;
 
   constructor(
     scene:         Phaser.Scene,
@@ -68,6 +69,14 @@ export class InteractionSystem {
   /** Add a new interactable at runtime (e.g. dynamically spawned objects). */
   addInteractable(obj: IInteractable): void {
     this.interactables.push(obj);
+  }
+
+  /** Disable/enable E-key interaction trigger (e.g. while typing in chat input). */
+  setInputEnabled(enabled: boolean): void {
+    this.inputEnabled = enabled;
+    if (!enabled) {
+      this.eWasDown = false;
+    }
   }
 
   // ── Private ────────────────────────────────────────────────────────────
@@ -120,6 +129,18 @@ export class InteractionSystem {
   }
 
   private _handleInput(): void {
+    const activeTag = document.activeElement?.tagName;
+    const isDomInputFocused =
+      activeTag === "INPUT" ||
+      activeTag === "TEXTAREA" ||
+      activeTag === "SELECT" ||
+      (document.activeElement instanceof HTMLElement && document.activeElement.isContentEditable);
+
+    if (!this.inputEnabled || isDomInputFocused) {
+      this.eWasDown = this.keyE.isDown;
+      return;
+    }
+
     const eDown = this.keyE.isDown;
 
     if (eDown && !this.eWasDown && this.activeTarget) {

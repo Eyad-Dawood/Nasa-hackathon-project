@@ -1,81 +1,94 @@
+import gameData from "../../../../game_data.json";
+
 /**
- * ObjectiveData.ts
- * ────────────────
- * Master registry for authentic NASA Mission Directives.
- * Pure data module.
+ * ObjectiveData.ts  —  MASTER MISSION REGISTRY
+ * ───────────────────────────────────────────────
+ * Single source of truth for all 6 missions from game_data.json.
  *
- * Each objective defines:
- *   - Mission destination and payload envelope limits (maxWeight).
- *   - Critical subsystems needed for orbital insertion / landing.
- *   - Detailed engineering requirements used by the AI Flight Director.
+ * WHY ONLY THE ID IS SENT TO THE SERVER:
+ *   The server stores only `selectedObjectiveId` (and reads canonical mission
+ *   constraints directly from game_data.json). The full Objective object is
+ *   reconstructed client-side by getObjectiveById().
  */
 
 export interface Objective {
-  /** Unique identifier — synced via Colyseus GameState.selectedObjectiveId. */
+  /** Unique identifier — stored on the server ("M01".."M06"). */
   id: string;
 
-  /** Formal mission designation. */
+  /** Short display name (e.g. "Moon Explorer"). */
   label: string;
 
-  /** Target celestial body or orbit. */
-  target: string;
+  /** Destination body (e.g. "The Moon"). */
+  destination: string;
 
-  /** Maximum payload mass allowance in kg. */
-  maxWeight: number;
-
-  /** Operational difficulty profile. */
-  difficulty: "Nominal" | "Challenging" | "Extreme";
-
-  /** Mission briefing description. */
+  /** One-sentence description for the selection UI. */
   description: string;
 
-  /** Primary hardware components critical to mission survival. */
-  criticalItemIds: string[];
+  /** Difficulty tier. */
+  difficulty: "Easy" | "Medium" | "Hard" | "Expert";
 
-  /** Subsystems that must be represented in the final manifest. */
-  requiredRoles: string[];
+  /** Star rating 1–4. */
+  stars: 1 | 2 | 3 | 4;
+
+  /** Human-readable distance (e.g. "about 384,000 km"). */
+  distanceKm: string;
+
+  /** Travel time story (e.g. "about 3 days"). */
+  travelTime: string;
+
+  /** Fun fact shown on the mission card. */
+  funFact: string;
+
+  // ── Launch rule parameters (used by LaunchSystem.ts) ─────────────────
+  distanceRating: number;
+  sunlightPct: number;
+  nightNeed: number;
+  heatDanger: number;
+  radiation: number;
+  launchPull: number;
+  signalNeed: number;
+  navigationBrain: number;
+  scienceGoal: number;
+  starInstrumentId: string;
+  starInstrument: string;
+  budget: number;
 }
 
-/**
- * Authentic NASA Mission Directives.
- */
-export const OBJECTIVES: Objective[] = [
-  {
-    id: "artemis_lunar_relay",
-    label: "Artemis Lunar Gateway Relay",
-    target: "Lunar Near-Rectilinear Orbit",
-    maxWeight: 190,
-    difficulty: "Nominal",
-    description: "Deploy a high-frequency communications and telemetry relay satellite to support crewed Artemis surface expeditions at the Lunar South Pole.",
-    criticalItemIds: ["engine_core", "comms_array", "nav_system", "solar_cell"],
-    requiredRoles: ["powerAndThermal", "structureAndComputing", "Communications"],
-  },
-  {
-    id: "europa_clipper_probe",
-    label: "Europa Clipper Deep Ocean Probe",
-    target: "Jupiter / Jovian System",
-    maxWeight: 240,
-    difficulty: "Extreme",
-    description: "Launch an radiation-hardened exploration probe through Jupiter's extreme radiation belts to investigate the subsurface ocean of ice-moon Europa.",
-    criticalItemIds: ["engine_core", "shield_gen", "radar_dish", "targeting_sys"],
-    requiredRoles: ["powerAndThermal", "structureAndComputing", "Communications", "Science"],
-  },
-  {
-    id: "mars_sample_return",
-    label: "Mars Sample Return Fetcher",
-    target: "Mars Jezero Crater",
-    maxWeight: 215,
-    difficulty: "Challenging",
-    description: "Assemble an autonomous recovery vehicle to retrieve sealed geological sample tubes and launch them into Mars orbit for Earth transit.",
-    criticalItemIds: ["fuel_cell", "thruster", "nav_system", "laser_cannon"],
-    requiredRoles: ["powerAndThermal", "structureAndComputing", "Science"],
-  },
-];
+const MISSION_DESCRIPTIONS: Record<string, string> = {
+  M01: "A short hop to Earth's natural satellite.",
+  M02: "Journey to the red desert world of our solar system.",
+  M03: "Explore the icy ocean world orbiting Jupiter.",
+  M04: "A quick trip to orbit — monitor Earth from above.",
+  M05: "Brave intense heat and radiation to study our star.",
+  M06: "Visit a moon with rivers of liquid methane.",
+};
 
-/**
- * Look up a full Objective by its id.
- * Falls back to first objective if not found.
- */
+export const OBJECTIVES: Objective[] = gameData.missions.map((m) => ({
+  id: m.id,
+  label: m.name,
+  destination: m.destination,
+  description:
+    MISSION_DESCRIPTIONS[m.id] ?? `Explore ${m.destination} (${m.distance_km}).`,
+  difficulty: m.difficulty as Objective["difficulty"],
+  stars: m.stars as Objective["stars"],
+  distanceKm: m.distance_km,
+  travelTime: m.travel_time_story,
+  funFact: m.fun_fact,
+  distanceRating: m.distance_rating,
+  sunlightPct: m.sunlight_pct,
+  nightNeed: m.night_need,
+  heatDanger: m.heat_danger,
+  radiation: m.radiation,
+  launchPull: m.launch_pull,
+  signalNeed: m.signal_need,
+  navigationBrain: m.navigation_brain,
+  scienceGoal: m.science_goal,
+  starInstrumentId: m.star_instrument_id,
+  starInstrument: m.star_instrument,
+  budget: m.budget,
+}));
+
+/** Look up a full Objective by its id. Returns undefined if not found. */
 export function getObjectiveById(id: string): Objective | undefined {
-  return OBJECTIVES.find((o) => o.id === id) ?? OBJECTIVES[0];
+  return OBJECTIVES.find((o) => o.id === id);
 }

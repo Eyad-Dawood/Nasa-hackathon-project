@@ -18,21 +18,21 @@ import { ItemDetailUI } from "./ItemDetailUI";
 import { LaunchResultUI } from "./LaunchResultUI";
 import { runLaunchChecks } from "../game/data/LaunchSystem";
 import { Objective } from "../game/data/ObjectiveData";
-
-type ShipEntry = { itemId: string; roleId: string; addedBy: string };
+import { ShipEntrySnapshot } from "../game/entities/ShipEntity";
 
 /**
  * ShipMenuUI
  * ──────────
  * Spacecraft Manifest & Subsystem Telemetry overlay.
- * Liquid Glass styling with live aerospace telemetry, 12-rule launch validation,
- * AI Flight Director integration, and cinematic warp launch sequence.
+ * Supports duplicate components keyed by `instanceId`, `maxPerShip` limits,
+ * server rejection alerts (`shipError`), authoritative 12-rule launch audit,
+ * and Launch -> AI diagnosis handoff.
  */
 export class ShipMenuUI {
   private _container: HTMLDivElement;
   private _carry: CarrySystem;
   private _onClose: () => void;
-  private _onConsultAi?: () => void;
+  private _onConsultAi?: (contextPrompt?: string) => void;
   private _onLaunchMission?: () => void;
   private _openDetail: ItemDetailUI | null = null;
   private _openResult: LaunchResultUI | null = null;
@@ -40,17 +40,21 @@ export class ShipMenuUI {
   private _objective: Objective | null;
   private _isHost: boolean;
 
+  private _bannerEl!: HTMLDivElement;
+  private _errorEl!: HTMLDivElement;
   private _contentEl!: HTMLDivElement;
-  private _snapshot: Map<string, ShipEntry>;
+  private _snapshot: Map<string, ShipEntrySnapshot>;
+  private _unsubShipError: (() => void) | null = null;
+  private _pendingCarryAction: { type: "add" | "remove"; item: GameItem } | null = null;
 
   constructor(
-    snapshot: Map<string, ShipEntry>,
+    snapshot: Map<string, ShipEntrySnapshot>,
     carry: CarrySystem,
     playerRoles: string[],
     objective: Objective | null,
     isHost: boolean,
     onClose: () => void,
-    onConsultAi?: () => void,
+    onConsultAi?: (contextPrompt?: string) => void,
     onLaunchMission?: () => void,
   ) {
     this._snapshot = snapshot;
@@ -66,24 +70,74 @@ export class ShipMenuUI {
 
   mount(): void {
     document.body.appendChild(this._container);
+    this._unsubShipError = ColyseusService.on("shipError", (data: unknown) => {
+      if (this._pendingCarryAction) {
+        if (this._pendingCarryAction.type === "add" && !this._carry.isHolding) {
+          this._carry.pickUp(this._pendingCarryAction.item);
+        } else if (
+          this._pendingCarryAction.type === "remove" &&
+          this._carry.heldItem?.id === this._pendingCarryAction.item.id
+        ) {
+          this._carry.putDown();
+        }
+        this._pendingCarryAction = null;
+        this._rebuildContent();
+      }
+      const msg = (data as { message?: string })?.message ?? "Spacecraft manifest action rejected.";
+      this._showError(msg);
+    });
   }
 
   close(): void {
+    this._unsubShipError?.();
+    this._unsubShipError = null;
+    this._pendingCarryAction = null;
     this._openDetail?.close();
     this._openResult?.close();
     this._container.remove();
     this._onClose();
   }
 
-  refresh(snapshot: Map<string, ShipEntry>): void {
+  setObjective(objective: Objective | null): void {
+    this._objective = objective;
+    this._updateBanner();
+    this._rebuildContent();
+  }
+
+  setIsHost(isHost: boolean): void {
+    this._isHost = isHost;
+    this._rebuildContent();
+  }
+
+  refresh(snapshot: Map<string, ShipEntrySnapshot>): void {
+    this._pendingCarryAction = null;
     this._snapshot = snapshot;
     this._rebuildContent();
   }
 
   // ── Private ────────────────────────────────────────────────────────────
 
+  private _showError(message: string): void {
+    if (!this._errorEl) return;
+    this._errorEl.textContent = message;
+    this._errorEl.style.display = "flex";
+    setTimeout(() => {
+      if (this._errorEl) this._errorEl.style.display = "none";
+    }, 4500);
+  }
+
+  private _updateBanner(): void {
+    if (!this._bannerEl) return;
+    if (this._objective) {
+      this._bannerEl.style.display = "flex";
+      this._bannerEl.innerHTML = `<span><strong>Mission (${this._objective.id}):</strong> ${this._objective.label}</span><span>Budget: ${this._objective.budget} cr · Goal: ${this._objective.scienceGoal} pts</span>`;
+    } else {
+      this._bannerEl.style.display = "none";
+    }
+  }
+
   private _buildDOM(): HTMLDivElement {
-    const { font } = Theme;
+    const { font, colors } = Theme;
 
     const overlay = document.createElement("div");
     overlay.id = "ship-menu-overlay";
@@ -105,7 +159,7 @@ export class ShipMenuUI {
 
     const panel = document.createElement("div");
     Object.assign(panel.style, {
-      background: "rgba(12, 16, 26, 0.88)",
+      background: "rgba(12, 16, 26, 0.9)",
       boxShadow:
         "inset 0 1px 0.5px rgba(255, 255, 255, 0.22), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 24px 48px rgba(0, 0, 0, 0.6)",
       backdropFilter: "blur(20px) saturate(1.5)",
@@ -113,16 +167,15 @@ export class ShipMenuUI {
       border: "none",
       borderRadius: "16px",
       padding: "20px 24px",
-      width: "520px",
-      maxHeight: "84vh",
+      width: "540px",
+      maxHeight: "86vh",
       maxWidth: "92vw",
       display: "flex",
       flexDirection: "column",
-      gap: "14px",
+      gap: "12px",
       overflowY: "auto",
     });
 
-    // Header
     const header = document.createElement("div");
     Object.assign(header.style, {
       display: "flex",
@@ -165,26 +218,33 @@ export class ShipMenuUI {
     hr.style.borderColor = "rgba(255, 255, 255, 0.08)";
     hr.style.margin = "0";
 
-    panel.append(header, hr);
+    this._bannerEl = document.createElement("div");
+    Object.assign(this._bannerEl.style, {
+      background: "rgba(255, 255, 255, 0.04)",
+      boxShadow:
+        "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)",
+      borderRadius: "8px",
+      padding: "8px 12px",
+      color: "rgba(255, 255, 255, 0.85)",
+      fontSize: "11px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    });
+    this._updateBanner();
 
-    // Objective banner if available
-    if (this._objective) {
-      const objBanner = document.createElement("div");
-      Object.assign(objBanner.style, {
-        background: "rgba(255, 255, 255, 0.04)",
-        boxShadow:
-          "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.06)",
-        borderRadius: "8px",
-        padding: "8px 12px",
-        color: "rgba(255, 255, 255, 0.8)",
-        fontSize: "11px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-      });
-      objBanner.innerHTML = `<span><strong>Mission:</strong> ${this._objective.label}</span><span>Budget: $${this._objective.budget}M · Goal: ${this._objective.scienceGoal} pts</span>`;
-      panel.appendChild(objBanner);
-    }
+    this._errorEl = document.createElement("div");
+    Object.assign(this._errorEl.style, {
+      display: "none",
+      alignItems: "center",
+      gap: "8px",
+      padding: "8px 12px",
+      borderRadius: "8px",
+      background: "rgba(248, 113, 113, 0.14)",
+      border: `1px solid ${colors.danger}`,
+      color: colors.danger,
+      fontSize: "12px",
+    });
 
     this._contentEl = document.createElement("div");
     Object.assign(this._contentEl.style, {
@@ -193,7 +253,7 @@ export class ShipMenuUI {
       gap: "12px",
     });
 
-    panel.appendChild(this._contentEl);
+    panel.append(header, hr, this._bannerEl, this._errorEl, this._contentEl);
     overlay.appendChild(panel);
 
     this._rebuildContent();
@@ -204,18 +264,16 @@ export class ShipMenuUI {
     const { colors, font } = Theme;
     this._contentEl.innerHTML = "";
 
-    // Gather all installed items
     const allItems: GameItem[] = [];
     this._snapshot.forEach((e) => {
       const item = getItemById(e.itemId);
       if (item) allItems.push(item);
     });
 
-    // ── Live Telemetry Totals Strip ──
-    const totalMass = allItems.reduce((s, i) => s + (i.mass ?? (i as any).weight ?? 0), 0);
-    const totalCost = allItems.reduce((s, i) => s + (i.cost ?? 0), 0);
+    const totalMass = allItems.reduce((s, i) => s + i.mass, 0);
+    const totalCost = allItems.reduce((s, i) => s + i.cost, 0);
     const totalScience = allItems.reduce((s, i) => s + (i.sciencePoints ?? 0), 0);
-    const totalSize = allItems.reduce((s, i) => s + (i.size ?? 0), 0);
+    const totalSize = allItems.reduce((s, i) => s + i.size, 0);
 
     const totalsBar = document.createElement("div");
     Object.assign(totalsBar.style, {
@@ -257,14 +315,13 @@ export class ShipMenuUI {
 
     const isOverBudget = this._objective && totalCost > this._objective.budget;
     totalsBar.append(
-      createStat("Payload Mass", `${totalMass} kg`, totalMass > 300 ? colors.danger : "#ffffff"),
-      createStat("Total Budget", `$${totalCost}M`, isOverBudget ? colors.danger : "#ffffff"),
-      createStat("Science Yield", `${totalScience} pts`, "#70a1ff"),
-      createStat("Module Volume", `${totalSize} units`),
+      createStat("Total Mass", `${totalMass} kg`, "#ffffff"),
+      createStat("Cost / Budget", `${totalCost} / ${this._objective?.budget ?? "—"} cr`, isOverBudget ? colors.danger : "#ffffff"),
+      createStat("Science Pts", `${totalScience}`, "#70a1ff"),
+      createStat("Used Space", `${totalSize} units`),
     );
     this._contentEl.appendChild(totalsBar);
 
-    // ── Role sections ──
     const allRoles = STATIONS.map((s) => ({ roleId: s.roleId }));
     for (const { roleId } of allRoles) {
       this._contentEl.appendChild(this._buildRoleSection(roleId));
@@ -273,22 +330,32 @@ export class ShipMenuUI {
     // ── Add Carried Item Action ──
     const held = this._carry.heldItem;
     if (held) {
+      const existingCount = [...this._snapshot.values()].filter((e) => e.itemId === held.id).length;
+      const atLimit = held.maxPerShip !== null && existingCount >= held.maxPerShip;
+      const ownsRole = this._playerRoles.includes(held.roleId);
+      const canInstall = ownsRole && !atLimit;
+
       const addBar = document.createElement("div");
       Object.assign(addBar.style, {
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
+        gap: "10px",
         background: "rgba(255, 255, 255, 0.06)",
         boxShadow:
           "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
         borderRadius: "10px",
         padding: "10px 14px",
       });
+
       const addLabel = document.createElement("span");
-      const massVal = held.mass ?? (held as any).weight ?? 0;
-      addLabel.textContent = `Install: ${held.name} (${massVal} kg)`;
+      addLabel.textContent = atLimit
+        ? `${held.name} — max ${held.maxPerShip} per ship reached`
+        : !ownsRole
+          ? `${held.name} — requires ${getRoleLabel(held.roleId)} role`
+          : `Install: ${held.name} (${held.mass} kg · ${held.cost} cr)`;
       Object.assign(addLabel.style, {
-        color: "#ffffff",
+        color: canInstall ? "#ffffff" : colors.warning,
         fontSize: "12px",
         fontWeight: "500",
         flex: "1",
@@ -298,37 +365,45 @@ export class ShipMenuUI {
       addBtn.style.display = "flex";
       addBtn.style.alignItems = "center";
       addBtn.style.gap = "6px";
-      addBtn.appendChild(createElement(Plus, { width: 13, height: 13, "stroke-width": 2 }));
+      addBtn.disabled = !canInstall;
+      addBtn.appendChild(createElement(canInstall ? Plus : AlertTriangle, { width: 13, height: 13, "stroke-width": 2 }));
       const addBtnText = document.createElement("span");
-      addBtnText.textContent = "Install on Ship";
+      addBtnText.textContent = canInstall ? "Install on Ship" : "Blocked";
       addBtn.appendChild(addBtnText);
 
       Object.assign(addBtn.style, {
-        background: "#ffffff",
-        color: "#04060a",
+        background: canInstall ? "#ffffff" : "rgba(255,255,255,0.08)",
+        color: canInstall ? "#04060a" : "rgba(255,255,255,0.4)",
         border: "none",
         borderRadius: "8px",
         padding: "6px 14px",
         fontWeight: "600",
         fontSize: "12px",
-        boxShadow: "0 2px 12px rgba(255, 255, 255, 0.25)",
-        cursor: "pointer",
+        boxShadow: canInstall ? "0 2px 12px rgba(255, 255, 255, 0.25)" : "none",
+        cursor: canInstall ? "pointer" : "not-allowed",
         transition: "all 0.15s ease",
       });
-      addBtn.addEventListener("mouseenter", () => (addBtn.style.transform = "scale(1.02)"));
-      addBtn.addEventListener("mouseleave", () => (addBtn.style.transform = "scale(1)"));
-      addBtn.addEventListener("click", () => {
-        const item = this._carry.putDown();
-        if (item) {
-          ColyseusService.send("addItemToShip", { itemId: item.id, roleId: item.roleId });
-          this._snapshot.set(item.id, {
-            itemId: item.id,
-            roleId: item.roleId,
-            addedBy: "me",
-          });
-          this.refresh(this._snapshot);
-        }
-      });
+
+      if (canInstall) {
+        addBtn.addEventListener("click", () => {
+          const item = this._carry.putDown();
+          if (!item) return;
+
+          if (ColyseusService.room) {
+            this._pendingCarryAction = { type: "add", item };
+            ColyseusService.sendAddItem(item.id, item.roleId);
+          } else {
+            const localInstanceId = `${item.id}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+            this._snapshot.set(localInstanceId, {
+              instanceId: localInstanceId,
+              itemId: item.id,
+              roleId: item.roleId,
+              addedBy: "me",
+            });
+            this.refresh(this._snapshot);
+          }
+        });
+      }
 
       addBar.append(addLabel, addBtn);
       this._contentEl.appendChild(addBar);
@@ -339,7 +414,7 @@ export class ShipMenuUI {
       const consultBar = document.createElement("div");
       Object.assign(consultBar.style, {
         marginTop: "4px",
-        borderTop: `1px solid rgba(255, 255, 255, 0.08)`,
+        borderTop: "1px solid rgba(255, 255, 255, 0.08)",
         paddingTop: "10px",
         display: "flex",
         justifyContent: "flex-end",
@@ -376,61 +451,48 @@ export class ShipMenuUI {
       });
       aiBtn.addEventListener("click", () => {
         this.close();
-        this._onConsultAi?.();
+        this._onConsultAi?.("Can we launch now? Evaluate all 12 rules for our current ship.");
       });
 
       consultBar.appendChild(aiBtn);
       this._contentEl.appendChild(consultBar);
     }
 
-    // ── Launch Evaluation & Initiation (Host or All Roles) ──
-    const installedRoleIds = new Set(Array.from(this._snapshot.values()).map((e) => e.roleId));
-    const allRolesCovered = installedRoleIds.size >= 4;
+    // ── Launch Evaluation & Initiation ──
+    const auditNow = runLaunchChecks(allItems, this._objective);
+    const launchActionRow = document.createElement("div");
+    Object.assign(launchActionRow.style, {
+      display: "flex",
+      gap: "10px",
+      marginTop: "6px",
+    });
 
-    if (this._isHost || allRolesCovered) {
-      const launchActionRow = document.createElement("div");
-      Object.assign(launchActionRow.style, {
-        display: "flex",
-        gap: "10px",
-        marginTop: "8px",
-      });
+    const evalBtn = document.createElement("button");
+    evalBtn.style.display = "flex";
+    evalBtn.style.alignItems = "center";
+    evalBtn.style.justifyContent = "center";
+    evalBtn.style.gap = "6px";
+    evalBtn.style.flex = "1";
+    evalBtn.appendChild(createElement(CheckCircle2, { width: 14, height: 14, "stroke-width": 1.5 }));
+    const evalText = document.createElement("span");
+    evalText.textContent = `Launch Audit (${auditNow.passCount}/12)`;
+    evalBtn.appendChild(evalText);
 
-      // 1. Run 12-rule launch validation dialog
-      const evalBtn = document.createElement("button");
-      evalBtn.style.display = "flex";
-      evalBtn.style.alignItems = "center";
-      evalBtn.style.justifyContent = "center";
-      evalBtn.style.gap = "6px";
-      evalBtn.style.flex = "1";
-      evalBtn.appendChild(createElement(CheckCircle2, { width: 14, height: 14, "stroke-width": 1.5 }));
-      const evalText = document.createElement("span");
-      evalText.textContent = "Run Launch Audit (12 Rules)";
-      evalBtn.appendChild(evalText);
+    Object.assign(evalBtn.style, {
+      background: "rgba(255, 255, 255, 0.08)",
+      border: "1px solid rgba(255, 255, 255, 0.15)",
+      borderRadius: "10px",
+      color: "#ffffff",
+      fontWeight: "500",
+      fontSize: "12px",
+      fontFamily: font.family,
+      padding: "10px 14px",
+      cursor: "pointer",
+    });
+    evalBtn.addEventListener("click", () => this._openLaunchAuditModal(allItems));
+    launchActionRow.appendChild(evalBtn);
 
-      Object.assign(evalBtn.style, {
-        background: "rgba(255, 255, 255, 0.08)",
-        border: "1px solid rgba(255, 255, 255, 0.15)",
-        borderRadius: "10px",
-        color: "#ffffff",
-        fontWeight: "500",
-        fontSize: "12px",
-        fontFamily: font.family,
-        padding: "10px 14px",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-      });
-      evalBtn.addEventListener("mouseenter", () => (evalBtn.style.background = "rgba(255, 255, 255, 0.14)"));
-      evalBtn.addEventListener("mouseleave", () => (evalBtn.style.background = "rgba(255, 255, 255, 0.08)"));
-      evalBtn.addEventListener("click", () => {
-        if (this._openResult) return;
-        const result = runLaunchChecks(allItems, this._objective);
-        this._openResult = new LaunchResultUI(result, () => {
-          this._openResult = null;
-        });
-        this._openResult.mount();
-      });
-
-      // 2. Initiate Launch Sequence Button
+    if (this._isHost) {
       const launchBtn = document.createElement("button");
       launchBtn.style.display = "flex";
       launchBtn.style.alignItems = "center";
@@ -439,32 +501,62 @@ export class ShipMenuUI {
       launchBtn.style.flex = "1.3";
       launchBtn.appendChild(createElement(Rocket, { width: 15, height: 15, "stroke-width": 2 }));
       const launchText = document.createElement("span");
-      launchText.textContent = "Initiate Launch Sequence";
+      launchText.textContent = auditNow.success
+        ? "Initiate Launch Sequence"
+        : `Verify & Launch (${auditNow.failCount} failing)`;
       launchBtn.appendChild(launchText);
 
       Object.assign(launchBtn.style, {
-        background: "#ffffff",
-        border: "none",
+        background: auditNow.success ? "#ffffff" : "rgba(251, 191, 36, 0.18)",
+        border: auditNow.success ? "none" : `1px solid ${colors.warning}`,
         borderRadius: "10px",
-        color: "#04060a",
+        color: auditNow.success ? "#04060a" : colors.warning,
         fontWeight: "600",
-        fontSize: "13px",
+        fontSize: "12.5px",
         fontFamily: font.family,
         padding: "10px 16px",
         cursor: "pointer",
-        boxShadow: "0 4px 20px rgba(255, 255, 255, 0.35), inset 0 1px 1px #ffffff",
-        transition: "all 0.15s ease",
+        boxShadow: auditNow.success
+          ? "0 4px 20px rgba(255, 255, 255, 0.35), inset 0 1px 1px #ffffff"
+          : "none",
       });
-      launchBtn.addEventListener("mouseenter", () => (launchBtn.style.boxShadow = "0 6px 30px rgba(255, 255, 255, 0.5)"));
-      launchBtn.addEventListener("mouseleave", () => (launchBtn.style.boxShadow = "0 4px 20px rgba(255, 255, 255, 0.35)"));
+
       launchBtn.addEventListener("click", () => {
+        const result = runLaunchChecks(allItems, this._objective);
+        if (!result.success) {
+          this._openLaunchAuditModal(allItems);
+          return;
+        }
         this.close();
         this._onLaunchMission?.();
       });
 
-      launchActionRow.append(evalBtn, launchBtn);
-      this._contentEl.appendChild(launchActionRow);
+      launchActionRow.appendChild(launchBtn);
     }
+
+    this._contentEl.appendChild(launchActionRow);
+  }
+
+  private _openLaunchAuditModal(allItems: GameItem[]): void {
+    if (this._openResult) return;
+    const result = runLaunchChecks(allItems, this._objective);
+    this._openResult = new LaunchResultUI(
+      result,
+      () => {
+        this._openResult = null;
+      },
+      (failedResult) => {
+        const failingNames = failedResult.checks
+          .filter((c) => !c.pass)
+          .map((c) => c.label)
+          .join(", ");
+        this.close();
+        this._onConsultAi?.(
+          `Our launch audit failed ${failedResult.failCount} rule(s): ${failingNames}. Why are we failing and what exact components should each engineer install next?`,
+        );
+      },
+    );
+    this._openResult.mount();
   }
 
   private _buildRoleSection(roleId: string): HTMLDivElement {
@@ -502,9 +594,19 @@ export class ShipMenuUI {
       return section;
     }
 
+    const totalOfType = new Map<string, number>();
+    roleEntries.forEach((e) => {
+      totalOfType.set(e.itemId, (totalOfType.get(e.itemId) ?? 0) + 1);
+    });
+    const seenOfType = new Map<string, number>();
+
     for (const entry of roleEntries) {
       const item = getItemById(entry.itemId);
       if (!item) continue;
+
+      const copyIndex = (seenOfType.get(entry.itemId) ?? 0) + 1;
+      seenOfType.set(entry.itemId, copyIndex);
+      const countTotal = totalOfType.get(entry.itemId) ?? 1;
 
       const row = document.createElement("div");
       Object.assign(row.style, {
@@ -519,7 +621,7 @@ export class ShipMenuUI {
       });
 
       const name = document.createElement("span");
-      name.textContent = item.name;
+      name.textContent = countTotal > 1 ? `${item.name} (#${copyIndex})` : item.name;
       Object.assign(name.style, {
         color: colors.textPrimary,
         fontSize: "12px",
@@ -527,8 +629,7 @@ export class ShipMenuUI {
       });
 
       const kg = document.createElement("span");
-      const massVal = item.mass ?? (item as any).weight ?? 0;
-      kg.textContent = `${massVal} kg`;
+      kg.textContent = `${item.mass} kg`;
       Object.assign(kg.style, {
         color: colors.textSecondary,
         fontSize: "11px",
@@ -575,9 +676,13 @@ export class ShipMenuUI {
 
       removeBtn.addEventListener("click", () => {
         if (this._carry.isHolding) return;
-        ColyseusService.send("removeItemFromShip", { itemId: item.id });
-        this._snapshot.delete(item.id);
-        this.refresh(this._snapshot);
+        if (ColyseusService.room) {
+          this._pendingCarryAction = { type: "remove", item };
+          ColyseusService.sendRemoveItem(entry.instanceId, item.id);
+        } else {
+          this._snapshot.delete(entry.instanceId);
+          this.refresh(this._snapshot);
+        }
         this._carry.pickUp(item);
       });
 
