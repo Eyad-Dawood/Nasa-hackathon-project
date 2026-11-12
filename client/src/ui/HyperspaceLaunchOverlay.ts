@@ -151,29 +151,15 @@ export class HyperspaceLaunchOverlay {
     });
 
     const rocketImg = document.createElement("img");
-    rocketImg.src = "/assets/space_benders_pixel_assets/artemis_assembly_bay_96x160.png";
-    rocketImg.alt = "Artemis Exploration Rocket";
+    rocketImg.src = "/assets/spaceShip/artemis_flight_rocket.png";
+    rocketImg.alt = "Artemis Deep-Space Rocket";
     Object.assign(rocketImg.style, {
-      width: "110px",
+      width: "150px",
       height: "auto",
       imageRendering: "pixelated",
-      filter: "drop-shadow(0 0 24px rgba(255, 180, 50, 0.6))",
     });
 
-    // Pulsing Ion Thruster Flame
-    const thrusterGlow = document.createElement("div");
-    Object.assign(thrusterGlow.style, {
-      width: "36px",
-      height: "48px",
-      marginTop: "-12px",
-      borderRadius: "50%",
-      background: "radial-gradient(ellipse at 50% 20%, #ffffff 0%, #38bdf8 45%, #ff5500 85%, transparent 100%)",
-      filter: "blur(4px)",
-      boxShadow: "0 0 32px #38bdf8, 0 0 60px #ff5500",
-      animation: "thrustPulse 0.15s infinite alternate ease-in-out",
-    });
-
-    rocketBox.append(rocketImg, thrusterGlow);
+    rocketBox.append(rocketImg);
     this.container.appendChild(rocketBox);
 
     // Top Mission Telemetry Bar - Liquid Glass
