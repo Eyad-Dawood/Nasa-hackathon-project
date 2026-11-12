@@ -23,6 +23,7 @@ import { MissionAiTerminal } from "../ui/MissionAiTerminal";
 import { MissionVictoryUI } from "../ui/MissionVictoryUI";
 import { HyperspaceLaunchOverlay } from "../ui/HyperspaceLaunchOverlay";
 import { getItemById } from "../game/data/ItemData";
+import { SoundFX } from "../audio/SoundEffects";
 
 /** How often (ms) the local player position is sent to the server. */
 const MOVE_SEND_INTERVAL = 50; // 20 updates/sec
@@ -53,6 +54,9 @@ export class GameScene extends Phaser.Scene {
   private remotePlayers:  Map<string, RemotePlayerController> = new Map();
   private moveSendTimer:  number = 0;
   private isShutDown:     boolean = false;
+
+  private keyGHandler:    ((e: KeyboardEvent) => void) | null = null;
+  private lastGPressTime: number = 0;
 
   constructor() { super({ key: "GameScene" }); }
 
@@ -144,10 +148,43 @@ export class GameScene extends Phaser.Scene {
 
     // 8. HUD
     const hudTitle = this.objective ? `LVL ${this.objective.level} · ${this.objective.label}` : "Awaiting Directive";
-    this.hud = new GameHUD(this.username, this.roles, hudTitle, () => {
-      this._handleExitGame();
-    });
+    this.hud = new GameHUD(
+      this.username,
+      this.roles,
+      hudTitle,
+      () => {
+        this._handleExitGame();
+      },
+      () => {
+        this._triggerAutoFillCheat();
+      },
+    );
     this.hud.mount();
+
+    // 8a. Developer Magic Double-Tap 'G' Cheat Listener
+    this.keyGHandler = (e: KeyboardEvent) => {
+      // Ignore if user is currently typing inside an input or textarea (e.g. AI Terminal)
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (e.key === "g" || e.key === "G") {
+        const now = Date.now();
+        if (now - this.lastGPressTime <= 450) {
+          this._triggerAutoFillCheat();
+          this.lastGPressTime = 0;
+        } else {
+          this.lastGPressTime = now;
+        }
+      }
+    };
+    window.addEventListener("keydown", this.keyGHandler);
 
     // 8b. NASA AI Mission Director Terminal
     this.aiTerminal = new MissionAiTerminal({
@@ -198,6 +235,10 @@ export class GameScene extends Phaser.Scene {
 
   shutdown() {
     this.isShutDown = true;
+    if (this.keyGHandler) {
+      window.removeEventListener("keydown", this.keyGHandler);
+      this.keyGHandler = null;
+    }
     this.hud?.destroy();
     this.aiTerminal?.destroy();
     this.remotePlayers.forEach((rp) => rp.destroy());
@@ -391,6 +432,45 @@ export class GameScene extends Phaser.Scene {
       username: this.username,
       roles: this.roles,
     });
+  }
+
+  /**
+   * Developer Magic Cheat:
+   * Instantly packs the spacecraft with a 100% verified 12/12 canonical build
+   * for the active mission, bypassing manual item fetch for testing.
+   */
+  private _triggerAutoFillCheat(): void {
+    SoundFX.playRoleSelect();
+
+    if (ColyseusService.room) {
+      ColyseusService.devAutoFillShip();
+    } else {
+      // Offline fallback: load canonical build directly
+      const CANONICAL_BUILDS: Record<string, string[]> = {
+        M01: ["SC02", "SC13", "CM05", "CM04", "CM01", "PT20", "SI04", "SC07", "PT14", "PT05", "PT11", "PT17"],
+        M02: ["SC03", "SC14", "CM07", "PT20", "PT20", "SI14", "SI04", "SI06", "SC09", "PT14", "PT14", "PT14", "PT06", "PT17", "PT17"],
+        M03: ["SC05", "SC17", "CM09", "PT21", "PT20", "SI19", "SI19", "SI07", "SI06", "SC08", "SC09", "PT14", "PT14", "PT14", "PT14", "PT06", "PT05", "PT11", "PT11", "PT19", "SC19"],
+        M04: ["SC02", "SC12", "CM02", "CM02", "CM01", "CM01", "PT20", "SI02", "PT14", "PT01", "PT01", "PT08", "PT17"],
+        M05: ["SC05", "SC16", "CM07", "CM02", "CM01", "PT21", "PT20", "SI12", "SI19", "SI06", "SC08", "SC08", "SC08", "PT14", "PT16", "PT01", "PT01", "PT18", "PT17", "PT17"],
+        M06: ["SC05", "SC17", "CM09", "CM03", "PT21", "PT20", "PT20", "SI16", "SI19", "SI19", "SI10", "SI06", "CM13", "SC07", "SC07", "PT14", "PT14", "PT14", "PT14", "PT14", "PT06", "PT06", "PT11", "PT11", "PT19", "SC18", "SC18", "PT18", "PT17"],
+      };
+      const missionId = this.objective?.id || "M01";
+      const itemIds = CANONICAL_BUILDS[missionId] || CANONICAL_BUILDS.M01;
+      const snapshot = new Map<string, ShipEntrySnapshot>();
+      itemIds.forEach((itemId, idx) => {
+        const itemDef = getItemById(itemId);
+        snapshot.set(`cheat_${missionId}_${idx}`, {
+          instanceId: `cheat_${missionId}_${idx}`,
+          itemId,
+          roleId: itemDef?.roleId || "commander",
+          addedBy: "DEV-CHEAT",
+        });
+      });
+      this.ship?.refreshState(snapshot);
+      this.aiTerminal?.refreshTelemetry();
+    }
+
+    this.hud?.showCheatToast("⚡ CHEAT ACTIVATED: 12/12 LAUNCH READY!");
   }
 
   // ── Tilemap & Architecture ─────────────────────────────────────────────

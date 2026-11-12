@@ -245,6 +245,41 @@ export class GameRoom extends Room<GameRoomOptions> {
       },
     );
 
+    // ── devAutoFillShip (Testing cheat: auto-populates ship with valid 12/12 build) ──
+    this.onMessage("devAutoFillShip", (client: Client) => {
+      const missionId = this.state.selectedObjectiveId || "M04";
+      const mission = GameCatalog.getMissionById(missionId);
+      if (!mission) return;
+
+      this.state.shipItems.clear();
+
+      const CANONICAL_BUILDS: Record<string, string[]> = {
+        M01: ["SC02", "SC13", "CM05", "CM04", "CM01", "PT20", "SI04", "SC07", "PT14", "PT05", "PT11", "PT17"],
+        M02: ["SC03", "SC14", "CM07", "PT20", "PT20", "SI14", "SI04", "SI06", "SC09", "PT14", "PT14", "PT14", "PT06", "PT17", "PT17"],
+        M03: ["SC05", "SC17", "CM09", "PT21", "PT20", "SI19", "SI19", "SI07", "SI06", "SC08", "SC09", "PT14", "PT14", "PT14", "PT14", "PT06", "PT05", "PT11", "PT11", "PT19", "SC19"],
+        M04: ["SC02", "SC12", "CM02", "CM02", "CM01", "CM01", "PT20", "SI02", "PT14", "PT01", "PT01", "PT08", "PT17"],
+        M05: ["SC05", "SC16", "CM07", "CM02", "CM01", "PT21", "PT20", "SI12", "SI19", "SI06", "SC08", "SC08", "SC08", "PT14", "PT16", "PT01", "PT01", "PT18", "PT17", "PT17"],
+        M06: ["SC05", "SC17", "CM09", "CM03", "PT21", "PT20", "PT20", "SI16", "SI19", "SI19", "SI10", "SI06", "CM13", "SC07", "SC07", "PT14", "PT14", "PT14", "PT14", "PT14", "PT06", "PT06", "PT11", "PT11", "PT19", "SC18", "SC18", "PT18", "PT17"],
+      };
+
+      const componentIds = CANONICAL_BUILDS[missionId] ?? CANONICAL_BUILDS.M04;
+      componentIds.forEach((cid) => {
+        const comp = GameCatalog.getComponentById(cid);
+        if (!comp) return;
+        const instanceId = `${comp.id}_${crypto.randomUUID().slice(0, 8)}`;
+        const entry = new ShipItemSchema();
+        entry.instanceId = instanceId;
+        entry.itemId = comp.id;
+        entry.roleId = comp.roleId;
+        entry.addedBy = client.sessionId;
+        this.state.shipItems.set(instanceId, entry);
+      });
+
+      console.log(
+        `[GameRoom] ${this.roomId} — ⚡ devAutoFillShip: populated 12/12 build (${componentIds.length} items) for mission "${missionId}" by ${client.sessionId}`,
+      );
+    });
+
     // ── ai:ask (private streaming AI Flight Director response) ─────────────
     this.onMessage(
       "ai:ask",

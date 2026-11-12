@@ -15,11 +15,19 @@ export class GameHUD {
   private usernameEl: HTMLSpanElement;
   private missionEl: HTMLSpanElement;
   private onExitCallback?: () => void;
+  private onAutoFillCallback?: () => void;
 
-  constructor(username: string, roleIds: string[], missionTitle?: string, onExit?: () => void) {
+  constructor(
+    username: string,
+    roleIds: string[],
+    missionTitle?: string,
+    onExit?: () => void,
+    onAutoFill?: () => void,
+  ) {
     this.container = document.createElement("div");
     this.container.id = "game-hud";
     this.onExitCallback = onExit;
+    this.onAutoFillCallback = onAutoFill;
 
     const { usernameEl, rolesContainer, missionEl } = this._buildDOM(
       username,
@@ -250,14 +258,61 @@ export class GameHUD {
       <span><b style="color:#ffffff; font-family:'JetBrains Mono', monospace; background:rgba(255,255,255,0.12); padding:2px 5px; border-radius:4px; font-weight:500;">E</b> Interact</span>
     `;
 
-    // ── Top-right Back / Exit Station Button ────────────────────────────
-    const backBtn = document.createElement("button");
-    backBtn.id = "hud-back-btn";
-    backBtn.innerHTML = `<span>⎋</span><span>Exit To Orbit / Lobbies</span>`;
-    Object.assign(backBtn.style, {
+    // ── Top-right Controls Bar (Exit + Dev Cheat Button) ───────────────
+    const topControls = document.createElement("div");
+    Object.assign(topControls.style, {
       position: "fixed",
       top: "18px",
       right: "18px",
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      zIndex: "600",
+      pointerEvents: "auto",
+    });
+
+    // Magic Auto-Fill Ship Button (Double-tap G or click)
+    const cheatBtn = document.createElement("button");
+    cheatBtn.id = "hud-cheat-btn";
+    cheatBtn.title = "Developer Cheat: Auto-fill ship with 12/12 launch ready build (Press 'GG')";
+    cheatBtn.innerHTML = `<span>⚡</span><span>Auto-Fill Ship</span><b style="background:rgba(255,255,255,0.18); padding:1px 5px; border-radius:4px; font-size:9px;">GG</b>`;
+    Object.assign(cheatBtn.style, {
+      background: "rgba(16, 185, 129, 0.15)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), inset 0 0 0 0.5px rgba(16, 185, 129, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4)",
+      backdropFilter: "blur(14px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(14px) saturate(1.4)",
+      border: "1px solid rgba(16, 185, 129, 0.4)",
+      borderRadius: "10px",
+      color: "#34D399",
+      cursor: "pointer",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "11px",
+      fontWeight: "700",
+      padding: "8px 12px",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      transition: "all 0.15s ease",
+    });
+    cheatBtn.addEventListener("mouseenter", () => {
+      cheatBtn.style.background = "rgba(16, 185, 129, 0.3)";
+      cheatBtn.style.color = "#ffffff";
+    });
+    cheatBtn.addEventListener("mouseleave", () => {
+      cheatBtn.style.background = "rgba(16, 185, 129, 0.15)";
+      cheatBtn.style.color = "#34D399";
+    });
+    cheatBtn.addEventListener("click", () => {
+      if (this.onAutoFillCallback) {
+        this.onAutoFillCallback();
+      }
+    });
+
+    // Exit Station Button
+    const backBtn = document.createElement("button");
+    backBtn.id = "hud-back-btn";
+    backBtn.innerHTML = `<span>⎋</span><span>Exit To Orbit</span>`;
+    Object.assign(backBtn.style, {
       background: "rgba(255, 255, 255, 0.06)",
       boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.18), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4)",
       backdropFilter: "blur(14px) saturate(1.4)",
@@ -273,8 +328,6 @@ export class GameHUD {
       display: "flex",
       alignItems: "center",
       gap: "8px",
-      zIndex: "600",
-      pointerEvents: "auto",
       transition: "all 0.15s ease",
     });
 
@@ -296,7 +349,42 @@ export class GameHUD {
       }
     });
 
-    this.container.append(panel, hints, backBtn);
+    topControls.append(cheatBtn, backBtn);
+    this.container.append(panel, hints, topControls);
     return { usernameEl, rolesContainer, missionEl };
+  }
+
+  public showCheatToast(message: string): void {
+    const toast = document.createElement("div");
+    toast.textContent = message;
+    Object.assign(toast.style, {
+      position: "fixed",
+      top: "22px",
+      left: "50%",
+      transform: "translateX(-50%) translateY(-20px)",
+      background: "rgba(16, 185, 129, 0.95)",
+      boxShadow: "0 8px 32px rgba(0, 0, 0, 0.6), 0 0 16px rgba(52, 211, 153, 0.6)",
+      color: "#040810",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "12px",
+      fontWeight: "800",
+      letterSpacing: "0.5px",
+      padding: "10px 22px",
+      borderRadius: "20px",
+      zIndex: "3000",
+      pointerEvents: "none",
+      opacity: "0",
+      transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+    });
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+      toast.style.opacity = "1";
+      toast.style.transform = "translateX(-50%) translateY(0)";
+    });
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      toast.style.transform = "translateX(-50%) translateY(-10px)";
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
   }
 }

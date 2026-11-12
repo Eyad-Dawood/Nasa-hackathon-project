@@ -189,6 +189,11 @@ class _ColyseusService {
     this.send("addItemToShip", { itemId, roleId });
   }
 
+  /** Dev Cheat: instantly equips the ship with a 12/12 launch-ready build for testing. */
+  devAutoFillShip(): void {
+    this.send("devAutoFillShip", {});
+  }
+
   /** Tell the server to remove an item instance from the ship inventory. */
   sendRemoveItem(instanceId: string, itemId?: string): void {
     this.send("removeItemFromShip", { instanceId, itemId });
