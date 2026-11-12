@@ -16,6 +16,7 @@ export type DepartmentId =
 
 export interface MissionSpec {
   id: string;
+  level: number;
   name: string;
   destination: string;
   difficulty: "Easy" | "Medium" | "Hard" | "Expert";
@@ -189,9 +190,23 @@ function resolveGameDataPath(): string {
   );
 }
 
+export const CAMPAIGN_MISSION_IDS = ["M04", "M01", "M02", "M03", "M05", "M06"] as const;
+
+export function getLevelNumber(missionId: string): number {
+  const idx = CAMPAIGN_MISSION_IDS.indexOf(missionId as any);
+  return idx >= 0 ? idx + 1 : 1;
+}
+
+export function getMissionIdByLevel(level: number): string {
+  const bounded = Math.max(1, Math.min(level, CAMPAIGN_MISSION_IDS.length));
+  return CAMPAIGN_MISSION_IDS[bounded - 1];
+}
+
 function mapMission(raw: Record<string, unknown>): MissionSpec {
+  const id = String(raw.id);
   return {
-    id: String(raw.id),
+    id,
+    level: getLevelNumber(id),
     name: String(raw.name),
     destination: String(raw.destination),
     difficulty: String(raw.difficulty) as MissionSpec["difficulty"],

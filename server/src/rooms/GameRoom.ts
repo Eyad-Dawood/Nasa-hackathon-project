@@ -34,9 +34,16 @@ export class GameRoom extends Room<GameRoomOptions> {
     const initialMission = typeof options?.selectedObjectiveId === "string"
       ? options.selectedObjectiveId.trim()
       : "";
-    state.selectedObjectiveId = initialMission && GameCatalog.getMissionById(initialMission)
-      ? initialMission
-      : "";
+    if (initialMission) {
+      const m = GameCatalog.getMissionById(initialMission);
+      if (m) {
+        state.selectedObjectiveId = m.id;
+        state.highestUnlockedLevel = Math.max(state.highestUnlockedLevel, m.level);
+      }
+    }
+    if (typeof options?.highestUnlockedLevel === "number") {
+      state.highestUnlockedLevel = options.highestUnlockedLevel;
+    }
 
     this.setState(state);
 
@@ -60,8 +67,15 @@ export class GameRoom extends Room<GameRoomOptions> {
           return;
         }
 
+        if (mission.level > this.state.highestUnlockedLevel) {
+          client.send("objectiveError", {
+            message: `Level ${mission.level} (${mission.name}) is locked. Complete Level ${this.state.highestUnlockedLevel} first!`,
+          });
+          return;
+        }
+
         console.log(
-          `[GameRoom] ${this.roomId} — objective selected: "${objectiveId}" (${mission.name}) by host ${client.sessionId}`,
+          `[GameRoom] ${this.roomId} — objective selected: "${objectiveId}" (${mission.name}, Level ${mission.level}) by host ${client.sessionId}`,
         );
 
         this.state.selectedObjectiveId = mission.id;
@@ -88,13 +102,20 @@ export class GameRoom extends Room<GameRoomOptions> {
           return;
         }
 
-        if (payload?.resetShip) {
+        // Unlock the level if advancing
+        if (mission.level > this.state.highestUnlockedLevel) {
+          this.state.highestUnlockedLevel = mission.level;
+        }
+
+        // Clean assembly bay when deploying next mission level (default true)
+        const shouldReset = payload?.resetShip !== false;
+        if (shouldReset) {
           this.state.shipItems.clear();
         }
         this.state.selectedObjectiveId = mission.id;
 
         console.log(
-          `[GameRoom] ${this.roomId} — advanced to mission "${mission.id}" by host ${client.sessionId}`,
+          `[GameRoom] ${this.roomId} — advanced to Level ${mission.level} ("${mission.id}" - ${mission.name}) by host ${client.sessionId}. Highest unlocked: ${this.state.highestUnlockedLevel}`,
         );
       },
     );

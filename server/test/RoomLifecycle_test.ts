@@ -84,10 +84,26 @@ describe("Space Benders — Phase 1 Room & Catalog Tests", () => {
     await invalidPromise;
     assert.strictEqual(room.state.selectedObjectiveId, "");
 
-    // Host selects M03
+    // Host cannot jump to locked Level 4 (M03) while on Level 1
+    const lockedPromise = new Promise<{ message: string }>((resolve) => {
+      hostClient.onMessage("objectiveError", (p) => resolve(p));
+    });
     hostClient.send("selectObjective", { objectiveId: "M03" });
+    const lockedErr = await lockedPromise;
+    assert.ok(lockedErr.message.includes("locked"));
+    assert.strictEqual(room.state.selectedObjectiveId, "");
+
+    // Host selects Level 1 (M04: Earth Watcher)
+    hostClient.send("selectObjective", { objectiveId: "M04" });
     await room.waitForNextPatch();
-    assert.strictEqual(room.state.selectedObjectiveId, "M03");
+    assert.strictEqual(room.state.selectedObjectiveId, "M04");
+    assert.strictEqual(room.state.highestUnlockedLevel, 1);
+
+    // Host advances to Level 2 (M01: Moon Explorer) via nextMission
+    hostClient.send("nextMission", { objectiveId: "M01", resetShip: true });
+    await room.waitForNextPatch();
+    assert.strictEqual(room.state.selectedObjectiveId, "M01");
+    assert.strictEqual(room.state.highestUnlockedLevel, 2);
   });
 
   it("allows duplicate ship items via instanceId, enforces maxPerShip and role authorization", async () => {
@@ -178,9 +194,9 @@ describe("Space Benders — Phase 1 Room & Catalog Tests", () => {
     await room.waitForNextPatch();
     assert.strictEqual(room.state.hostId, realHost.sessionId);
 
-    realHost.send("selectObjective", { objectiveId: "M02" });
+    realHost.send("selectObjective", { objectiveId: "M04" });
     await room.waitForNextPatch();
-    assert.strictEqual(room.state.selectedObjectiveId, "M02");
+    assert.strictEqual(room.state.selectedObjectiveId, "M04");
   });
 });
 

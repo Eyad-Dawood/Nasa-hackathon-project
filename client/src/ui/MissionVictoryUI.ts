@@ -87,8 +87,9 @@ export class MissionVictoryUI {
     });
 
     // Titles
+    const isFinalLevel = this._objective.level >= OBJECTIVES.length;
     const title = document.createElement("h2");
-    title.textContent = "MISSION SUCCESS";
+    title.textContent = isFinalLevel ? "🏆 CAMPAIGN CONQUERED!" : `LEVEL ${this._objective.level} COMPLETE!`;
     Object.assign(title.style, {
       color: colors.success,
       fontSize: "20px",
@@ -98,7 +99,9 @@ export class MissionVictoryUI {
     });
 
     const sub = document.createElement("p");
-    sub.textContent = `Orbital trajectory achieved for ${this._objective.label}`;
+    sub.textContent = isFinalLevel
+      ? "All 6 NASA Deep Space missions successfully engineered and deployed!"
+      : `Orbital trajectory achieved for ${this._objective.label} (${this._objective.destination})`;
     Object.assign(sub.style, {
       color: colors.textSecondary,
       fontSize: "13px",
@@ -158,7 +161,7 @@ export class MissionVictoryUI {
       </div>
     `;
 
-    // Next Mission Logic
+    // Next Mission Logic (Ordered Campaign Sequence)
     const currentIndex = OBJECTIVES.findIndex((o) => o.id === this._objective.id);
     const nextObjective = OBJECTIVES[(currentIndex + 1) % OBJECTIVES.length];
 
@@ -178,7 +181,9 @@ export class MissionVictoryUI {
     nextBtn.style.gap = "8px";
     nextBtn.appendChild(createElement(Rocket, { width: 14, height: 14, "stroke-width": 2 }));
     const nextText = document.createElement("span");
-    nextText.textContent = `Deploy Next: ${nextObjective.label}`;
+    nextText.textContent = isFinalLevel
+      ? `Replay Campaign: Level 1 (${nextObjective.label})`
+      : `Deploy Level ${nextObjective.level}: ${nextObjective.label}`;
     nextBtn.appendChild(nextText);
     nextBtn.appendChild(createElement(ArrowRight, { width: 14, height: 14, "stroke-width": 2 }));
 

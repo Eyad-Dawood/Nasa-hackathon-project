@@ -59,6 +59,12 @@ export class GameState extends Schema {
   @type("string") selectedObjectiveId: string = "";
 
   /**
+   * The highest campaign level currently unlocked for this crew (1..6).
+   * Level 1 is always unlocked; succeeding at a level unlocks the next level.
+   */
+  @type("uint8") highestUnlockedLevel: number = 1;
+
+  /**
    * Items currently loaded on the spaceship.
    * Key = unique instanceId. One entry per installed module instance.
    */

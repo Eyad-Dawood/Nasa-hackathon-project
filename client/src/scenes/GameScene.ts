@@ -128,7 +128,8 @@ export class GameScene extends Phaser.Scene {
     this.interaction = new InteractionSystem(this, this.player, interactables);
 
     // 8. HUD
-    this.hud = new GameHUD(this.username, this.roles, this.objective?.label);
+    const hudTitle = this.objective ? `LVL ${this.objective.level} · ${this.objective.label}` : "Awaiting Directive";
+    this.hud = new GameHUD(this.username, this.roles, hudTitle);
     this.hud.mount();
 
     // 8b. NASA AI Mission Director Terminal
@@ -238,7 +239,7 @@ export class GameScene extends Phaser.Scene {
         const syncedObj = getObjectiveById(state.selectedObjectiveId);
         if (syncedObj) {
           this.objective = syncedObj;
-          this.hud?.refresh(this.username, this.roles, syncedObj.label);
+          this.hud?.refresh(this.username, this.roles, `LVL ${syncedObj.level} · ${syncedObj.label}`);
           this.ship?.setObjective(syncedObj);
           this.aiTerminal?.setObjective(syncedObj);
         }
@@ -331,10 +332,10 @@ export class GameScene extends Phaser.Scene {
               onNextMission: (nextObj) => {
                 this.ship.sprite.setPosition(SHIP_WORLD_POS.x, SHIP_WORLD_POS.y);
                 if (ColyseusService.room && this.isHost) {
-                  ColyseusService.sendNextMission(nextObj.id);
+                  ColyseusService.sendNextMission(nextObj.id, true);
                 } else {
                   this.objective = nextObj;
-                  this.hud.refresh(this.username, this.roles, nextObj.label);
+                  this.hud.refresh(this.username, this.roles, `LVL ${nextObj.level} · ${nextObj.label}`);
                   this.ship.setObjective(nextObj);
                   this.aiTerminal.setObjective(nextObj);
                 }

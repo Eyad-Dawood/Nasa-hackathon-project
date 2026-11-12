@@ -1,4 +1,4 @@
-import { createElement, Rocket, Check, Clock, Star, Sun, ShieldAlert, Flame, Sparkles } from "lucide";
+import { createElement, Rocket, Check, Clock, Star, Sun, ShieldAlert, Flame, Sparkles, Lock, Trophy } from "lucide";
 import { Theme } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
 import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
@@ -6,18 +6,18 @@ import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
 /**
  * ObjectivePicker
  * ───────────────
- * Pre-flight Mission Directive Selection for canonical missions M01–M06.
- * Renders real mission telemetry (destination, distance, sunlight%, radiation,
- * heat danger, budget, science goal, star instrument, difficulty) with clear
- * Host vs Crew waiting state.
+ * Pre-flight Campaign Mission Directive Selection for canonical missions (Level 1–6).
+ * Renders real mission telemetry with level locks, completion status, and host authorization.
  */
 export class ObjectivePicker {
   private container: HTMLDivElement;
   private isHost: boolean;
+  private highestUnlockedLevel: number;
   private errorBanner: HTMLDivElement | null = null;
 
-  constructor(isHost: boolean) {
+  constructor(isHost: boolean, highestUnlockedLevel: number = 1) {
     this.isHost = isHost;
+    this.highestUnlockedLevel = highestUnlockedLevel;
     this.container = this._buildDOM();
   }
 
@@ -29,9 +29,19 @@ export class ObjectivePicker {
     this.container.remove();
   }
 
+  setUnlockedLevel(level: number): void {
+    if (this.highestUnlockedLevel === level) return;
+    this.highestUnlockedLevel = level;
+    this._rebuild();
+  }
+
   setHost(isHost: boolean): void {
     if (this.isHost === isHost) return;
     this.isHost = isHost;
+    this._rebuild();
+  }
+
+  private _rebuild(): void {
     const parent = this.container.parentElement;
     this.container.remove();
     this.container = this._buildDOM();
@@ -193,17 +203,23 @@ export class ObjectivePicker {
 
   private _buildCard(obj: Objective): HTMLDivElement {
     const { colors, font } = Theme;
+    const isUnlocked = obj.level <= this.highestUnlockedLevel;
+    const isCompleted = obj.level < this.highestUnlockedLevel;
 
     const card = document.createElement("div");
     Object.assign(card.style, {
       display: "flex",
       flexDirection: "column",
-      background: colors.surfaceRaised,
-      border: `1px solid ${colors.border}`,
+      background: isUnlocked ? colors.surfaceRaised : "rgba(18, 22, 34, 0.6)",
+      border: isUnlocked
+        ? (isCompleted ? "1px solid rgba(52, 211, 153, 0.4)" : `1px solid ${colors.border}`)
+        : "1px dashed rgba(255, 255, 255, 0.12)",
       borderRadius: "10px",
       padding: "14px 16px",
       gap: "10px",
       justifyContent: "space-between",
+      opacity: isUnlocked ? "1" : "0.62",
+      transition: "all 0.2s ease",
     });
 
     const topSection = document.createElement("div");
@@ -225,7 +241,26 @@ export class ObjectivePicker {
     });
 
     const labelRow = document.createElement("div");
-    Object.assign(labelRow.style, { display: "flex", alignItems: "center", gap: "8px" });
+    Object.assign(labelRow.style, { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" });
+
+    // Level Badge
+    const levelBadge = document.createElement("span");
+    levelBadge.textContent = `LEVEL ${obj.level}`;
+    Object.assign(levelBadge.style, {
+      fontFamily: font.mono,
+      fontSize: "10px",
+      fontWeight: "700",
+      letterSpacing: "0.5px",
+      color: isUnlocked ? (isCompleted ? colors.success : "#ffffff") : "rgba(255, 255, 255, 0.4)",
+      background: isUnlocked
+        ? (isCompleted ? "rgba(52, 211, 153, 0.15)" : "rgba(255, 255, 255, 0.1)")
+        : "rgba(255, 255, 255, 0.05)",
+      border: isUnlocked
+        ? (isCompleted ? "1px solid rgba(52, 211, 153, 0.3)" : "1px solid rgba(255, 255, 255, 0.15)")
+        : "1px solid rgba(255, 255, 255, 0.08)",
+      padding: "2px 7px",
+      borderRadius: "4px",
+    });
 
     const idBadge = document.createElement("span");
     idBadge.textContent = obj.id;
@@ -233,7 +268,7 @@ export class ObjectivePicker {
       fontFamily: font.mono,
       fontSize: "10px",
       fontWeight: "600",
-      color: colors.accent,
+      color: isUnlocked ? colors.accent : "rgba(255, 255, 255, 0.4)",
       background: "rgba(56, 189, 248, 0.1)",
       border: "1px solid rgba(56, 189, 248, 0.25)",
       padding: "1px 6px",
@@ -243,12 +278,40 @@ export class ObjectivePicker {
     const label = document.createElement("span");
     label.textContent = obj.label;
     Object.assign(label.style, {
-      color: colors.textPrimary,
+      color: isUnlocked ? colors.textPrimary : "rgba(255, 255, 255, 0.5)",
       fontSize: "14px",
       fontWeight: "600",
     });
 
-    labelRow.append(idBadge, label);
+    labelRow.append(levelBadge, idBadge, label);
+
+    if (isCompleted) {
+      const compBadge = document.createElement("span");
+      compBadge.textContent = "COMPLETED";
+      Object.assign(compBadge.style, {
+        fontFamily: font.mono,
+        fontSize: "9px",
+        fontWeight: "700",
+        color: colors.success,
+        background: "rgba(52, 211, 153, 0.12)",
+        padding: "1px 5px",
+        borderRadius: "3px",
+      });
+      labelRow.appendChild(compBadge);
+    } else if (!isUnlocked) {
+      const lockBadge = document.createElement("span");
+      lockBadge.textContent = "LOCKED";
+      Object.assign(lockBadge.style, {
+        fontFamily: font.mono,
+        fontSize: "9px",
+        fontWeight: "700",
+        color: "rgba(255, 255, 255, 0.4)",
+        background: "rgba(255, 255, 255, 0.06)",
+        padding: "1px 5px",
+        borderRadius: "3px",
+      });
+      labelRow.appendChild(lockBadge);
+    }
 
     const destLine = document.createElement("div");
     Object.assign(destLine.style, {
@@ -340,41 +403,88 @@ export class ObjectivePicker {
       btn.style.display = "flex";
       btn.style.alignItems = "center";
       btn.style.gap = "6px";
-      btn.appendChild(createElement(Check, { width: 13, height: 13, "stroke-width": 2 }));
+
       const btnLabel = document.createElement("span");
       btnLabel.setAttribute("data-btn-label", "true");
-      btnLabel.textContent = "Select Directive";
-      btn.appendChild(btnLabel);
 
-      Object.assign(btn.style, {
-        background: colors.accent,
-        border: "none",
-        borderRadius: "6px",
-        color: "#080a10",
-        fontSize: "12px",
-        fontWeight: "600",
-        fontFamily: font.family,
-        padding: "7px 14px",
-        cursor: "pointer",
-        transition: "background 0.15s ease",
-      });
-
-      btn.addEventListener("mouseenter", () => {
-        if (!btn.disabled) btn.style.background = colors.accentHover;
-      });
-      btn.addEventListener("mouseleave", () => {
-        if (!btn.disabled) btn.style.background = colors.accent;
-      });
-      btn.addEventListener("click", () => {
+      if (!isUnlocked) {
         btn.disabled = true;
-        btnLabel.textContent = "Authorizing...";
-        btn.style.opacity = "0.7";
-        btn.style.cursor = "not-allowed";
-        ColyseusService.selectObjective(obj.id);
-      });
+        btn.appendChild(createElement(Lock, { width: 13, height: 13, "stroke-width": 2 }));
+        btnLabel.textContent = `Locked (Need Level ${obj.level - 1})`;
+        btn.appendChild(btnLabel);
+
+        Object.assign(btn.style, {
+          background: "rgba(255, 255, 255, 0.06)",
+          border: "1px solid rgba(255, 255, 255, 0.1)",
+          borderRadius: "6px",
+          color: "rgba(255, 255, 255, 0.4)",
+          fontSize: "11px",
+          fontWeight: "500",
+          fontFamily: font.family,
+          padding: "7px 12px",
+          cursor: "not-allowed",
+        });
+      } else {
+        btn.appendChild(createElement(Check, { width: 13, height: 13, "stroke-width": 2 }));
+        btnLabel.textContent = isCompleted ? `Replay Level ${obj.level}` : `Deploy Level ${obj.level}`;
+        btn.appendChild(btnLabel);
+
+        Object.assign(btn.style, {
+          background: isCompleted ? "rgba(52, 211, 153, 0.2)" : colors.accent,
+          border: isCompleted ? "1px solid rgba(52, 211, 153, 0.4)" : "none",
+          borderRadius: "6px",
+          color: isCompleted ? colors.success : "#080a10",
+          fontSize: "12px",
+          fontWeight: "600",
+          fontFamily: font.family,
+          padding: "7px 14px",
+          cursor: "pointer",
+          transition: "all 0.15s ease",
+        });
+
+        btn.addEventListener("mouseenter", () => {
+          if (!btn.disabled) {
+            btn.style.background = isCompleted ? "rgba(52, 211, 153, 0.3)" : colors.accentHover;
+          }
+        });
+        btn.addEventListener("mouseleave", () => {
+          if (!btn.disabled) {
+            btn.style.background = isCompleted ? "rgba(52, 211, 153, 0.2)" : colors.accent;
+          }
+        });
+        btn.addEventListener("click", () => {
+          btn.disabled = true;
+          btnLabel.textContent = "Authorizing...";
+          btn.style.opacity = "0.7";
+          btn.style.cursor = "not-allowed";
+          ColyseusService.selectObjective(obj.id);
+        });
+      }
 
       actionRow.appendChild(btn);
       card.appendChild(actionRow);
+    } else {
+      // Non-host crew view: show level status tag
+      const statusRow = document.createElement("div");
+      Object.assign(statusRow.style, {
+        display: "flex",
+        justifyContent: "flex-end",
+        marginTop: "2px",
+      });
+
+      const tag = document.createElement("span");
+      Object.assign(tag.style, {
+        fontSize: "11px",
+        fontFamily: font.mono,
+        color: isUnlocked ? (isCompleted ? colors.success : colors.accent) : "rgba(255, 255, 255, 0.35)",
+      });
+      tag.textContent = !isUnlocked
+        ? `🔒 Locked (Level ${obj.level})`
+        : isCompleted
+        ? `✅ Level ${obj.level} Completed`
+        : `⭐ Level ${obj.level} Available`;
+      statusRow.appendChild(tag);
+      card.appendChild(statusRow);
     }
 
     return card;

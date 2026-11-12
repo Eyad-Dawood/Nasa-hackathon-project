@@ -86,8 +86,9 @@ export class ObjectiveScene extends Phaser.Scene {
       }
 
       this.isHost = Boolean(this.isHost || (room.state?.hostId && room.sessionId === room.state.hostId));
+      const unlockedLevel = Number(room.state?.highestUnlockedLevel ?? 1);
 
-      this.picker = new ObjectivePicker(this.isHost);
+      this.picker = new ObjectivePicker(this.isHost, unlockedLevel);
       this.picker.mount();
 
       let hasConfirmedObjective = false;
@@ -113,6 +114,10 @@ export class ObjectiveScene extends Phaser.Scene {
             this.isHost = currentIsHost;
             this.picker?.setHost(currentIsHost);
           }
+        }
+
+        if (typeof state.highestUnlockedLevel === "number") {
+          this.picker?.setUnlockedLevel(state.highestUnlockedLevel);
         }
 
         const objectiveId: string = state.selectedObjectiveId ?? "";
