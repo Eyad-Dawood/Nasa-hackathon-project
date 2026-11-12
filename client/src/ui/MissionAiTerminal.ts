@@ -19,6 +19,7 @@ import { Objective } from "../game/data/ObjectiveData";
 import { getItemById, GameItem } from "../game/data/ItemData";
 import { runLaunchChecks } from "../game/data/LaunchSystem";
 import { ShipEntity } from "../game/entities/ShipEntity";
+import { SoundFX } from "../audio/SoundEffects";
 import {
   ClientAiChunkEvent,
   ClientAiDoneEvent,
@@ -67,6 +68,7 @@ export class MissionAiTerminal {
   private _getHeldItemId?: () => string | null;
   private _onFocusChange?: (isFocused: boolean) => void;
   private _onLaunchMission?: () => void;
+  private _onDevAutoFill?: () => void;
 
   private _isOpen: boolean = false;
   private _activeRequestId: string | null = null;
@@ -85,6 +87,7 @@ export class MissionAiTerminal {
     getHeldItemId?: () => string | null;
     onFocusChange?: (isFocused: boolean) => void;
     onLaunchMission?: () => void;
+    onDevAutoFill?: () => void;
   }) {
     this._objective = options.objective;
     this._playerRoles = options.playerRoles;
@@ -93,6 +96,7 @@ export class MissionAiTerminal {
     this._getHeldItemId = options.getHeldItemId;
     this._onFocusChange = options.onFocusChange;
     this._onLaunchMission = options.onLaunchMission;
+    this._onDevAutoFill = options.onDevAutoFill;
 
     this._ensureStyles();
     this._container = this._buildDOM();
@@ -723,6 +727,26 @@ export class MissionAiTerminal {
     this._addQuickUserMessage(trimmed);
     this._inputEl.value = "";
     this.refreshTelemetry();
+
+    // ── Secret Developer Cheat Protocol ("GG" / "gg" / "/gg") ──────────
+    const normalized = trimmed.toLowerCase();
+    if (normalized === "gg" || normalized === "/gg" || normalized === "!gg" || normalized === "cheat") {
+      this._onDevAutoFill?.();
+      SoundFX.playRoleSelect();
+      this.refreshTelemetry();
+      this.setDroidState("ready");
+
+      const objLabel = this._objective?.label ?? "Active Mission";
+      this._appendStaticCard(
+        `🚀 **[MCC DEV PROTOCOL OVERRIDE ACTIVATED]**\n\n` +
+        `تم ملء الصاروخ وتجهيزه بالكامل بـ **التشكيلة المعتمدة 12/12** الخاصة بمهمة \`${objLabel}\`!\n\n` +
+        `* **حالة الإطلاق:** جاهز للإطلاق فورا (**12/12 Checks Passing** ✅)\n` +
+        `* **الفحوصات الهندسية:** Mass, Power, Delta-V, Computer, Communications, Thermal كلها مستوفاة بنجاح 100%.\n` +
+        `* توجه إلى الصاروخ واضغط **E** للانطلاق أو ابدأ التسلسل مباشرة!`,
+        "MISSION CONTROL // DEV OVERRIDE",
+      );
+      return;
+    }
 
     // Live Colyseus multiplayer room -> real AI Flight Director (Gemini / configured provider)
     if (ColyseusService.room && ColyseusService.room.name === "game") {

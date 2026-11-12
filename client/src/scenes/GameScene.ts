@@ -206,6 +206,9 @@ export class GameScene extends Phaser.Scene {
       onLaunchMission: () => {
         this._handleLaunchSequence();
       },
+      onDevAutoFill: () => {
+        this._triggerAutoFillCheat();
+      },
     });
     this.aiTerminal.mount();
 
@@ -442,32 +445,36 @@ export class GameScene extends Phaser.Scene {
   private _triggerAutoFillCheat(): void {
     SoundFX.playRoleSelect();
 
+    // Canonical 12/12 builds for all 6 missions
+    const CANONICAL_BUILDS: Record<string, string[]> = {
+      M01: ["SC02", "SC13", "CM05", "CM04", "CM01", "PT20", "SI04", "SC07", "PT14", "PT05", "PT11", "PT17"],
+      M02: ["SC03", "SC14", "CM07", "PT20", "PT20", "SI14", "SI04", "SI06", "SC09", "PT14", "PT14", "PT14", "PT06", "PT17", "PT17"],
+      M03: ["SC05", "SC17", "CM09", "PT21", "PT20", "SI19", "SI19", "SI07", "SI06", "SC08", "SC09", "PT14", "PT14", "PT14", "PT14", "PT06", "PT05", "PT11", "PT11", "PT19", "SC19"],
+      M04: ["SC02", "SC12", "CM02", "CM02", "CM01", "CM01", "PT20", "SI02", "PT14", "PT01", "PT01", "PT08", "PT17"],
+      M05: ["SC05", "SC16", "CM07", "CM02", "CM01", "PT21", "PT20", "SI12", "SI19", "SI06", "SC08", "SC08", "SC08", "PT14", "PT16", "PT01", "PT01", "PT18", "PT17", "PT17"],
+      M06: ["SC05", "SC17", "CM09", "CM03", "PT21", "PT20", "PT20", "SI16", "SI19", "SI19", "SI10", "SI06", "CM13", "SC07", "SC07", "PT14", "PT14", "PT14", "PT14", "PT14", "PT06", "PT06", "PT11", "PT11", "PT19", "SC18", "SC18", "PT18", "PT17"],
+    };
+
+    const missionId = this.objective?.id || "M01";
+    const itemIds = CANONICAL_BUILDS[missionId] || CANONICAL_BUILDS.M01;
+    const snapshot = new Map<string, ShipEntrySnapshot>();
+    itemIds.forEach((itemId, idx) => {
+      const itemDef = getItemById(itemId);
+      snapshot.set(`cheat_${missionId}_${idx}`, {
+        instanceId: `cheat_${missionId}_${idx}`,
+        itemId,
+        roleId: itemDef?.roleId || "commander",
+        addedBy: "DEV-CHEAT",
+      });
+    });
+
+    // Instant local client state & telemetry refresh
+    this.ship?.refreshState(snapshot);
+    this.aiTerminal?.refreshTelemetry();
+
+    // If connected to Colyseus GameRoom, sync authoritative state to all peers
     if (ColyseusService.room) {
       ColyseusService.devAutoFillShip();
-    } else {
-      // Offline fallback: load canonical build directly
-      const CANONICAL_BUILDS: Record<string, string[]> = {
-        M01: ["SC02", "SC13", "CM05", "CM04", "CM01", "PT20", "SI04", "SC07", "PT14", "PT05", "PT11", "PT17"],
-        M02: ["SC03", "SC14", "CM07", "PT20", "PT20", "SI14", "SI04", "SI06", "SC09", "PT14", "PT14", "PT14", "PT06", "PT17", "PT17"],
-        M03: ["SC05", "SC17", "CM09", "PT21", "PT20", "SI19", "SI19", "SI07", "SI06", "SC08", "SC09", "PT14", "PT14", "PT14", "PT14", "PT06", "PT05", "PT11", "PT11", "PT19", "SC19"],
-        M04: ["SC02", "SC12", "CM02", "CM02", "CM01", "CM01", "PT20", "SI02", "PT14", "PT01", "PT01", "PT08", "PT17"],
-        M05: ["SC05", "SC16", "CM07", "CM02", "CM01", "PT21", "PT20", "SI12", "SI19", "SI06", "SC08", "SC08", "SC08", "PT14", "PT16", "PT01", "PT01", "PT18", "PT17", "PT17"],
-        M06: ["SC05", "SC17", "CM09", "CM03", "PT21", "PT20", "PT20", "SI16", "SI19", "SI19", "SI10", "SI06", "CM13", "SC07", "SC07", "PT14", "PT14", "PT14", "PT14", "PT14", "PT06", "PT06", "PT11", "PT11", "PT19", "SC18", "SC18", "PT18", "PT17"],
-      };
-      const missionId = this.objective?.id || "M01";
-      const itemIds = CANONICAL_BUILDS[missionId] || CANONICAL_BUILDS.M01;
-      const snapshot = new Map<string, ShipEntrySnapshot>();
-      itemIds.forEach((itemId, idx) => {
-        const itemDef = getItemById(itemId);
-        snapshot.set(`cheat_${missionId}_${idx}`, {
-          instanceId: `cheat_${missionId}_${idx}`,
-          itemId,
-          roleId: itemDef?.roleId || "commander",
-          addedBy: "DEV-CHEAT",
-        });
-      });
-      this.ship?.refreshState(snapshot);
-      this.aiTerminal?.refreshTelemetry();
     }
 
     this.hud?.showCheatToast("⚡ CHEAT ACTIVATED: 12/12 LAUNCH READY!");

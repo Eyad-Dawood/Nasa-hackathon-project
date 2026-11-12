@@ -258,7 +258,7 @@ export class GameHUD {
       <span><b style="color:#ffffff; font-family:'JetBrains Mono', monospace; background:rgba(255,255,255,0.12); padding:2px 5px; border-radius:4px; font-weight:500;">E</b> Interact</span>
     `;
 
-    // ── Top-right Controls Bar (Exit + Dev Cheat Button) ───────────────
+    // ── Top-right Controls Bar (Exit Button) ───────────────────────────
     const topControls = document.createElement("div");
     Object.assign(topControls.style, {
       position: "fixed",
@@ -269,43 +269,6 @@ export class GameHUD {
       gap: "10px",
       zIndex: "600",
       pointerEvents: "auto",
-    });
-
-    // Magic Auto-Fill Ship Button (Double-tap G or click)
-    const cheatBtn = document.createElement("button");
-    cheatBtn.id = "hud-cheat-btn";
-    cheatBtn.title = "Developer Cheat: Auto-fill ship with 12/12 launch ready build (Press 'GG')";
-    cheatBtn.innerHTML = `<span>⚡</span><span>Auto-Fill Ship</span><b style="background:rgba(255,255,255,0.18); padding:1px 5px; border-radius:4px; font-size:9px;">GG</b>`;
-    Object.assign(cheatBtn.style, {
-      background: "rgba(16, 185, 129, 0.15)",
-      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), inset 0 0 0 0.5px rgba(16, 185, 129, 0.35), 0 8px 24px rgba(0, 0, 0, 0.4)",
-      backdropFilter: "blur(14px) saturate(1.4)",
-      WebkitBackdropFilter: "blur(14px) saturate(1.4)",
-      border: "1px solid rgba(16, 185, 129, 0.4)",
-      borderRadius: "10px",
-      color: "#34D399",
-      cursor: "pointer",
-      fontFamily: "'JetBrains Mono', monospace",
-      fontSize: "11px",
-      fontWeight: "700",
-      padding: "8px 12px",
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
-      transition: "all 0.15s ease",
-    });
-    cheatBtn.addEventListener("mouseenter", () => {
-      cheatBtn.style.background = "rgba(16, 185, 129, 0.3)";
-      cheatBtn.style.color = "#ffffff";
-    });
-    cheatBtn.addEventListener("mouseleave", () => {
-      cheatBtn.style.background = "rgba(16, 185, 129, 0.15)";
-      cheatBtn.style.color = "#34D399";
-    });
-    cheatBtn.addEventListener("click", () => {
-      if (this.onAutoFillCallback) {
-        this.onAutoFillCallback();
-      }
     });
 
     // Exit Station Button
@@ -349,7 +312,7 @@ export class GameHUD {
       }
     });
 
-    topControls.append(cheatBtn, backBtn);
+    topControls.append(backBtn);
     this.container.append(panel, hints, topControls);
     return { usernameEl, rolesContainer, missionEl };
   }
