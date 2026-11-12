@@ -86,7 +86,7 @@ export class ObjectiveScene extends Phaser.Scene {
       }
 
       this.isHost = Boolean(this.isHost || (room.state?.hostId && room.sessionId === room.state.hostId));
-      const unlockedLevel = Number(room.state?.highestUnlockedLevel ?? 1);
+      const unlockedLevel = Number(room.state?.highestUnlockedLevel ?? 6);
 
       this.picker = new ObjectivePicker(this.isHost, unlockedLevel);
       this.picker.mount();

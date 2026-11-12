@@ -52,7 +52,7 @@ describe("Space Benders — Phase 1 Room & Catalog Tests", () => {
   });
 
   it("starts GameRoom with empty selectedObjectiveId and validates host mission selection (M01–M06)", async () => {
-    const room = await colyseus.createRoom<GameState>("game", {});
+    const room = await colyseus.createRoom<GameState>("game", { highestUnlockedLevel: 1 });
     const hostClient = await colyseus.connectTo(room, {
       username: "Alex",
       roles: ["powerAndThermal", "structureAndComputing"],

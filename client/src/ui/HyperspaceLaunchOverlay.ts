@@ -12,6 +12,8 @@
  *   5. White warp flash transition into MissionVictoryUI.
  */
 
+import { PixelFxAnimator } from "./PixelFxAnimator";
+
 const VERT_SHADER = `#version 300 es
 precision highp float;
 in vec2 position;
@@ -79,6 +81,7 @@ export class HyperspaceLaunchOverlay {
   private speed: number = 1.2;
   private options: LaunchSequenceOptions;
   private destroyed: boolean = false;
+  private countdownFx: PixelFxAnimator | null = null;
 
   constructor(options: LaunchSequenceOptions) {
     this.options = options;
@@ -97,6 +100,11 @@ export class HyperspaceLaunchOverlay {
     if (this.destroyed) return;
     this.destroyed = true;
     cancelAnimationFrame(this.rafId);
+
+    if (this.countdownFx) {
+      this.countdownFx.destroy();
+      this.countdownFx = null;
+    }
 
     if (this.gl && this.program) {
       const p = this.program;
@@ -332,6 +340,36 @@ export class HyperspaceLaunchOverlay {
       this.container.style.opacity = "1";
     });
 
+    // Launch Countdown VFX (3... 2... 1... GO!) procedural retro pixel art
+    this.countdownFx = new PixelFxAnimator({
+      src: "/assets/vfx/countdown.png",
+      frameWidth: 152,
+      frameHeight: 136,
+      totalFrames: 94,
+      columns: 10,
+      fps: 30,
+      scale: 2.2,
+      style: {
+        position: "absolute",
+        top: "40%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        zIndex: "35",
+        filter: "drop-shadow(0 6px 20px rgba(0, 0, 0, 0.85))",
+      },
+      onComplete: () => {
+        if (this.countdownFx) {
+          const cvs = this.countdownFx.getCanvas();
+          cvs.style.transition = "opacity 0.35s ease, transform 0.35s ease";
+          cvs.style.opacity = "0";
+          cvs.style.transform = "translate(-50%, -50%) scale(1.3)";
+          setTimeout(() => this.countdownFx?.destroy(), 400);
+        }
+      },
+    });
+    this.container.appendChild(this.countdownFx.getCanvas());
+    this.countdownFx.start();
+
     const rocketBox = document.getElementById("warp-rocket-box");
     const velEl = document.getElementById("warp-velocity");
     const factorEl = document.getElementById("warp-factor");
@@ -344,31 +382,36 @@ export class HyperspaceLaunchOverlay {
       }
       progress += 0.05;
 
-      // Accelerate shader speed smoothly
-      this.speed = 1.2 + progress * 2.5;
+      // Accelerate shader speed: warmup during countdown, burst into hyperspace at GO!
+      if (progress < 2.5) {
+        this.speed = 0.4 + progress * 0.4;
+      } else {
+        this.speed = 1.4 + (progress - 2.5) * 3.5;
+      }
 
       // Update telemetry readouts
-      const warpFactor = (1.0 + progress * 2.8).toFixed(2);
-      const velocity = Math.round(42000 + progress * 150000);
+      const warpFactor = (progress < 2.5 ? 0.2 + progress * 0.3 : 1.0 + (progress - 2.5) * 2.8).toFixed(2);
+      const velocity = Math.round(progress < 2.5 ? 2000 + progress * 14000 : 42000 + (progress - 2.5) * 160000);
       if (velEl) velEl.textContent = `${velocity.toLocaleString()} KM/H`;
       if (factorEl) factorEl.textContent = `${warpFactor} c`;
 
       // Subtle rocket vibration
       if (rocketBox) {
-        const shakeX = (Math.random() - 0.5) * 4;
-        const shakeY = (Math.random() - 0.5) * 4;
-        rocketBox.style.transform = `translate(calc(-50% + ${shakeX}px), calc(-50% + ${shakeY}px)) scale(${1 + progress * 0.15})`;
+        const shakeIntensity = progress < 2.5 ? 1.5 : 4;
+        const shakeX = (Math.random() - 0.5) * shakeIntensity;
+        const shakeY = (Math.random() - 0.5) * shakeIntensity;
+        rocketBox.style.transform = `translate(calc(-50% + ${shakeX}px), calc(-50% + ${shakeY}px)) scale(${1 + progress * 0.12})`;
       }
 
       // At 4.5 seconds: rocket accelerates into the warp center
-      if (progress >= 3.8 && rocketBox) {
-        rocketBox.style.transition = "transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease";
+      if (progress >= 4.2 && rocketBox) {
+        rocketBox.style.transition = "transform 1.0s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.8s ease";
         rocketBox.style.transform = "translate(-50%, -50%) scale(0.1)";
         rocketBox.style.opacity = "0";
       }
 
-      // Finish sequence after 5.2 seconds
-      if (progress >= 5.0) {
+      // Finish sequence after 5.3 seconds
+      if (progress >= 5.3) {
         clearInterval(interval);
         this._finishLaunch();
       }

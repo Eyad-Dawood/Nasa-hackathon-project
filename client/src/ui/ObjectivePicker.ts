@@ -297,6 +297,27 @@ export class ObjectivePicker {
     const rightBox = document.createElement("div");
     Object.assign(rightBox.style, { display: "flex", alignItems: "center", gap: "12px" });
 
+    // Developer Test Mode Badge (shown when all 6 campaign levels are unlocked)
+    if (this.highestUnlockedLevel >= 6) {
+      const testBadge = document.createElement("div");
+      Object.assign(testBadge.style, {
+        display: "flex",
+        alignItems: "center",
+        gap: "6px",
+        fontSize: "10.5px",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontWeight: "700",
+        color: "#FBBF24",
+        background: "rgba(245, 158, 11, 0.12)",
+        border: "1px solid rgba(245, 158, 11, 0.35)",
+        padding: "5px 12px",
+        borderRadius: "8px",
+        letterSpacing: "0.5px",
+      });
+      testBadge.innerHTML = `<span>🧪</span><span>TEST MODE: ALL 6 LEVELS UNLOCKED</span>`;
+      rightBox.appendChild(testBadge);
+    }
+
     // Quick Level Navigator Pill
     const navPill = document.createElement("div");
     Object.assign(navPill.style, {
@@ -482,9 +503,10 @@ export class ObjectivePicker {
     obj: Objective,
     coord: { level: number; x: number; yPct: number },
   ): HTMLDivElement {
-    const isUnlocked = obj.level <= this.highestUnlockedLevel;
-    const isCompleted = obj.level < this.highestUnlockedLevel;
-    const isCurrentActive = obj.level === this.highestUnlockedLevel;
+    const isTestingAll = this.highestUnlockedLevel >= 6;
+    const isUnlocked = isTestingAll || obj.level <= this.highestUnlockedLevel;
+    const isCompleted = !isTestingAll && obj.level < this.highestUnlockedLevel;
+    const isCurrentActive = isTestingAll ? true : obj.level === this.highestUnlockedLevel;
     const style = PLANET_STYLES[obj.id] ?? PLANET_STYLES.M04;
 
     const stationWrapper = document.createElement("div");
@@ -731,19 +753,25 @@ export class ObjectivePicker {
         });
       } else {
         btn.appendChild(createElement(Rocket, { width: 12, height: 12, "stroke-width": 2 }));
-        btnLabel.textContent = isCompleted
+        btnLabel.textContent = isTestingAll
+          ? `AUTHORIZE LEVEL ${obj.level}`
+          : isCompleted
           ? `REPLAY LEVEL ${obj.level}`
           : `AUTHORIZE LEVEL ${obj.level}`;
         btn.appendChild(btnLabel);
 
+        const btnBg = (isTestingAll || !isCompleted) ? "#29ADFF" : "rgba(16, 185, 129, 0.15)";
+        const btnTextColor = (isTestingAll || !isCompleted) ? "#040810" : "#34D399";
+        const btnBorder = (isTestingAll || !isCompleted) ? "none" : "1px solid rgba(16, 185, 129, 0.35)";
+
         Object.assign(btn.style, {
-          background: isCompleted ? "rgba(16, 185, 129, 0.15)" : "#29ADFF",
-          boxShadow: isCompleted
+          background: btnBg,
+          boxShadow: isCompleted && !isTestingAll
             ? "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
             : "0 2px 8px rgba(0, 0, 0, 0.4)",
-          border: isCompleted ? "1px solid rgba(16, 185, 129, 0.35)" : "none",
+          border: btnBorder,
           borderRadius: "6px",
-          color: isCompleted ? "#34D399" : "#040810",
+          color: btnTextColor,
           fontSize: "11px",
           fontWeight: "700",
           fontFamily: "'JetBrains Mono', monospace",

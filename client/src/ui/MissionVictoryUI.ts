@@ -1,6 +1,7 @@
 import { createElement, Rocket, CheckCircle2, Award, ArrowRight, RotateCcw } from "lucide";
 import { Theme } from "../config/theme";
 import { Objective, OBJECTIVES } from "../game/data/ObjectiveData";
+import { PixelFxAnimator } from "./PixelFxAnimator";
 
 const PLANET_SPRITES: Record<string, string> = {
   M04: "/assets/planets/planet_earth_64.png",
@@ -19,6 +20,7 @@ export class MissionVictoryUI {
   private _isHost: boolean;
   private _onNextMission: (nextObjective: Objective) => void;
   private _onClose: () => void;
+  private _confettiFx: PixelFxAnimator | null = null;
 
   constructor(options: {
     objective: Objective;
@@ -40,11 +42,39 @@ export class MissionVictoryUI {
 
   mount(): void {
     document.body.appendChild(this._container);
+    this._startConfetti();
   }
 
   close(): void {
+    if (this._confettiFx) {
+      this._confettiFx.destroy();
+      this._confettiFx = null;
+    }
     this._container.remove();
     this._onClose();
+  }
+
+  private _startConfetti(): void {
+    this._confettiFx = new PixelFxAnimator({
+      src: "/assets/vfx/confetti.png",
+      frameWidth: 200,
+      frameHeight: 140,
+      totalFrames: 103,
+      columns: 9,
+      fps: 30,
+      scale: 3,
+      loop: true,
+      style: {
+        position: "absolute",
+        top: "16px",
+        left: "50%",
+        transform: "translateX(-50%)",
+        zIndex: "3050",
+        pointerEvents: "none",
+      },
+    });
+    this._container.appendChild(this._confettiFx.getCanvas());
+    this._confettiFx.start();
   }
 
   private _buildDOM(): HTMLDivElement {

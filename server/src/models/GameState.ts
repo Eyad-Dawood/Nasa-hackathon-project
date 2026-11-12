@@ -41,6 +41,12 @@ export class ShipItemSchema extends Schema {
 }
 
 /**
+ * Set to true during developer testing so all 6 campaign levels (L1–L6) are fully unlocked.
+ * Toggle to false before official competition so players must advance sequentially.
+ */
+export const UNLOCK_ALL_LEVELS_FOR_TESTING = true;
+
+/**
  * GameState
  * ─────────
  * Top-level state for the GameRoom. Synced to all clients.
@@ -61,8 +67,9 @@ export class GameState extends Schema {
   /**
    * The highest campaign level currently unlocked for this crew (1..6).
    * Level 1 is always unlocked; succeeding at a level unlocks the next level.
+   * Controlled by UNLOCK_ALL_LEVELS_FOR_TESTING flag.
    */
-  @type("uint8") highestUnlockedLevel: number = 1;
+  @type("uint8") highestUnlockedLevel: number = UNLOCK_ALL_LEVELS_FOR_TESTING ? 6 : 1;
 
   /**
    * Items currently loaded on the spaceship.
