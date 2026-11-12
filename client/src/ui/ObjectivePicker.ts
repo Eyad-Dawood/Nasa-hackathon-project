@@ -107,6 +107,7 @@ interface PlanetStyle {
   accentColor: string;
   borderColor: string;
   badge: string;
+  sprite: string;
 }
 
 const PLANET_STYLES: Record<string, PlanetStyle> = {
@@ -114,31 +115,37 @@ const PLANET_STYLES: Record<string, PlanetStyle> = {
     accentColor: "#29ADFF",
     borderColor: "#38BDF8",
     badge: "EARTH LEO",
+    sprite: "/assets/planets/planet_earth_64.png",
   },
   M01: {
     accentColor: "#CBD5E1",
     borderColor: "#94A3B8",
     badge: "THE MOON",
+    sprite: "/assets/planets/planet_moon_64.png",
   },
   M02: {
     accentColor: "#F87171",
     borderColor: "#EF4444",
     badge: "MARS BASE",
+    sprite: "/assets/planets/planet_mars_64.png",
   },
   M03: {
     accentColor: "#38BDF8",
     borderColor: "#0284C7",
     badge: "EUROPA / JUPITER",
+    sprite: "/assets/planets/planet_europa_64.png",
   },
   M05: {
     accentColor: "#FBBF24",
     borderColor: "#F59E0B",
     badge: "HELIOS CORONA",
+    sprite: "/assets/planets/planet_sun_64.png",
   },
   M06: {
     accentColor: "#34D399",
     borderColor: "#10B981",
     badge: "TITAN / SATURN",
+    sprite: "/assets/planets/planet_titan_64.png",
   },
 };
 
@@ -498,12 +505,12 @@ export class ObjectivePicker {
       pointerEvents: "auto",
     });
 
-    // ── Crisp 2D Tactical Stage Node (No 3D marble gradients, no glowing halos) ──
+    // ── Crisp 2D Tactical Stage Node with Pixel Art Planet Sprite ──
     const portalHub = document.createElement("div");
     portalHub.className = "stage-portal-hub";
     Object.assign(portalHub.style, {
-      width: "68px",
-      height: "68px",
+      width: "74px",
+      height: "74px",
       borderRadius: "50%",
       background: isUnlocked ? "#0B111E" : "#080C14",
       boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
@@ -521,31 +528,48 @@ export class ObjectivePicker {
       cursor: "pointer",
       position: "relative",
       transition: "all 0.15s ease",
+      padding: "2px",
     });
 
-    // Level number inside 2D hub
-    const lvlNum = document.createElement("span");
-    lvlNum.textContent = String(obj.level);
-    Object.assign(lvlNum.style, {
-      fontSize: "22px",
+    // Top Level Pill Tag
+    const lvlTag = document.createElement("div");
+    lvlTag.textContent = `LVL ${obj.level}`;
+    Object.assign(lvlTag.style, {
+      fontSize: "8.5px",
       fontWeight: "800",
       fontFamily: "'JetBrains Mono', monospace",
-      color: isUnlocked ? "#ffffff" : "rgba(255, 255, 255, 0.3)",
+      color: isUnlocked ? "#ffffff" : "rgba(255, 255, 255, 0.35)",
+      letterSpacing: "0.4px",
       lineHeight: "1",
     });
 
+    // Central Pixel Art Planet Sprite
+    const planetImg = document.createElement("img");
+    planetImg.src = style.sprite;
+    planetImg.alt = style.badge;
+    Object.assign(planetImg.style, {
+      width: "36px",
+      height: "36px",
+      imageRendering: "pixelated",
+      opacity: isUnlocked ? "1" : "0.35",
+      filter: isUnlocked ? "none" : "grayscale(0.85)",
+      pointerEvents: "none",
+      margin: "1px 0",
+    });
+
+    // Planet Badge below image
     const planetBadge = document.createElement("span");
     planetBadge.textContent = style.badge;
     Object.assign(planetBadge.style, {
-      fontSize: "7.5px",
+      fontSize: "7px",
       fontWeight: "700",
       fontFamily: "'JetBrains Mono', monospace",
       color: isUnlocked ? style.accentColor : "rgba(255, 255, 255, 0.25)",
-      letterSpacing: "0.5px",
-      marginTop: "3px",
+      letterSpacing: "0.4px",
+      lineHeight: "1",
     });
 
-    portalHub.append(lvlNum, planetBadge);
+    portalHub.append(lvlTag, planetImg, planetBadge);
 
     // Completion or Lock badge over hub
     if (isCompleted) {

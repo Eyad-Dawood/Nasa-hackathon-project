@@ -1,0 +1,31 @@
+{
+  "$schema": "https://palletism.art/schema/taste.json",
+  "project": "NASA Space Benders",
+  "description": "Multiplayer retro-tactical space engineering and NASA mission simulator with pixel art and liquid glass UI",
+  "tastePack": "pixel-arcade",
+  "theme": "dark",
+  "colors": {
+    "--background": "#05080E",
+    "--foreground": "#FFFFFF",
+    "--primary": "#29ADFF",
+    "--secondary": "#34D399",
+    "--accent": "#F59E0B",
+    "--destructive": "#FF004D",
+    "--muted": "#1E293B",
+    "--border": "rgba(255, 255, 255, 0.1)"
+  },
+  "roles": {
+    "hero": {
+      "aspect": "16:9",
+      "style": "retro-pixel-sci-fi"
+    },
+    "missions": {
+      "aspect": "1:1",
+      "style": "tactical-vector-badges"
+    }
+  },
+  "auth": {
+    "endpoint": "https://palletism.art/mcp",
+    "key": "plt_LoerAriumglnBXtozRkBXzYHiGUHTSWoH1VMJYyzWJM"
+  }
+}
