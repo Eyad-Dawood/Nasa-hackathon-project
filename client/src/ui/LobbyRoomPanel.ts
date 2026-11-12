@@ -36,6 +36,7 @@ export class LobbyRoomPanel {
   private unsubGameStarted: (() => void) | null = null;
   private unsubRoleError: (() => void) | null = null;
   private unsubStartError: (() => void) | null = null;
+  private hasAutoClaimedRoles: boolean = false;
 
   constructor(sessionId: string, isHost: boolean, onGameStart: (gameRoomId: string) => void) {
     this.sessionId = sessionId;
@@ -115,6 +116,16 @@ export class LobbyRoomPanel {
     });
 
     this.rolePicker.refresh(assignments);
+
+    // Auto-claim all 4 roles when playing solo or host testing so user doesn't have to manually click all 4
+    if (this.isHost && !this.hasAutoClaimedRoles && players.size === 1) {
+      this.hasAutoClaimedRoles = true;
+      ALL_ROLE_IDS.forEach((rid) => {
+        if (assignments[rid] === null) {
+          ColyseusService.send("setRole", { role: rid, claim: true });
+        }
+      });
+    }
 
     // Enable start button only if all 4 roles are assigned
     const allAssigned = ALL_ROLE_IDS.every((rid) => assignments[rid] !== null);

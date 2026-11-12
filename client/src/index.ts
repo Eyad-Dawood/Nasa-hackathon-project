@@ -4,6 +4,15 @@ import { LobbyScene } from "./scenes/LobbyScene";
 import { ObjectiveScene } from "./scenes/ObjectiveScene";
 import { GameScene } from "./scenes/GameScene";
 import { EarthBlazeBackground } from "./ui/EarthBlazeBackground";
+import { SoundFX } from "./audio/SoundEffects";
+
+// Global click sound listener for buttons and interactive controls
+window.addEventListener("click", (e: MouseEvent) => {
+  const target = e.target as HTMLElement | null;
+  if (target?.closest("button") || target?.closest("[role='button']") || target?.closest(".stage-portal-hub")) {
+    SoundFX.playClick();
+  }
+});
 
 // Initialize the photorealistic NASA Earth Blaze WebGL background
 EarthBlazeBackground.get().init();

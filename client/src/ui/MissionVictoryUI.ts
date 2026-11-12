@@ -2,6 +2,7 @@ import { createElement, Rocket, CheckCircle2, Award, ArrowRight, RotateCcw } fro
 import { Theme } from "../config/theme";
 import { Objective, OBJECTIVES } from "../game/data/ObjectiveData";
 import { PixelFxAnimator } from "./PixelFxAnimator";
+import { SoundFX } from "../audio/SoundEffects";
 
 const PLANET_SPRITES: Record<string, string> = {
   M04: "/assets/planets/planet_earth_64.png",
@@ -43,6 +44,7 @@ export class MissionVictoryUI {
   mount(): void {
     document.body.appendChild(this._container);
     this._startConfetti();
+    SoundFX.playVictoryFanfare();
   }
 
   close(): void {

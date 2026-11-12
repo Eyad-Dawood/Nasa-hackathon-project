@@ -129,7 +129,9 @@ export class GameScene extends Phaser.Scene {
 
     // 8. HUD
     const hudTitle = this.objective ? `LVL ${this.objective.level} · ${this.objective.label}` : "Awaiting Directive";
-    this.hud = new GameHUD(this.username, this.roles, hudTitle);
+    this.hud = new GameHUD(this.username, this.roles, hudTitle, () => {
+      this._handleExitGame();
+    });
     this.hud.mount();
 
     // 8b. NASA AI Mission Director Terminal
@@ -352,10 +354,58 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  private _handleExitGame(): void {
+    this.shutdown();
+    ColyseusService.leaveRoom();
+    // Return to LobbyScene cleanly
+    this.scene.start("LobbyScene", {
+      username: this.username,
+      roles: this.roles,
+    });
+  }
+
   // ── Tilemap ────────────────────────────────────────────────────────────
 
   private _buildTilemap(): Phaser.Physics.Arcade.StaticGroup {
     const wallsGroup = this.physics.add.staticGroup();
+
+    // Mission-specific environmental lighting and station hue
+    // Level 1: Earth orbit (Crisp cool blue)
+    // Level 2: Moon (Monochrome lunar gray)
+    // Level 3: Mars (Deep Martian red/rust)
+    // Level 4: Europa (Sub-surface icy cyan/azure)
+    // Level 5: Sun Helios (Intense golden amber solar heat)
+    // Level 6: Titan (Mysterious methane twilight emerald)
+    const level = this.objective?.level ?? 1;
+    let floorTint = 0xffffff;
+    let wallTint = 0xffffff;
+
+    switch (level) {
+      case 1: // Low Earth Orbit
+        floorTint = 0xe0f2fe; // Light azure cleanroom
+        wallTint = 0xbae6fd;
+        break;
+      case 2: // Moon
+        floorTint = 0xf1f5f9; // Pale lunar concrete
+        wallTint = 0x94a3b8;
+        break;
+      case 3: // Mars Base
+        floorTint = 0xffedd5; // Martian rust tint
+        wallTint = 0xfca5a5;
+        break;
+      case 4: // Europa
+        floorTint = 0xcffafe; // Cryogenic ice blue
+        wallTint = 0x7dd3fc;
+        break;
+      case 5: // Sun Watcher
+        floorTint = 0xfef3c7; // Solar flare warm gold
+        wallTint = 0xfcd34d;
+        break;
+      case 6: // Titan Saturn
+        floorTint = 0xd1fae5; // Methane atmospheric emerald
+        wallTint = 0x6ee7b7;
+        break;
+    }
 
     for (let row = 0; row < MAP_ROWS; row++) {
       for (let col = 0; col < MAP_COLS; col++) {
@@ -378,9 +428,9 @@ export class GameScene extends Phaser.Scene {
 
         if (isCollidable) {
           const tile = wallsGroup.create(x, y, textureKey) as Phaser.Physics.Arcade.Image;
-          tile.setScale(1).refreshBody().setDepth(1);
+          tile.setScale(1).refreshBody().setDepth(1).setTint(wallTint);
         } else {
-          this.add.image(x, y, textureKey).setScale(1).setDepth(0);
+          this.add.image(x, y, textureKey).setScale(1).setDepth(0).setTint(floorTint);
         }
       }
     }

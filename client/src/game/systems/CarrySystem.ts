@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import { Assets } from "../../config/assets";
 import { Theme, getRoleHex } from "../../config/theme";
 import { GameItem } from "../data/ItemData";
+import { SoundFX } from "../../audio/SoundEffects";
 
 /**
  * CarrySystem
@@ -53,6 +54,7 @@ export class CarrySystem {
     this._heldItem = item;
     this._sprite.setTint(getRoleHex(item.roleId)).setVisible(true);
     this._label.setText(item.name).setVisible(true);
+    SoundFX.playPickup();
     return true;
   }
 
@@ -65,6 +67,9 @@ export class CarrySystem {
     this._heldItem = null;
     this._sprite.setVisible(false);
     this._label.setVisible(false);
+    if (item) {
+      SoundFX.playInstallModule();
+    }
     return item;
   }
 

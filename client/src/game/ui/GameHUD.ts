@@ -14,10 +14,12 @@ export class GameHUD {
   private rolesContainer: HTMLDivElement;
   private usernameEl: HTMLSpanElement;
   private missionEl: HTMLSpanElement;
+  private onExitCallback?: () => void;
 
-  constructor(username: string, roleIds: string[], missionTitle?: string) {
+  constructor(username: string, roleIds: string[], missionTitle?: string, onExit?: () => void) {
     this.container = document.createElement("div");
     this.container.id = "game-hud";
+    this.onExitCallback = onExit;
 
     const { usernameEl, rolesContainer, missionEl } = this._buildDOM(
       username,
@@ -248,7 +250,53 @@ export class GameHUD {
       <span><b style="color:#ffffff; font-family:'JetBrains Mono', monospace; background:rgba(255,255,255,0.12); padding:2px 5px; border-radius:4px; font-weight:500;">E</b> Interact</span>
     `;
 
-    this.container.append(panel, hints);
+    // ── Top-right Back / Exit Station Button ────────────────────────────
+    const backBtn = document.createElement("button");
+    backBtn.id = "hud-back-btn";
+    backBtn.innerHTML = `<span>⎋</span><span>Exit To Orbit / Lobbies</span>`;
+    Object.assign(backBtn.style, {
+      position: "fixed",
+      top: "18px",
+      right: "18px",
+      background: "rgba(255, 255, 255, 0.06)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.18), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 8px 24px rgba(0, 0, 0, 0.4)",
+      backdropFilter: "blur(14px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(14px) saturate(1.4)",
+      border: "1px solid rgba(255, 255, 255, 0.1)",
+      borderRadius: "10px",
+      color: "rgba(255, 255, 255, 0.8)",
+      cursor: "pointer",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "11px",
+      fontWeight: "600",
+      padding: "8px 14px",
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      zIndex: "600",
+      pointerEvents: "auto",
+      transition: "all 0.15s ease",
+    });
+
+    backBtn.addEventListener("mouseenter", () => {
+      backBtn.style.background = "rgba(239, 68, 68, 0.18)";
+      backBtn.style.borderColor = "rgba(239, 68, 68, 0.45)";
+      backBtn.style.color = "#ffffff";
+    });
+    backBtn.addEventListener("mouseleave", () => {
+      backBtn.style.background = "rgba(255, 255, 255, 0.06)";
+      backBtn.style.borderColor = "rgba(255, 255, 255, 0.1)";
+      backBtn.style.color = "rgba(255, 255, 255, 0.8)";
+    });
+    backBtn.addEventListener("click", () => {
+      if (this.onExitCallback) {
+        this.onExitCallback();
+      } else {
+        window.location.reload();
+      }
+    });
+
+    this.container.append(panel, hints, backBtn);
     return { usernameEl, rolesContainer, missionEl };
   }
 }

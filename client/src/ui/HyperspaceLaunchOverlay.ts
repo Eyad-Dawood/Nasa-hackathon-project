@@ -13,6 +13,7 @@
  */
 
 import { PixelFxAnimator } from "./PixelFxAnimator";
+import { SoundFX } from "../audio/SoundEffects";
 
 const VERT_SHADER = `#version 300 es
 precision highp float;
@@ -100,6 +101,7 @@ export class HyperspaceLaunchOverlay {
     if (this.destroyed) return;
     this.destroyed = true;
     cancelAnimationFrame(this.rafId);
+    SoundFX.stopRocketLaunchRoar();
 
     if (this.countdownFx) {
       this.countdownFx.destroy();
@@ -369,6 +371,15 @@ export class HyperspaceLaunchOverlay {
     });
     this.container.appendChild(this.countdownFx.getCanvas());
     this.countdownFx.start();
+
+    // Sound FX: Start rocket launch thruster roar and countdown beeps
+    SoundFX.playCountdownTick(false);
+    setTimeout(() => SoundFX.playCountdownTick(false), 800);
+    setTimeout(() => SoundFX.playCountdownTick(false), 1600);
+    setTimeout(() => {
+      SoundFX.playCountdownTick(true);
+      SoundFX.startRocketLaunchRoar(5.5);
+    }, 2400);
 
     const rocketBox = document.getElementById("warp-rocket-box");
     const velEl = document.getElementById("warp-velocity");
