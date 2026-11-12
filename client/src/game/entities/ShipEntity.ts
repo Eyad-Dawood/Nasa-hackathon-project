@@ -48,6 +48,7 @@ export class ShipEntity implements IInteractable {
     isHost:      boolean,
     onConsultAi?: (contextPrompt?: string) => void,
     onLaunchMission?: () => void,
+    shipWorldPos?: { x: number; y: number },
   ) {
     this._carry       = carry;
     this._playerRoles = playerRoles;
@@ -55,8 +56,9 @@ export class ShipEntity implements IInteractable {
     this._isHost      = isHost;
     this._onConsultAi = onConsultAi;
     this._onLaunchMission = onLaunchMission;
-    this._worldX = SHIP_WORLD_POS.x;
-    this._worldY = SHIP_WORLD_POS.y;
+    const pos = shipWorldPos ?? SHIP_WORLD_POS;
+    this._worldX = pos.x;
+    this._worldY = pos.y;
 
     this._sprite = scene.add.image(this._worldX, this._worldY, Assets.ship.key);
     this._sprite.setScale(1).setDepth(5);
@@ -89,6 +91,13 @@ export class ShipEntity implements IInteractable {
   }
   get sprite(): Phaser.GameObjects.Image {
     return this._sprite;
+  }
+
+  setPosition(x: number, y: number): void {
+    this._worldX = x;
+    this._worldY = y;
+    this._sprite.setPosition(x, y);
+    this._label.setPosition(x, y - 88);
   }
 
   setObjective(objective: Objective | null): void {

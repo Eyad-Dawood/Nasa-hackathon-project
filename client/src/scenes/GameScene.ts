@@ -8,6 +8,7 @@ import {
 import { NPC_LIST } from "../game/data/NpcData";
 import { Objective, OBJECTIVES, getObjectiveById } from "../game/data/ObjectiveData";
 import { STATIONS, SHIP_WORLD_POS } from "../game/data/StationData";
+import { getLevelLayout, LevelLayout } from "../game/data/LevelLayouts";
 import { PlayerController } from "../game/systems/PlayerController";
 import { NpcController } from "../game/systems/NpcController";
 import { InteractionSystem } from "../game/systems/InteractionSystem";
@@ -79,12 +80,19 @@ export class GameScene extends Phaser.Scene {
     const worldH = MAP_ROWS * TILE_PX;
     this.physics.world.setBounds(0, 0, worldW, worldH);
 
-    // 1. Tilemap
-    this.wallsGroup = this._buildTilemap();
+    // Get level-specific architectural blueprint and environmental styling
+    const level = this.objective?.level ?? 1;
+    const layout = getLevelLayout(level);
 
-    // 2. Local player
-    const spawnX = PLAYER_SPAWN_TILE.col * TILE_PX + TILE_PX / 2;
-    const spawnY = PLAYER_SPAWN_TILE.row * TILE_PX + TILE_PX / 2;
+    // 1. Tilemap with level-specific room layout and palette
+    this.wallsGroup = this._buildTilemap(layout);
+
+    // 1b. High-tech Floor Sector Decals & Power Conduits
+    this._buildRoomDecorations(layout);
+
+    // 2. Local player spawned at level-specific airlock
+    const spawnX = layout.spawnTile.col * TILE_PX + TILE_PX / 2;
+    const spawnY = layout.spawnTile.row * TILE_PX + TILE_PX / 2;
     const primaryRole = this.roles[0] ?? "no-role";
 
     this.player = new PlayerController(this, spawnX, spawnY, getRoleHex(primaryRole));
@@ -93,15 +101,21 @@ export class GameScene extends Phaser.Scene {
     // 3. Carry system
     this.carry = new CarrySystem(this);
 
-    // 4. NPCs
-    this.npcs = NPC_LIST.map((def) => new NpcController(this, def));
+    // 4. NPCs placed at level's control hub
+    this.npcs = [
+      new NpcController(this, {
+        ...NPC_LIST[0],
+        tileCol: layout.npcTile.col,
+        tileRow: layout.npcTile.row,
+      }),
+    ];
 
-    // 5. Stations
-    this.stations = STATIONS.map(
+    // 5. Stations positioned tailored to room architecture
+    this.stations = layout.stations.map(
       (def) => new StationEntity(this, def, this.roles, this.carry),
     );
 
-    // 6. Spaceship
+    // 6. Spaceship on the gantry excavation pad
     this.ship = new ShipEntity(
       this,
       this.carry,
@@ -117,6 +131,7 @@ export class GameScene extends Phaser.Scene {
       () => {
         this._handleLaunchSequence();
       },
+      layout.shipWorldPos,
     );
 
     // 7. InteractionSystem
@@ -240,7 +255,19 @@ export class GameScene extends Phaser.Scene {
       if (state.selectedObjectiveId && state.selectedObjectiveId !== this.objective?.id) {
         const syncedObj = getObjectiveById(state.selectedObjectiveId);
         if (syncedObj) {
+          const oldLevel = this.objective?.level;
           this.objective = syncedObj;
+          if (oldLevel !== undefined && oldLevel !== syncedObj.level) {
+            // Rebuild scene with new level architectural blueprint
+            this.scene.restart({
+              username: this.username,
+              roles: this.roles,
+              gameRoomId: this.gameRoomId,
+              isHost: this.isHost,
+              objective: syncedObj,
+            });
+            return;
+          }
           this.hud?.refresh(this.username, this.roles, `LVL ${syncedObj.level} · ${syncedObj.label}`);
           this.ship?.setObjective(syncedObj);
           this.aiTerminal?.setObjective(syncedObj);
@@ -332,14 +359,16 @@ export class GameScene extends Phaser.Scene {
               username: this.username,
               isHost: this.isHost || !ColyseusService.room,
               onNextMission: (nextObj) => {
-                this.ship.sprite.setPosition(SHIP_WORLD_POS.x, SHIP_WORLD_POS.y);
                 if (ColyseusService.room && this.isHost) {
                   ColyseusService.sendNextMission(nextObj.id, true);
                 } else {
-                  this.objective = nextObj;
-                  this.hud.refresh(this.username, this.roles, `LVL ${nextObj.level} · ${nextObj.label}`);
-                  this.ship.setObjective(nextObj);
-                  this.aiTerminal.setObjective(nextObj);
+                  this.scene.restart({
+                    username: this.username,
+                    roles: this.roles,
+                    gameRoomId: this.gameRoomId,
+                    isHost: this.isHost,
+                    objective: nextObj,
+                  });
                 }
               },
               onClose: () => {
@@ -364,52 +393,15 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  // ── Tilemap ────────────────────────────────────────────────────────────
+  // ── Tilemap & Architecture ─────────────────────────────────────────────
 
-  private _buildTilemap(): Phaser.Physics.Arcade.StaticGroup {
+  private _buildTilemap(layout: LevelLayout): Phaser.Physics.Arcade.StaticGroup {
     const wallsGroup = this.physics.add.staticGroup();
-
-    // Mission-specific environmental lighting and station hue
-    // Level 1: Earth orbit (Crisp cool blue)
-    // Level 2: Moon (Monochrome lunar gray)
-    // Level 3: Mars (Deep Martian red/rust)
-    // Level 4: Europa (Sub-surface icy cyan/azure)
-    // Level 5: Sun Helios (Intense golden amber solar heat)
-    // Level 6: Titan (Mysterious methane twilight emerald)
-    const level = this.objective?.level ?? 1;
-    let floorTint = 0xffffff;
-    let wallTint = 0xffffff;
-
-    switch (level) {
-      case 1: // Low Earth Orbit
-        floorTint = 0xe0f2fe; // Light azure cleanroom
-        wallTint = 0xbae6fd;
-        break;
-      case 2: // Moon
-        floorTint = 0xf1f5f9; // Pale lunar concrete
-        wallTint = 0x94a3b8;
-        break;
-      case 3: // Mars Base
-        floorTint = 0xffedd5; // Martian rust tint
-        wallTint = 0xfca5a5;
-        break;
-      case 4: // Europa
-        floorTint = 0xcffafe; // Cryogenic ice blue
-        wallTint = 0x7dd3fc;
-        break;
-      case 5: // Sun Watcher
-        floorTint = 0xfef3c7; // Solar flare warm gold
-        wallTint = 0xfcd34d;
-        break;
-      case 6: // Titan Saturn
-        floorTint = 0xd1fae5; // Methane atmospheric emerald
-        wallTint = 0x6ee7b7;
-        break;
-    }
+    const { floorTint, wallTint } = layout.palette;
 
     for (let row = 0; row < MAP_ROWS; row++) {
       for (let col = 0; col < MAP_COLS; col++) {
-        const tileType = MAP_GRID[row]?.[col] ?? TILE.GRASS;
+        const tileType = layout.grid[row]?.[col] ?? TILE.GRASS;
         const x        = col * TILE_PX + TILE_PX / 2;
         const y        = row * TILE_PX + TILE_PX / 2;
 
@@ -436,5 +428,76 @@ export class GameScene extends Phaser.Scene {
     }
 
     return wallsGroup;
+  }
+
+  /**
+   * Builds level-specific decorative elements:
+   *   1. Visual floor power conduits connecting stations to the central rocket bay.
+   *   2. High-tech Floor Sector Emblem Plaque.
+   *   3. Atmospheric ambient floating dust/gas particles.
+   */
+  private _buildRoomDecorations(layout: LevelLayout): void {
+    const graphics = this.add.graphics();
+    graphics.setDepth(0.4);
+
+    // 1. Draw glowing circuit conduits from each station to the Ship Assembly Bay
+    const shipCenter = layout.shipWorldPos;
+    graphics.lineStyle(2, layout.palette.conduitColor, 0.45);
+
+    layout.stations.forEach((st) => {
+      const sx = st.tileCol * TILE_PX + TILE_PX / 2;
+      const sy = st.tileRow * TILE_PX + TILE_PX / 2;
+
+      // Draw clean orthogonal circuit traces to ship
+      graphics.beginPath();
+      graphics.moveTo(sx, sy);
+      graphics.lineTo(sx, shipCenter.y);
+      graphics.lineTo(shipCenter.x, shipCenter.y);
+      graphics.strokePath();
+
+      // Station junction terminal circle
+      graphics.fillStyle(layout.palette.conduitColor, 0.6);
+      graphics.fillCircle(sx, sy, 4);
+    });
+
+    // 2. High-Tech Floor Sector Emblem Plaque
+    const plaqueX = (MAP_COLS * TILE_PX) / 2;
+    const plaqueY = 28;
+
+    const bannerBg = this.add.graphics();
+    bannerBg.setDepth(0.6);
+    bannerBg.fillStyle(0x040810, 0.75);
+    bannerBg.fillRoundedRect(plaqueX - 180, plaqueY - 14, 360, 26, 6);
+    bannerBg.lineStyle(1, layout.palette.wallTint, 0.4);
+    bannerBg.strokeRoundedRect(plaqueX - 180, plaqueY - 14, 360, 26, 6);
+
+    const bannerText = this.add.text(
+      plaqueX,
+      plaqueY - 1,
+      layout.sectorTag,
+      {
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: "10px",
+        color: layout.palette.accentColor,
+        stroke: "#000000",
+        strokeThickness: 2,
+      },
+    );
+    bannerText.setOrigin(0.5, 0.5).setDepth(0.7);
+
+    // 3. Subtle atmospheric particles floating in the room
+    const particles = this.add.particles(0, 0, Assets.itemPlaceholder.key, {
+      x: { min: 32, max: MAP_COLS * TILE_PX - 32 },
+      y: { min: 32, max: MAP_ROWS * TILE_PX - 32 },
+      speedY: { min: -10, max: -3 },
+      speedX: { min: -5, max: 5 },
+      scale: { start: 0.8, end: 0.2 },
+      alpha: { start: 0.45, end: 0 },
+      tint: layout.palette.particleColor,
+      lifespan: 3000,
+      frequency: 200,
+      quantity: 1,
+    });
+    particles.setDepth(2);
   }
 }
