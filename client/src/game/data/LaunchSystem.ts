@@ -78,9 +78,9 @@ function checkSpace(items: GameItem[]): CheckResult {
   const pass = frames.length === 1 && usedSpace <= totalSpace;
   let note: string | undefined;
   if (frames.length === 0) {
-    note = "⚠ Exactly 1 frame is required on the spacecraft.";
+    note = "Exactly 1 frame is required on the spacecraft.";
   } else if (frames.length > 1) {
-    note = `⚠ Too many frames (${frames.length}) — each spacecraft must use exactly 1 frame.`;
+    note = `Too many frames (${frames.length}) — each spacecraft must use exactly 1 frame.`;
   }
 
   return {
@@ -211,9 +211,9 @@ function checkBrain(items: GameItem[], obj: Objective): CheckResult {
   const pass = computers.length === 1 && totalBrain >= needed;
   let note: string | undefined;
   if (computers.length === 0) {
-    note = "⚠ Exactly 1 flight computer is required on the spacecraft.";
+    note = "Exactly 1 flight computer is required on the spacecraft.";
   } else if (computers.length > 1) {
-    note = `⚠ Too many computers (${computers.length}) — each spacecraft may have only 1 computer.`;
+    note = `Too many computers (${computers.length}) — each spacecraft may have only 1 computer.`;
   }
 
   return {
@@ -240,7 +240,7 @@ function checkDataRate(items: GameItem[]): CheckResult {
     pass,
     actual:   `${effectiveRate} Data Rate (${radios.length} radio${radios.length === 1 ? "" : "s"}, ${totalRate} + ${rateBonus} bonus)`,
     required: `≥ 1 radio & ≥ ${netData} (${dataMade} data made − ${dataReduced} compressed)`,
-    note: radios.length === 0 ? "⚠ At least 1 radio/antenna is required on the spacecraft." : undefined,
+    note: radios.length === 0 ? "At least 1 radio/antenna is required on the spacecraft." : undefined,
   };
 }
 
@@ -256,7 +256,7 @@ function checkSignalRange(items: GameItem[], obj: Objective): CheckResult {
     pass,
     actual:   `${totalRange} Range (${bestRange} best radio + ${totalBoost} boosters)`,
     required: `≥ 1 radio & ≥ ${obj.signalNeed} (mission signal need)`,
-    note: radios.length === 0 ? "⚠ At least 1 radio/antenna is required to transmit a signal." : undefined,
+    note: radios.length === 0 ? "At least 1 radio/antenna is required to transmit a signal." : undefined,
   };
 }
 

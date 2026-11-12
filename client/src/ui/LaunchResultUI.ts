@@ -65,7 +65,7 @@ export class LaunchResultUI {
     });
 
     const title = document.createElement("h2");
-    title.textContent = result.success ? "🚀 LAUNCH SUCCESSFUL" : "🚫 LAUNCH FAILED";
+    title.textContent = result.success ? "LAUNCH SUCCESSFUL" : "LAUNCH FAILED";
     Object.assign(title.style, {
       color:        result.success ? "#2ecc71" : "#e94560",
       fontSize:     font.sizeLg, margin: "0", letterSpacing: "2px",
@@ -91,11 +91,11 @@ export class LaunchResultUI {
     });
 
     const passEl = document.createElement("span");
-    passEl.textContent = `✅  ${result.passCount} passed`;
+    passEl.textContent = `${result.passCount} passed`;
     Object.assign(passEl.style, { color: "#2ecc71", fontSize: font.sizeSm, fontWeight: "bold" });
 
     const failEl = document.createElement("span");
-    failEl.textContent = `❌  ${result.failCount} failed`;
+    failEl.textContent = `${result.failCount} failed`;
     Object.assign(failEl.style, { color: "#e94560", fontSize: font.sizeSm, fontWeight: "bold" });
 
     summaryBar.append(passEl, failEl);
@@ -162,13 +162,24 @@ export class LaunchResultUI {
       display: "flex", flexDirection: "column", gap: "2px",
     });
 
-    // Top line: icon + rule label
+    // Top line: status badge + rule label
     const topLine = document.createElement("div");
-    Object.assign(topLine.style, { display: "flex", gap: spacing.sm, alignItems: "baseline" });
+    Object.assign(topLine.style, { display: "flex", gap: "8px", alignItems: "center" });
 
-    const icon = document.createElement("span");
-    icon.textContent = check.pass ? "✅" : "❌";
-    icon.style.fontSize = "14px";
+    const badge = document.createElement("span");
+    badge.textContent = check.pass ? "PASS" : "FAIL";
+    Object.assign(badge.style, {
+      fontFamily: font.mono,
+      fontSize: "9px",
+      fontWeight: "800",
+      letterSpacing: "0.5px",
+      padding: "2px 6px",
+      borderRadius: "3px",
+      background: check.pass ? "rgba(46, 204, 113, 0.2)" : "rgba(233, 69, 96, 0.2)",
+      color: passColor,
+      border: `1px solid ${passColor}66`,
+      flexShrink: "0",
+    });
 
     const label = document.createElement("span");
     label.textContent = check.label;
@@ -176,7 +187,7 @@ export class LaunchResultUI {
       color:      colors.textPrimary, fontSize: font.sizeSm, fontWeight: "bold",
     });
 
-    topLine.append(icon, label);
+    topLine.append(badge, label);
 
     // Values lines
     const actual = document.createElement("div");
@@ -213,7 +224,7 @@ export class LaunchResultUI {
    * PLACEHOLDER: logs to console + shows a toast. Replace with real scene event.
    */
   private _onSuccess(result: LaunchResult): void {
-    console.log("🚀 [LaunchSystem] LAUNCH SUCCESS!", result);
+    console.log("[LaunchSystem] LAUNCH SUCCESS!", result);
     // TODO: trigger server "launchShip" event, play launch animation, transition scene, etc.
   }
 
@@ -223,7 +234,7 @@ export class LaunchResultUI {
    */
   private _onFailure(result: LaunchResult): void {
     const fails = result.checks.filter(c => !c.pass).map(c => c.label);
-    console.warn("❌ [LaunchSystem] LAUNCH FAILED — failing rules:", fails);
+    console.warn("[LaunchSystem] LAUNCH FAILED — failing rules:", fails);
     // TODO: show hint, play failure sound, etc.
   }
 }

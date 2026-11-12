@@ -111,31 +111,31 @@ export class ItemDetailUI {
     };
 
     // Power & Thermal
-    if (item.powerMade)         addStat("⚡ Power Made",          item.powerMade,  item.solar ? ` (×sunlight%)` : "");
-    if (item.powerUse)          addStat("⚡ Power Used",          item.powerUse);
-    if (item.powerSaved)        addStat("⚡ Power Saved",         item.powerSaved);
-    if (item.batteryStorage)    addStat("🔋 Battery Storage",     item.batteryStorage);
-    if (item.heatProtection)    addStat("🔥 Heat Protection",     item.heatProtection);
-    if (item.fuelCapacity)      addStat("⛽ Fuel Capacity",       item.fuelCapacity);
-    if (item.thrust)            addStat("🚀 Thrust",              item.thrust);
-    if (item.fuelBurn)          addStat("⛽ Fuel Burn / dist",    item.fuelBurn);
+    if (item.powerMade)         addStat("Power Made",             item.powerMade,  item.solar ? ` (×sunlight%)` : "");
+    if (item.powerUse)          addStat("Power Used",             item.powerUse);
+    if (item.powerSaved)        addStat("Power Saved",            item.powerSaved);
+    if (item.batteryStorage)    addStat("Battery Storage",        item.batteryStorage);
+    if (item.heatProtection)    addStat("Heat Protection",        item.heatProtection);
+    if (item.fuelCapacity)      addStat("Fuel Capacity",          item.fuelCapacity);
+    if (item.thrust)            addStat("Thrust",                 item.thrust);
+    if (item.fuelBurn)          addStat("Fuel Burn / dist",       item.fuelBurn);
     // Structure & Computing
-    if (item.frameSpace)        addStat("📦 Frame Space",         item.frameSpace);
-    if (item.spaceBonus)        addStat("📦 Space Bonus",         item.spaceBonus);
-    if (item.radiationProtection) addStat("☢ Rad. Protection",   item.radiationProtection);
-    if (item.brainPower)        addStat("🧠 Brain Power",         item.brainPower);
-    if (item.brainBonus)        addStat("🧠 Brain Bonus",         item.brainBonus);
-    if (item.launchPullReduction) addStat("🔻 Launch Pull −",     item.launchPullReduction);
+    if (item.frameSpace)        addStat("Frame Space",            item.frameSpace);
+    if (item.spaceBonus)        addStat("Space Bonus",            item.spaceBonus);
+    if (item.radiationProtection) addStat("Rad. Protection",      item.radiationProtection);
+    if (item.brainPower)        addStat("Brain Power",            item.brainPower);
+    if (item.brainBonus)        addStat("Brain Bonus",            item.brainBonus);
+    if (item.launchPullReduction) addStat("Launch Pull Reduction", item.launchPullReduction);
     // Communications
-    if (item.dataRate)          addStat("📡 Data Rate",           item.dataRate);
-    if (item.signalRange)       addStat("📡 Signal Range",        item.signalRange);
-    if (item.rangeBonus)        addStat("📡 Range Bonus",         item.rangeBonus);
-    if (item.rateBonus)         addStat("📡 Rate Bonus",          item.rateBonus);
-    if (item.dataReduction)     addStat("🗜 Data Reduction",      item.dataReduction);
+    if (item.dataRate)          addStat("Data Rate",              item.dataRate);
+    if (item.signalRange)       addStat("Signal Range",           item.signalRange);
+    if (item.rangeBonus)        addStat("Range Bonus",            item.rangeBonus);
+    if (item.rateBonus)         addStat("Rate Bonus",             item.rateBonus);
+    if (item.dataReduction)     addStat("Data Reduction",         item.dataReduction);
     // Science
-    if (item.dataMade)          addStat("🌌 Data Made",           item.dataMade);
-    if (item.brainUse)          addStat("🧠 Brain Used",          item.brainUse);
-    if (item.sciencePoints)     addStat("🔬 Science Points",      item.sciencePoints);
+    if (item.dataMade)          addStat("Data Made",              item.dataMade);
+    if (item.brainUse)          addStat("Brain Used",             item.brainUse);
+    if (item.sciencePoints)     addStat("Science Points",         item.sciencePoints);
 
     // ── Good / Watch out ──
     const tipsBlock = document.createElement("div");
@@ -151,7 +151,7 @@ export class ItemDetailUI {
       fontSize: "10.5px",
       lineHeight: "1.4",
     });
-    goodDiv.textContent = `✓ ${item.good}`;
+    goodDiv.textContent = item.good;
 
     const warnDiv = document.createElement("div");
     Object.assign(warnDiv.style, {
@@ -163,7 +163,7 @@ export class ItemDetailUI {
       fontSize: "10.5px",
       lineHeight: "1.4",
     });
-    warnDiv.textContent = `⚠ ${item.watchOut}`;
+    warnDiv.textContent = item.watchOut;
 
     tipsBlock.append(goodDiv, warnDiv);
 

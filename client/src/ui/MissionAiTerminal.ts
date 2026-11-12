@@ -738,9 +738,9 @@ export class MissionAiTerminal {
 
       const objLabel = this._objective?.label ?? "Active Mission";
       this._appendStaticCard(
-        `🚀 **[MCC DEV PROTOCOL OVERRIDE ACTIVATED]**\n\n` +
+        `**[MCC DEV PROTOCOL OVERRIDE ACTIVATED]**\n\n` +
         `تم ملء الصاروخ وتجهيزه بالكامل بـ **التشكيلة المعتمدة 12/12** الخاصة بمهمة \`${objLabel}\`!\n\n` +
-        `* **حالة الإطلاق:** جاهز للإطلاق فورا (**12/12 Checks Passing** ✅)\n` +
+        `* **حالة الإطلاق:** جاهز للإطلاق فورا (**12/12 Checks Passing**)\n` +
         `* **الفحوصات الهندسية:** Mass, Power, Delta-V, Computer, Communications, Thermal كلها مستوفاة بنجاح 100%.\n` +
         `* توجه إلى الصاروخ واضغط **E** للانطلاق أو ابدأ التسلسل مباشرة!`,
         "MISSION CONTROL // DEV OVERRIDE",

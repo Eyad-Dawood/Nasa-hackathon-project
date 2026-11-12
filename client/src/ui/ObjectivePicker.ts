@@ -314,7 +314,7 @@ export class ObjectivePicker {
         borderRadius: "8px",
         letterSpacing: "0.5px",
       });
-      testBadge.innerHTML = `<span>🧪</span><span>TEST MODE: ALL 6 LEVELS UNLOCKED</span>`;
+      testBadge.innerHTML = `<span>TEST MODE: ALL 6 LEVELS UNLOCKED</span>`;
       rightBox.appendChild(testBadge);
     }
 
@@ -813,10 +813,10 @@ export class ObjectivePicker {
         padding: "5px 0",
       });
       statusText.textContent = !isUnlocked
-        ? `🔒 SECTOR LOCKED (LVL ${obj.level})`
+        ? `SECTOR LOCKED (LVL ${obj.level})`
         : isCompleted
-        ? `✅ LEVEL ${obj.level} CLEARED`
-        : `⭐ LEVEL ${obj.level} READY FOR LAUNCH`;
+        ? `LEVEL ${obj.level} CLEARED`
+        : `LEVEL ${obj.level} READY FOR LAUNCH`;
       actionBlock.appendChild(statusText);
     }
 
