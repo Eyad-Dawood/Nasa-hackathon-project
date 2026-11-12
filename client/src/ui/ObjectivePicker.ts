@@ -104,47 +104,40 @@ function generateRibbonPath(
 }
 
 interface PlanetStyle {
-  glowColor: string;
-  bgGradient: string;
-  iconBg: string;
+  accentColor: string;
+  borderColor: string;
   badge: string;
 }
 
 const PLANET_STYLES: Record<string, PlanetStyle> = {
   M04: {
-    glowColor: "#29ADFF",
-    bgGradient: "radial-gradient(circle at 35% 35%, #38BDF8 0%, #0284C7 60%, #0369A1 100%)",
-    iconBg: "rgba(41, 173, 255, 0.2)",
-    badge: "EARTH ORBIT",
+    accentColor: "#29ADFF",
+    borderColor: "#38BDF8",
+    badge: "EARTH LEO",
   },
   M01: {
-    glowColor: "#E2E8F0",
-    bgGradient: "radial-gradient(circle at 35% 35%, #F8FAFC 0%, #94A3B8 60%, #475569 100%)",
-    iconBg: "rgba(248, 250, 252, 0.2)",
+    accentColor: "#CBD5E1",
+    borderColor: "#94A3B8",
     badge: "THE MOON",
   },
   M02: {
-    glowColor: "#EF4444",
-    bgGradient: "radial-gradient(circle at 35% 35%, #F87171 0%, #DC2626 60%, #991B1B 100%)",
-    iconBg: "rgba(239, 68, 68, 0.2)",
-    badge: "MARS",
+    accentColor: "#F87171",
+    borderColor: "#EF4444",
+    badge: "MARS BASE",
   },
   M03: {
-    glowColor: "#38BDF8",
-    bgGradient: "radial-gradient(circle at 35% 35%, #BAE6FD 0%, #38BDF8 50%, #0284C7 100%)",
-    iconBg: "rgba(56, 189, 248, 0.2)",
+    accentColor: "#38BDF8",
+    borderColor: "#0284C7",
     badge: "EUROPA / JUPITER",
   },
   M05: {
-    glowColor: "#F59E0B",
-    bgGradient: "radial-gradient(circle at 35% 35%, #FDE68A 0%, #F59E0B 50%, #B45309 100%)",
-    iconBg: "rgba(245, 158, 11, 0.2)",
+    accentColor: "#FBBF24",
+    borderColor: "#F59E0B",
     badge: "HELIOS CORONA",
   },
   M06: {
-    glowColor: "#10B981",
-    bgGradient: "radial-gradient(circle at 35% 35%, #6EE7B7 0%, #10B981 50%, #047857 100%)",
-    iconBg: "rgba(16, 185, 129, 0.2)",
+    accentColor: "#34D399",
+    borderColor: "#10B981",
     badge: "TITAN / SATURN",
   },
 };
@@ -274,13 +267,11 @@ export class ObjectivePicker {
     Object.assign(leftBox.style, { display: "flex", alignItems: "center", gap: "12px" });
 
     const beacon = document.createElement("div");
-    beacon.className = "pixel-beacon";
     Object.assign(beacon.style, {
-      width: "10px",
-      height: "10px",
+      width: "8px",
+      height: "8px",
       background: "#29ADFF",
       borderRadius: "2px",
-      boxShadow: "0 0 12px #29ADFF",
     });
 
     const titleText = document.createElement("div");
@@ -406,7 +397,7 @@ export class ObjectivePicker {
       scrollBehavior: "smooth",
     });
 
-    // Cosmic World Track: 2700px wide for expansive horizontal zigzagging
+    // Cosmic 2D Tactical World Track: 2700px wide with subtle 2D grid
     this.worldTrack = document.createElement("div");
     this.worldTrack.id = "pipeline-world-track";
     Object.assign(this.worldTrack.style, {
@@ -416,11 +407,15 @@ export class ObjectivePicker {
       height: "100%",
       display: "flex",
       alignItems: "center",
-      background:
-        "radial-gradient(circle at 20% 30%, rgba(41, 173, 255, 0.08) 0%, transparent 40%), radial-gradient(circle at 75% 70%, rgba(16, 185, 129, 0.07) 0%, transparent 45%), radial-gradient(circle at 50% 50%, rgba(245, 158, 11, 0.05) 0%, transparent 50%), #05080E",
+      backgroundColor: "#060911",
+      backgroundImage: `
+        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px)
+      `,
+      backgroundSize: "48px 48px",
     });
 
-    // SVG Manifold Ribbon Canvas
+    // SVG 2D Pipeline Ribbon Canvas (Clean Vector Strokes, No Blurry Glow Filter)
     this.svgLayer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     this.svgLayer.setAttribute("class", "pipeline-ribbon-canvas");
     Object.assign(this.svgLayer.style, {
@@ -435,45 +430,24 @@ export class ObjectivePicker {
 
     this.svgLayer.innerHTML = `
       <defs>
-        <linearGradient id="activeRibbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#29ADFF" stop-opacity="0.9" />
-          <stop offset="50%" stop-color="#38BDF8" stop-opacity="0.95" />
-          <stop offset="100%" stop-color="#34D399" stop-opacity="0.9" />
-        </linearGradient>
-        <linearGradient id="completedRibbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="#34D399" stop-opacity="0.75" />
-          <stop offset="100%" stop-color="#10B981" stop-opacity="0.75" />
-        </linearGradient>
-        <linearGradient id="lockedRibbonGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stop-color="rgba(255, 255, 255, 0.08)" />
-          <stop offset="100%" stop-color="rgba(255, 255, 255, 0.02)" />
-        </linearGradient>
-        <filter id="ribbonGlow" x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-          <feMerge>
-            <feMergeNode in="blur" />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
-        </filter>
+        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+          <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1" />
+        </pattern>
       </defs>
       <g id="ribbon-paths-group"></g>
     `;
 
     // ── Generate the Zigzag Nodes across Space ──
-    // Horizontal positions across 2700px track:
-    // Level 1: x=200px,  y=56% (Earth LEO)
-    // Level 2: x=640px,  y=32% (Moon)
-    // Level 3: x=1080px, y=58% (Mars)
-    // Level 4: x=1520px, y=32% (Europa)
-    // Level 5: x=1960px, y=58% (Sun Watcher)
-    // Level 6: x=2400px, y=32% (Titan Boss)
+    // Shifted down comfortably to give 2D breathing room from the top bar:
+    // Even levels (upper nodes): yPct = 44% (gives ~350px clearance below top bar)
+    // Odd levels (lower nodes):  yPct = 62% (gives comfortable clearance above bottom)
     const ZIGZAG_COORDS = [
-      { level: 1, x: 220, yPct: 56 },
-      { level: 2, x: 640, yPct: 32 },
-      { level: 3, x: 1060, yPct: 56 },
-      { level: 4, x: 1480, yPct: 32 },
-      { level: 5, x: 1900, yPct: 56 },
-      { level: 6, x: 2320, yPct: 32 },
+      { level: 1, x: 240, yPct: 62 },
+      { level: 2, x: 680, yPct: 44 },
+      { level: 3, x: 1120, yPct: 62 },
+      { level: 4, x: 1560, yPct: 44 },
+      { level: 5, x: 2000, yPct: 62 },
+      { level: 6, x: 2440, yPct: 44 },
     ];
 
     OBJECTIVES.forEach((obj) => {
@@ -495,7 +469,7 @@ export class ObjectivePicker {
   }
 
   /**
-   * Builds an expansive game level stage station node (Planetary Hub + Attached Liquid Glass Card)
+   * Builds a crisp 2D game stage station node (Tactical Sector Node + Attached Mission Dossier)
    */
   private _buildStageStation(
     obj: Objective,
@@ -518,63 +492,57 @@ export class ObjectivePicker {
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
-      gap: "14px",
+      gap: "12px",
       zIndex: "10",
-      width: "320px",
+      width: "280px",
       pointerEvents: "auto",
     });
 
-    // ── Planetary / Station Circular Portal ──
+    // ── Crisp 2D Tactical Stage Node (No 3D marble gradients, no glowing halos) ──
     const portalHub = document.createElement("div");
     portalHub.className = "stage-portal-hub";
     Object.assign(portalHub.style, {
-      width: "84px",
-      height: "84px",
+      width: "68px",
+      height: "68px",
       borderRadius: "50%",
-      background: isUnlocked ? style.bgGradient : "rgba(30, 41, 59, 0.4)",
-      boxShadow: isCurrentActive
-        ? `0 0 35px ${style.glowColor}, inset 0 2px 4px rgba(255, 255, 255, 0.6)`
-        : isCompleted
-        ? "0 0 20px rgba(52, 211, 153, 0.5), inset 0 1px 2px rgba(255, 255, 255, 0.4)"
-        : "inset 0 1px 2px rgba(255, 255, 255, 0.08)",
+      background: isUnlocked ? "#0B111E" : "#080C14",
+      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
       border: isCurrentActive
-        ? `3px solid #ffffff`
+        ? `2px solid ${style.borderColor}`
         : isCompleted
-        ? `2px solid #34D399`
-        : `2px dashed rgba(255, 255, 255, 0.18)`,
+        ? "2px solid #10B981"
+        : "1.5px dashed rgba(255, 255, 255, 0.15)",
+      outline: isCurrentActive ? "2px dashed rgba(56, 189, 248, 0.45)" : "none",
+      outlineOffset: "4px",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
       cursor: "pointer",
       position: "relative",
-      transition: "all 0.25s cubic-bezier(0.16, 1, 0.3, 1)",
+      transition: "all 0.15s ease",
     });
 
-    if (isCurrentActive) {
-      portalHub.classList.add("portal-pulse-active");
-    }
-
-    // Level number inside planet
+    // Level number inside 2D hub
     const lvlNum = document.createElement("span");
     lvlNum.textContent = String(obj.level);
     Object.assign(lvlNum.style, {
-      fontSize: "26px",
-      fontWeight: "900",
+      fontSize: "22px",
+      fontWeight: "800",
       fontFamily: "'JetBrains Mono', monospace",
-      color: "#ffffff",
-      textShadow: "0 2px 8px rgba(0, 0, 0, 0.8)",
+      color: isUnlocked ? "#ffffff" : "rgba(255, 255, 255, 0.3)",
+      lineHeight: "1",
     });
 
     const planetBadge = document.createElement("span");
     planetBadge.textContent = style.badge;
     Object.assign(planetBadge.style, {
-      fontSize: "8.5px",
+      fontSize: "7.5px",
       fontWeight: "700",
       fontFamily: "'JetBrains Mono', monospace",
-      color: "rgba(255, 255, 255, 0.9)",
+      color: isUnlocked ? style.accentColor : "rgba(255, 255, 255, 0.25)",
       letterSpacing: "0.5px",
-      textShadow: "0 1px 4px rgba(0, 0, 0, 0.8)",
+      marginTop: "3px",
     });
 
     portalHub.append(lvlNum, planetBadge);
@@ -582,34 +550,33 @@ export class ObjectivePicker {
     // Completion or Lock badge over hub
     if (isCompleted) {
       const checkIcon = document.createElement("div");
-      checkIcon.appendChild(createElement(Check, { width: 14, height: 14, color: "#ffffff", "stroke-width": 3 }));
+      checkIcon.appendChild(createElement(Check, { width: 12, height: 12, color: "#ffffff", "stroke-width": 3 }));
       Object.assign(checkIcon.style, {
         position: "absolute",
-        top: "-4px",
-        right: "-4px",
-        width: "24px",
-        height: "24px",
+        top: "-3px",
+        right: "-3px",
+        width: "20px",
+        height: "20px",
         borderRadius: "50%",
         background: "#10B981",
-        border: "2px solid #ffffff",
+        border: "1.5px solid #060911",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        boxShadow: "0 0 10px rgba(16, 185, 129, 0.8)",
       });
       portalHub.appendChild(checkIcon);
     } else if (!isUnlocked) {
       const lockIcon = document.createElement("div");
-      lockIcon.appendChild(createElement(Lock, { width: 13, height: 13, color: "rgba(255, 255, 255, 0.6)" }));
+      lockIcon.appendChild(createElement(Lock, { width: 11, height: 11, color: "rgba(255, 255, 255, 0.5)" }));
       Object.assign(lockIcon.style, {
         position: "absolute",
-        top: "-4px",
-        right: "-4px",
-        width: "24px",
-        height: "24px",
+        top: "-3px",
+        right: "-3px",
+        width: "20px",
+        height: "20px",
         borderRadius: "50%",
-        background: "rgba(15, 23, 42, 0.8)",
-        border: "1px solid rgba(255, 255, 255, 0.2)",
+        background: "#1E293B",
+        border: "1px solid rgba(255, 255, 255, 0.12)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -617,34 +584,30 @@ export class ObjectivePicker {
       portalHub.appendChild(lockIcon);
     }
 
-    // ── Attached Liquid Glass Mission Card ──
+    // ── Attached Crisp 2D Mission Card (Clean 2D Liquid Glass Dossier) ──
     const card = document.createElement("div");
     card.className = "stage-card-panel";
     Object.assign(card.style, {
       width: "100%",
       background: isCurrentActive
-        ? "rgba(14, 20, 36, 0.85)"
+        ? "rgba(13, 19, 33, 0.94)"
         : isCompleted
-        ? "rgba(12, 18, 28, 0.78)"
-        : "rgba(15, 19, 28, 0.52)",
-      boxShadow: isCurrentActive
-        ? "inset 0 1px 0.5px rgba(255, 255, 255, 0.3), inset 0 0 0 0.5px rgba(41, 173, 255, 0.4), 0 20px 45px rgba(0, 0, 0, 0.6)"
-        : isCompleted
-        ? "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), inset 0 0 0 0.5px rgba(52, 211, 153, 0.3), 0 16px 36px rgba(0, 0, 0, 0.5)"
-        : "inset 0 1px 0.5px rgba(255, 255, 255, 0.08), 0 10px 25px rgba(0, 0, 0, 0.4)",
-      backdropFilter: "blur(20px) saturate(1.5)",
-      WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+        ? "rgba(11, 16, 27, 0.88)"
+        : "rgba(10, 14, 22, 0.65)",
+      boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
       border: isCurrentActive
-        ? `1px solid rgba(41, 173, 255, 0.5)`
+        ? `1px solid rgba(56, 189, 248, 0.45)`
         : isCompleted
-        ? `1px solid rgba(52, 211, 153, 0.35)`
+        ? `1px solid rgba(16, 185, 129, 0.3)`
         : `1px solid rgba(255, 255, 255, 0.08)`,
-      borderRadius: "14px",
-      padding: "16px",
+      borderRadius: "10px",
+      padding: "13px",
       display: "flex",
       flexDirection: "column",
-      gap: "10px",
-      transition: "all 0.2s ease",
+      gap: "9px",
+      transition: "all 0.15s ease",
     });
 
     // Card Header (Name + Stars)
@@ -653,13 +616,13 @@ export class ObjectivePicker {
       display: "flex",
       alignItems: "flex-start",
       justifyContent: "space-between",
-      gap: "8px",
+      gap: "6px",
     });
 
     const cTitles = document.createElement("div");
     cTitles.innerHTML = `
-      <div style="font-size:14px; font-weight:700; color:#ffffff; letter-spacing:0.2px;">${obj.label}</div>
-      <div style="font-size:11px; color:rgba(255, 255, 255, 0.5); font-family:'JetBrains Mono', monospace; margin-top:2px;">
+      <div style="font-size:13px; font-weight:700; color:#ffffff; letter-spacing:0.2px;">${obj.label}</div>
+      <div style="font-size:10px; color:rgba(255, 255, 255, 0.5); font-family:'JetBrains Mono', monospace; margin-top:2px;">
         ${obj.destination} · ${obj.distanceKm}
       </div>
     `;
@@ -667,7 +630,7 @@ export class ObjectivePicker {
     const cStars = document.createElement("div");
     Object.assign(cStars.style, { display: "flex", alignItems: "center", gap: "2px" });
     for (let s = 0; s < obj.stars; s++) {
-      cStars.appendChild(createElement(Star, { width: 10, height: 10, color: "#FBBF24", fill: "#FBBF24" }));
+      cStars.appendChild(createElement(Star, { width: 9, height: 9, color: "#FBBF24", fill: "#FBBF24" }));
     }
 
     cHead.append(cTitles, cStars);
@@ -677,11 +640,11 @@ export class ObjectivePicker {
     Object.assign(telem.style, {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",
-      gap: "4px 8px",
-      background: "rgba(255, 255, 255, 0.03)",
-      borderRadius: "8px",
-      padding: "8px 10px",
-      fontSize: "10.5px",
+      gap: "4px 6px",
+      background: "rgba(255, 255, 255, 0.025)",
+      borderRadius: "6px",
+      padding: "6px 8px",
+      fontSize: "10px",
       fontFamily: "'JetBrains Mono', monospace",
       color: "rgba(255, 255, 255, 0.75)",
     });
@@ -702,17 +665,17 @@ export class ObjectivePicker {
     };
 
     telem.append(
-      item(createElement(Sun, { width: 11, height: 11, color: "#FBBF24" }), `Sun ${obj.sunlightPct}%`),
-      item(createElement(Flame, { width: 11, height: 11, color: "#FF004D" }), `Heat ${obj.heatDanger}`),
-      item(createElement(ShieldAlert, { width: 11, height: 11, color: "#29ADFF" }), `Rad ${obj.radiation}`),
-      item(createElement(Sparkles, { width: 11, height: 11, color: "#34D399" }), `Goal ${obj.scienceGoal} pts`),
-      item(createElement(Compass, { width: 11, height: 11, color: "#A78BFA" }), `$${obj.budget}M`),
-      item(createElement(Rocket, { width: 11, height: 11, color: "#FFF1E8" }), `${obj.starInstrument}`),
+      item(createElement(Sun, { width: 10, height: 10, color: "#FBBF24" }), `Sun ${obj.sunlightPct}%`),
+      item(createElement(Flame, { width: 10, height: 10, color: "#FF004D" }), `Heat ${obj.heatDanger}`),
+      item(createElement(ShieldAlert, { width: 10, height: 10, color: "#29ADFF" }), `Rad ${obj.radiation}`),
+      item(createElement(Sparkles, { width: 10, height: 10, color: "#34D399" }), `Goal ${obj.scienceGoal} pts`),
+      item(createElement(Compass, { width: 10, height: 10, color: "#A78BFA" }), `$${obj.budget}M`),
+      item(createElement(Rocket, { width: 10, height: 10, color: "#FFF1E8" }), `${obj.starInstrument}`),
     );
 
     // Launch Button / Status
     const actionBlock = document.createElement("div");
-    Object.assign(actionBlock.style, { marginTop: "4px" });
+    Object.assign(actionBlock.style, { marginTop: "2px" });
 
     if (this.isHost) {
       const btn = document.createElement("button");
@@ -728,54 +691,60 @@ export class ObjectivePicker {
 
       if (!isUnlocked) {
         btn.disabled = true;
-        btn.appendChild(createElement(Lock, { width: 12, height: 12 }));
-        btnLabel.textContent = `LOCKED // PASS LEVEL ${obj.level - 1}`;
+        btn.appendChild(createElement(Lock, { width: 11, height: 11 }));
+        btnLabel.textContent = `LOCKED // PASS LVL ${obj.level - 1}`;
         btn.appendChild(btnLabel);
 
         Object.assign(btn.style, {
-          background: "rgba(255, 255, 255, 0.05)",
-          border: "1px solid rgba(255, 255, 255, 0.08)",
-          borderRadius: "8px",
-          color: "rgba(255, 255, 255, 0.35)",
-          fontSize: "11px",
+          background: "rgba(255, 255, 255, 0.04)",
+          border: "1px solid rgba(255, 255, 255, 0.06)",
+          borderRadius: "6px",
+          color: "rgba(255, 255, 255, 0.3)",
+          fontSize: "10.5px",
           fontFamily: "'JetBrains Mono', monospace",
-          padding: "9px 12px",
+          padding: "8px 10px",
           cursor: "not-allowed",
         });
       } else {
-        btn.appendChild(createElement(Rocket, { width: 13, height: 13, "stroke-width": 2 }));
+        btn.appendChild(createElement(Rocket, { width: 12, height: 12, "stroke-width": 2 }));
         btnLabel.textContent = isCompleted
           ? `REPLAY LEVEL ${obj.level}`
           : `AUTHORIZE LEVEL ${obj.level}`;
         btn.appendChild(btnLabel);
 
         Object.assign(btn.style, {
-          background: isCompleted ? "rgba(52, 211, 153, 0.16)" : "#ffffff",
+          background: isCompleted ? "rgba(16, 185, 129, 0.15)" : "#29ADFF",
           boxShadow: isCompleted
-            ? "inset 0 1px 0.5px rgba(255, 255, 255, 0.2), 0 2px 10px rgba(52, 211, 153, 0.15)"
-            : "0 4px 20px rgba(255, 255, 255, 0.35), inset 0 1px 1px #ffffff",
-          border: isCompleted ? "1px solid rgba(52, 211, 153, 0.4)" : "none",
-          borderRadius: "8px",
-          color: isCompleted ? "#34D399" : "#04060A",
-          fontSize: "11.5px",
+            ? "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
+            : "0 2px 8px rgba(0, 0, 0, 0.4)",
+          border: isCompleted ? "1px solid rgba(16, 185, 129, 0.35)" : "none",
+          borderRadius: "6px",
+          color: isCompleted ? "#34D399" : "#040810",
+          fontSize: "11px",
           fontWeight: "700",
           fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.5px",
-          padding: "9px 14px",
+          letterSpacing: "0.4px",
+          padding: "8px 12px",
           cursor: "pointer",
-          transition: "all 0.15s ease",
+          transition: "all 0.12s ease",
         });
 
         btn.addEventListener("mouseenter", () => {
-          if (!btn.disabled) btn.style.transform = "scale(1.02)";
+          if (!btn.disabled) {
+            btn.style.opacity = "0.92";
+            btn.style.transform = "translateY(-1px)";
+          }
         });
         btn.addEventListener("mouseleave", () => {
-          if (!btn.disabled) btn.style.transform = "scale(1)";
+          if (!btn.disabled) {
+            btn.style.opacity = "1";
+            btn.style.transform = "translateY(0)";
+          }
         });
         btn.addEventListener("click", () => {
           btn.disabled = true;
-          btnLabel.textContent = "TRANSMITTING FLIGHT VECTOR...";
-          btn.style.opacity = "0.7";
+          btnLabel.textContent = "TRANSMITTING VECTOR...";
+          btn.style.opacity = "0.6";
           btn.style.cursor = "not-allowed";
           ColyseusService.selectObjective(obj.id);
         });
@@ -785,14 +754,14 @@ export class ObjectivePicker {
     } else {
       const statusText = document.createElement("div");
       Object.assign(statusText.style, {
-        fontSize: "11px",
+        fontSize: "10.5px",
         fontFamily: "'JetBrains Mono', monospace",
         textAlign: "center",
-        color: isCurrentActive ? "#29ADFF" : isCompleted ? "#34D399" : "rgba(255, 255, 255, 0.35)",
-        padding: "6px 0",
+        color: isCurrentActive ? "#29ADFF" : isCompleted ? "#34D399" : "rgba(255, 255, 255, 0.3)",
+        padding: "5px 0",
       });
       statusText.textContent = !isUnlocked
-        ? `🔒 SECTOR LOCKED (LEVEL ${obj.level})`
+        ? `🔒 SECTOR LOCKED (LVL ${obj.level})`
         : isCompleted
         ? `✅ LEVEL ${obj.level} CLEARED`
         : `⭐ LEVEL ${obj.level} READY FOR LAUNCH`;
@@ -845,29 +814,35 @@ export class ObjectivePicker {
         const isConnUnlocked = this.highestUnlockedLevel >= lvl + 1;
         const isConnCompleted = this.highestUnlockedLevel > lvl + 1;
 
-        const { ribbonPath, centerCurve } = generateRibbonPath(start, end, 26, 3.5);
+        const { ribbonPath, centerCurve } = generateRibbonPath(start, end, 22, 3);
 
         if (ribbonPath) {
-          const fillGrad = isConnCompleted
-            ? "url(#completedRibbonGrad)"
+          const ribbonFill = isConnCompleted
+            ? "#0D1E18"
             : isConnUnlocked
-            ? "url(#activeRibbonGrad)"
-            : "url(#lockedRibbonGrad)";
+            ? "#0E1828"
+            : "#090E17";
 
-          const strokeBorder = isConnUnlocked
-            ? "rgba(255, 255, 255, 0.3)"
+          const ribbonStroke = isConnCompleted
+            ? "rgba(16, 185, 129, 0.4)"
+            : isConnUnlocked
+            ? "rgba(56, 189, 248, 0.35)"
+            : "rgba(255, 255, 255, 0.05)";
+
+          const pulseStroke = isConnCompleted
+            ? "#10B981"
+            : isConnUnlocked
+            ? "#38BDF8"
             : "rgba(255, 255, 255, 0.08)";
 
-          const glowFilter = isConnUnlocked ? 'filter="url(#ribbonGlow)"' : "";
           const flowClass = isConnUnlocked ? "ribbon-flow-active" : "";
 
           html += `
             <g class="ribbon-connection-segment">
-              <!-- Organic Flared Ribbon Body -->
-              <path d="${ribbonPath}" fill="${fillGrad}" ${glowFilter} opacity="${isConnUnlocked ? 0.92 : 0.35}" />
-              <path d="${ribbonPath}" fill="none" stroke="${strokeBorder}" stroke-width="0.8" />
-              <!-- S-Curve Energy Pulse Line -->
-              <path d="${centerCurve}" class="${flowClass}" fill="none" stroke="${isConnUnlocked ? '#ffffff' : 'rgba(255,255,255,0.1)'}" stroke-width="${isConnUnlocked ? '1.8' : '1'}" stroke-dasharray="${isConnUnlocked ? '6 8' : '3 6'}" />
+              <!-- Crisp 2D Flared Ribbon Body (No Blurry Filters) -->
+              <path d="${ribbonPath}" fill="${ribbonFill}" stroke="${ribbonStroke}" stroke-width="1.2" opacity="0.95" />
+              <!-- Trajectory Flight Vector Line -->
+              <path d="${centerCurve}" class="${flowClass}" fill="none" stroke="${pulseStroke}" stroke-width="${isConnUnlocked ? '1.6' : '1'}" stroke-dasharray="${isConnUnlocked ? '6 7' : '3 6'}" />
             </g>
           `;
         }
@@ -952,25 +927,11 @@ export class ObjectivePicker {
     styleEl.id = "pipeline-ribbon-styles";
     styleEl.textContent = `
       @keyframes ribbonFlowDash {
-        from { stroke-dashoffset: 28; }
+        from { stroke-dashoffset: 26; }
         to { stroke-dashoffset: 0; }
       }
       .ribbon-flow-active {
         animation: ribbonFlowDash 1.2s linear infinite;
-      }
-      .portal-pulse-active {
-        animation: portalPulse 2s ease-in-out infinite alternate;
-      }
-      @keyframes portalPulse {
-        0% { transform: scale(1); filter: drop-shadow(0 0 10px rgba(41, 173, 255, 0.4)); }
-        100% { transform: scale(1.06); filter: drop-shadow(0 0 25px rgba(41, 173, 255, 0.8)); }
-      }
-      .pixel-beacon {
-        animation: beaconGlow 1.6s ease-in-out infinite alternate;
-      }
-      @keyframes beaconGlow {
-        0% { opacity: 0.6; transform: scale(0.9); }
-        100% { opacity: 1; transform: scale(1.15); box-shadow: 0 0 16px #29ADFF; }
       }
       #pipeline-scroll-viewport::-webkit-scrollbar {
         height: 6px;
@@ -979,7 +940,7 @@ export class ObjectivePicker {
         background: rgba(5, 8, 14, 0.8);
       }
       #pipeline-scroll-viewport::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.15);
         border-radius: 4px;
       }
       #pipeline-scroll-viewport::-webkit-scrollbar-thumb:hover {
