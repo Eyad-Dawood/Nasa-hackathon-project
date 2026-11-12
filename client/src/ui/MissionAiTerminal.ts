@@ -29,6 +29,15 @@ import {
 
 const ARABIC_CHAR_RX = /[\u0600-\u06FF]/;
 
+export type DroidState = "idle" | "thinking" | "alert" | "ready";
+
+const DROID_AVATARS: Record<DroidState, string> = {
+  idle: "/assets/droid/droid_idle.png",
+  thinking: "/assets/droid/droid_thinking.png",
+  alert: "/assets/droid/droid_alert.png",
+  ready: "/assets/droid/droid_ready.png",
+};
+
 /**
  * MissionAiTerminal
  * ─────────────────
@@ -49,6 +58,7 @@ export class MissionAiTerminal {
   private _inputEl!: HTMLInputElement;
   private _sendBtn!: HTMLButtonElement;
   private _toggleBtn!: HTMLButtonElement;
+  private _droidAvatarImg: HTMLImageElement | null = null;
 
   private _objective: Objective | null;
   private _playerRoles: string[];
@@ -124,6 +134,13 @@ export class MissionAiTerminal {
         this._handleErrorEvent(ev);
       }),
     );
+  }
+
+  /** Dynamically updates the Flight Director Droid avatar state */
+  public setDroidState(state: DroidState): void {
+    if (this._droidAvatarImg) {
+      this._droidAvatarImg.src = DROID_AVATARS[state] || DROID_AVATARS.idle;
+    }
   }
 
   destroy(): void {
@@ -253,13 +270,14 @@ export class MissionAiTerminal {
     this._activeRequestId = requestId;
     this._streamAccumulator = "";
 
-    const { row, contentEl, cursor } = this._createAiBubble("MCC-HOUSTON // LIVE LINK");
+    const { row, contentEl, cursor } = this._createAiBubble("MCC-HOUSTON // LIVE LINK", "thinking");
     this._activeRow = row;
     this._activeContentEl = contentEl;
     this._activeCursor = cursor;
     this._messagesContainer.appendChild(row);
     this._scrollBottom();
 
+    this.setDroidState("thinking");
     this._setLiveStatus("Connecting to MCC-Houston Flight Director...");
 
     const detectedLang: "en" | "ar" | undefined =
@@ -301,6 +319,7 @@ export class MissionAiTerminal {
     this._activeContentEl = null;
     this._activeRow = null;
     this._setLiveStatus(null);
+    this.setDroidState(ev.code === "ABORTED" ? "idle" : "alert");
 
     if (!contentEl || !row) return;
 
@@ -310,6 +329,11 @@ export class MissionAiTerminal {
 
     // Structured verification telemetry & citations footer
     const meta = ev.metadata;
+    if (meta?.passCount === 12) {
+      this.setDroidState("ready");
+    } else {
+      this.setDroidState("idle");
+    }
     if (meta) {
       const footer = document.createElement("div");
       Object.assign(footer.style, {
@@ -440,6 +464,7 @@ export class MissionAiTerminal {
     this._activeContentEl = null;
     this._activeRow = null;
     this._setLiveStatus(null);
+    this.setDroidState(ev.code === "ABORTED" ? "idle" : "alert");
 
     if (!contentEl || !row) return;
 
@@ -480,6 +505,7 @@ export class MissionAiTerminal {
     this._activeContentEl = null;
     this._activeRow = null;
     this._setLiveStatus(null);
+    this.setDroidState(ev.code === "ABORTED" ? "idle" : "alert");
   }
 
   // ── UI Rendering Helpers ───────────────────────────────────────────────
@@ -537,7 +563,7 @@ export class MissionAiTerminal {
     }
   }
 
-  private _createAiBubble(headerLabel: string): {
+  private _createAiBubble(headerLabel: string, droidState: DroidState = "idle"): {
     row: HTMLDivElement;
     contentEl: HTMLDivElement;
     cursor: HTMLSpanElement;
@@ -566,8 +592,17 @@ export class MissionAiTerminal {
     const headerTitle = document.createElement("div");
     headerTitle.style.display = "flex";
     headerTitle.style.alignItems = "center";
-    headerTitle.style.gap = "6px";
-    headerTitle.appendChild(createElement(Terminal, { width: 13, height: 13, "stroke-width": 1.5 }));
+    headerTitle.style.gap = "8px";
+
+    const bubbleDroid = document.createElement("img");
+    bubbleDroid.src = DROID_AVATARS[droidState] || DROID_AVATARS.idle;
+    Object.assign(bubbleDroid.style, {
+      width: "18px",
+      height: "18px",
+      imageRendering: "pixelated",
+    });
+    headerTitle.appendChild(bubbleDroid);
+
     const headerText = document.createElement("span");
     headerText.textContent = headerLabel;
     headerTitle.appendChild(headerText);
@@ -827,7 +862,20 @@ export class MissionAiTerminal {
     });
 
     const titleBox = document.createElement("div");
-    Object.assign(titleBox.style, { display: "flex", alignItems: "center", gap: "8px" });
+    Object.assign(titleBox.style, { display: "flex", alignItems: "center", gap: "10px" });
+
+    const droidAvatar = document.createElement("img");
+    droidAvatar.src = DROID_AVATARS.idle;
+    droidAvatar.alt = "Flight Director Droid";
+    Object.assign(droidAvatar.style, {
+      width: "28px",
+      height: "28px",
+      imageRendering: "pixelated",
+      borderRadius: "4px",
+      border: "1px solid rgba(255, 255, 255, 0.15)",
+      background: "#080C14",
+    });
+    this._droidAvatarImg = droidAvatar;
 
     const titleText = document.createElement("span");
     titleText.textContent = "Flight Director Telemetry";
@@ -837,7 +885,7 @@ export class MissionAiTerminal {
       fontWeight: "600",
       letterSpacing: "0.2px",
     });
-    titleBox.append(titleText);
+    titleBox.append(droidAvatar, titleText);
 
     const closeBtn = document.createElement("button");
     closeBtn.appendChild(createElement(X, { width: 16, height: 16, "stroke-width": 1.5 }));

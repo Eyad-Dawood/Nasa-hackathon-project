@@ -2,6 +2,15 @@ import { createElement, Rocket, CheckCircle2, Award, ArrowRight, RotateCcw } fro
 import { Theme } from "../config/theme";
 import { Objective, OBJECTIVES } from "../game/data/ObjectiveData";
 
+const PLANET_SPRITES: Record<string, string> = {
+  M04: "/assets/planets/planet_earth_64.png",
+  M01: "/assets/planets/planet_moon_64.png",
+  M02: "/assets/planets/planet_mars_64.png",
+  M03: "/assets/planets/planet_europa_64.png",
+  M05: "/assets/planets/planet_sun_64.png",
+  M06: "/assets/planets/planet_titan_64.png",
+};
+
 export class MissionVictoryUI {
   private _container: HTMLDivElement;
   private _objective: Objective;
@@ -72,15 +81,29 @@ export class MissionVictoryUI {
       alignItems: "center",
     });
 
-    // Icon Badge
+    // Destination Planet Emblem Badge
     const iconBadge = document.createElement("div");
-    iconBadge.appendChild(createElement(Award, { width: 32, height: 32, "stroke-width": 1.5, color: colors.success }));
+    const planetSrc = PLANET_SPRITES[this._objective.id];
+    if (planetSrc) {
+      const planetImg = document.createElement("img");
+      planetImg.src = planetSrc;
+      planetImg.alt = this._objective.destination;
+      Object.assign(planetImg.style, {
+        width: "48px",
+        height: "48px",
+        imageRendering: "pixelated",
+      });
+      iconBadge.appendChild(planetImg);
+    } else {
+      iconBadge.appendChild(createElement(Award, { width: 32, height: 32, "stroke-width": 1.5, color: colors.success }));
+    }
     Object.assign(iconBadge.style, {
-      width: "64px",
-      height: "64px",
+      width: "72px",
+      height: "72px",
       borderRadius: "50%",
-      background: "rgba(52, 211, 153, 0.1)",
-      border: `1px solid ${colors.success}`,
+      background: "#0B111E",
+      border: `2px solid ${colors.success}`,
+      boxShadow: "0 4px 16px rgba(16, 185, 129, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
