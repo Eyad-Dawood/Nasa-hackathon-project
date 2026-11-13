@@ -45,31 +45,33 @@ export class RolePicker {
       const iconWrap = card.querySelector(".role-icon-wrap") as HTMLDivElement | null;
 
       if (isMine) {
-        card.style.background = `linear-gradient(135deg, ${roleColor}18 0%, ${roleColor}08 100%)`;
-        card.style.boxShadow = `inset 0 1px 1px rgba(255, 255, 255, 0.35), inset 0 0 0 0.5px ${roleColor}40, 0 8px 32px ${roleColor}20, 0 0 0 1px ${roleColor}30`;
+        card.style.background = `linear-gradient(145deg, ${roleColor}22 0%, ${roleColor}0d 60%, rgba(255,255,255,0.03) 100%)`;
+        card.style.boxShadow = `inset 0 1px 1px ${roleColor}30, inset 0 0 0 0.5px ${roleColor}50, 0 8px 32px ${roleColor}28, 0 0 0 1px ${roleColor}40`;
+        card.style.borderBottom = `2px solid ${roleColor}80`;
         card.style.cursor = "pointer";
         card.style.opacity = "1";
         card.style.transform = "scale(1)";
         card.setAttribute("data-state", "mine");
         if (iconWrap) {
-          iconWrap.style.background = `${roleColor}28`;
-          iconWrap.style.boxShadow = `0 0 16px ${roleColor}18`;
+          iconWrap.style.background = `${roleColor}30`;
+          iconWrap.style.boxShadow = `0 0 20px ${roleColor}25, inset 0 0 0 1px ${roleColor}20`;
         }
         if (label) {
-          label.style.background = `linear-gradient(180deg, #ffffff 30%, ${roleColor}dd 100%)`;
+          label.style.background = `linear-gradient(180deg, #ffffff 20%, ${roleColor} 100%)`;
           label.style.webkitBackgroundClip = "text";
           label.style.webkitTextFillColor = "transparent";
         }
         if (statusBadge) {
           statusBadge.textContent = "ASSIGNED";
           statusBadge.style.display = "inline-flex";
-          statusBadge.style.background = `${roleColor}22`;
+          statusBadge.style.background = `${roleColor}25`;
           statusBadge.style.color = roleColor;
-          statusBadge.style.boxShadow = `inset 0 0 0 0.5px ${roleColor}35`;
+          statusBadge.style.boxShadow = `inset 0 0 0 0.5px ${roleColor}45`;
         }
       } else if (isTakenByOther) {
         card.style.background = "rgba(255, 255, 255, 0.02)";
         card.style.boxShadow = "inset 0 0 0 0.5px rgba(255, 255, 255, 0.04)";
+        card.style.borderBottom = "2px solid transparent";
         card.style.cursor = "not-allowed";
         card.style.opacity = "0.35";
         card.style.transform = "scale(1)";
@@ -91,15 +93,16 @@ export class RolePicker {
           statusBadge.style.boxShadow = "none";
         }
       } else {
-        card.style.background = "rgba(255, 255, 255, 0.04)";
-        card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
+        card.style.background = `linear-gradient(180deg, rgba(255,255,255,0.05) 0%, ${roleColor}06 100%)`;
+        card.style.boxShadow = `inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px ${roleColor}15`;
+        card.style.borderBottom = `2px solid ${roleColor}25`;
         card.style.cursor = "pointer";
         card.style.opacity = "1";
         card.style.transform = "scale(1)";
         card.setAttribute("data-state", "free");
         if (iconWrap) {
-          iconWrap.style.background = `${roleColor}0c`;
-          iconWrap.style.boxShadow = "none";
+          iconWrap.style.background = `${roleColor}14`;
+          iconWrap.style.boxShadow = `inset 0 0 0 1px ${roleColor}12`;
         }
         if (label) {
           label.style.background = "none";
@@ -136,11 +139,12 @@ export class RolePicker {
 
       const card = document.createElement("button");
       Object.assign(card.style, {
-        background: "rgba(255, 255, 255, 0.04)",
-        boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
+        background: `linear-gradient(180deg, rgba(255,255,255,0.05) 0%, ${roleColor}06 100%)`,
+        boxShadow: `inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px ${roleColor}15`,
         backdropFilter: "blur(16px) saturate(1.5)",
         WebkitBackdropFilter: "blur(16px) saturate(1.5)",
         border: "none",
+        borderBottom: `2px solid ${roleColor}25`,
         borderRadius: "14px",
         color: colors.textPrimary,
         cursor: "pointer",
@@ -164,7 +168,8 @@ export class RolePicker {
         width: "44px",
         height: "44px",
         borderRadius: "50%",
-        background: `${roleColor}0c`,
+        background: `${roleColor}14`,
+        boxShadow: `inset 0 0 0 1px ${roleColor}12`,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -221,15 +226,17 @@ export class RolePicker {
 
       card.addEventListener("mouseenter", () => {
         if (!card.disabled && card.getAttribute("data-state") !== "mine") {
-          card.style.background = "rgba(255, 255, 255, 0.08)";
-          card.style.boxShadow = `inset 0 1px 0.5px rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 4px 16px rgba(0, 0, 0, 0.2)`;
+          card.style.background = `linear-gradient(145deg, ${roleColor}12 0%, rgba(255,255,255,0.08) 50%, ${roleColor}08 100%)`;
+          card.style.boxShadow = `inset 0 1px 0.5px rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px ${roleColor}28, 0 4px 20px ${roleColor}12`;
+          card.style.borderBottom = `2px solid ${roleColor}50`;
           card.style.transform = "scale(1.03)";
         }
       });
       card.addEventListener("mouseleave", () => {
         if (card.getAttribute("data-state") === "free") {
-          card.style.background = "rgba(255, 255, 255, 0.04)";
-          card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
+          card.style.background = `linear-gradient(180deg, rgba(255,255,255,0.05) 0%, ${roleColor}06 100%)`;
+          card.style.boxShadow = `inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px ${roleColor}15`;
+          card.style.borderBottom = `2px solid ${roleColor}25`;
           card.style.transform = "scale(1)";
         }
       });
