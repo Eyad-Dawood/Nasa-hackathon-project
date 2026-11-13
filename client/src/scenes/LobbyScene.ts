@@ -47,11 +47,6 @@ export class LobbyScene extends Phaser.Scene {
     // Show the lobby browser
     this.lobbyList = new LobbyList(this.username, () => this._onEnterRoom());
     this.lobbyList.mount();
-
-    // Launch onboarding mission guide & video academy automatically on first visit
-    if (!localStorage.getItem("space_benders_onboarding_seen")) {
-      OnboardingGuideUI.get().open("briefing");
-    }
   }
 
   shutdown() {

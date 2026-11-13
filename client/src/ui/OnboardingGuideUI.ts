@@ -4,11 +4,6 @@ import {
   Play,
   Volume2,
   VolumeX,
-  ExternalLink,
-  ChevronRight,
-  ChevronLeft,
-  ArrowRight,
-  ArrowLeft,
 } from "lucide";
 import { Theme } from "../config/theme";
 import { SoundFX } from "../audio/SoundEffects";
@@ -192,12 +187,13 @@ export const VIDEO_TOPICS: VideoTopicData[] = [
 /**
  * OnboardingGuideUI
  * ─────────────────
- * Immersive, modern Landing Page Onboarding experience inspired by palletism.art.
- *  - 2 Clean, punchy sections (Hero Briefing + Video Briefings with live first-frame thumbnails).
- *  - Procedural soft space ambient drone playing in background.
- *  - Bilingual English/Arabic toggle.
- *  - Cinema video player popup modal.
- *  - Pure client-side execution, ZERO server load.
+ * High-craft Retro Game Landing Page directly matching the Jamboree visual reference:
+ *  - Background: #191c2b (exact color match to the floating pixel rocket art).
+ *  - Retro Game typography: Pixelify Sans / Press Start 2P.
+ *  - Left: "Build the rocket to deep space" + Stats (4 ROLES | 6 PLANETS | 12 RULES).
+ *  - Right: Floating pixel-art space island with astronaut waving at the ascending rocket.
+ *  - Section 2: 10 Video Topics with direct Google Drive first-frame thumbnails & cinema popup.
+ *  - Procedural deep space hum audio via Web Audio API.
  */
 export class OnboardingGuideUI {
   private static instance: OnboardingGuideUI | null = null;
@@ -225,7 +221,7 @@ export class OnboardingGuideUI {
   }
 
   /**
-   * Opens the full landing page onboarding.
+   * Opens the full landing page.
    */
   public open(targetSection: "hero" | "videos" = "hero", onClose?: () => void): void {
     this.onCloseCallback = onClose;
@@ -234,10 +230,11 @@ export class OnboardingGuideUI {
       this.pageEl.remove();
     }
 
+    this._ensureGlobalStyles();
     this.pageEl = this._buildLandingPageDOM();
     document.body.appendChild(this.pageEl);
 
-    // Fade-in
+    // Fade-in animation
     requestAnimationFrame(() => {
       if (this.pageEl) {
         this.pageEl.style.opacity = "1";
@@ -258,7 +255,7 @@ export class OnboardingGuideUI {
   }
 
   /**
-   * Closes the landing page and enters the game.
+   * Closes the landing page and transitions into the game.
    */
   public close(): void {
     if (this.videoModal) {
@@ -348,6 +345,25 @@ export class OnboardingGuideUI {
     }
   }
 
+  private _ensureGlobalStyles(): void {
+    if (document.getElementById("landing-game-styles")) return;
+    const style = document.createElement("style");
+    style.id = "landing-game-styles";
+    style.textContent = `
+      @keyframes floatIsland {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-12px); }
+      }
+      .pixel-game-title {
+        font-family: 'Pixelify Sans', 'Press Start 2P', monospace;
+      }
+      .pixel-stats-num {
+        font-family: 'Pixelify Sans', 'Press Start 2P', monospace;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
   // ── Landing Page Construction ──────────────────────────────────────────
 
   private _buildLandingPageDOM(): HTMLDivElement {
@@ -363,53 +379,60 @@ export class OnboardingGuideUI {
       zIndex: "3000",
       overflowY: "auto",
       overflowX: "hidden",
-      background: "radial-gradient(circle at 50% 10%, #0d1527 0%, #040711 60%, #020409 100%)",
+      backgroundColor: "#191c2b", // Exact background color of user's pixel art asset
+      backgroundImage: `
+        radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 255, 255, 0.7), transparent),
+        radial-gradient(1.5px 1.5px at 85% 15%, rgba(255, 255, 255, 0.6), transparent),
+        radial-gradient(1px 1px at 35% 65%, rgba(255, 255, 255, 0.5), transparent),
+        radial-gradient(1.5px 1.5px at 70% 75%, rgba(255, 255, 255, 0.6), transparent),
+        radial-gradient(1px 1px at 50% 40%, rgba(255, 255, 255, 0.4), transparent)
+      `,
       color: "#ffffff",
-      fontFamily: Theme.font.family,
+      fontFamily: "'Inter', sans-serif",
       opacity: "0",
       transition: "opacity 0.25s ease",
       scrollBehavior: "smooth",
     });
 
-    // 1. Fixed Top Navigation Bar
+    // 1. Fixed Top Navigation
     const nav = this._buildNavBar();
     page.appendChild(nav);
 
     // Main Container
     const mainWrap = document.createElement("div");
     Object.assign(mainWrap.style, {
-      maxWidth: "1200px",
+      maxWidth: "1140px",
       margin: "0 auto",
-      padding: "100px 28px 80px 28px",
+      padding: "100px 32px 80px 32px",
       display: "flex",
       flexDirection: "column",
       gap: "70px",
     });
 
-    // 2. Section 1: Hero & Onboarding (Compact, Punchy)
+    // 2. Hero Section (Jamboree-style 2 Columns)
     const heroSection = this._buildHeroSectionDOM();
     mainWrap.appendChild(heroSection);
 
-    // 3. Section 2: Video Academy (10 Topics with Live Thumbnails)
+    // 3. Section 2: Video Academy Grid (Embedded Thumbnails)
     const videosSection = this._buildVideosSectionDOM();
     mainWrap.appendChild(videosSection);
 
-    // 4. Subtle Landing Page Footer
+    // 4. Clean Footer
     const footer = document.createElement("div");
     Object.assign(footer.style, {
-      paddingTop: "40px",
+      paddingTop: "32px",
       borderTop: "1px solid rgba(255, 255, 255, 0.08)",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
       flexWrap: "wrap",
-      gap: "16px",
+      gap: "14px",
       fontSize: "12px",
       color: "rgba(255, 255, 255, 0.4)",
       fontFamily: "'JetBrains Mono', monospace",
     });
     footer.innerHTML = `
-      <div>NASA SPACE BENDERS · HOUSTON MISSION CONTROL OPERATIONS</div>
+      <div>SPACE BENDERS · NASA DEEP SPACE CO-OP OPERATIONS</div>
       <div>100% GROUNDED IN REAL AEROSPACE PHYSICS</div>
     `;
     mainWrap.appendChild(footer);
@@ -418,7 +441,7 @@ export class OnboardingGuideUI {
     return page;
   }
 
-  // ── Navigation Bar ─────────────────────────────────────────────────────
+  // ── Navigation Bar (Jamboree Style) ────────────────────────────────────
 
   private _buildNavBar(): HTMLDivElement {
     const isAr = this.currentLanguage === "ar";
@@ -430,39 +453,69 @@ export class OnboardingGuideUI {
       left: "0",
       right: "0",
       zIndex: "3200",
-      padding: "16px 32px",
+      padding: "18px 40px",
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      background: "rgba(4, 7, 17, 0.75)",
-      backdropFilter: "blur(20px) saturate(1.4)",
-      WebkitBackdropFilter: "blur(20px) saturate(1.4)",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+      background: "rgba(25, 28, 43, 0.9)",
+      backdropFilter: "blur(16px)",
+      WebkitBackdropFilter: "blur(16px)",
+      borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
       gap: "16px",
     });
 
-    // Left: Brand Logo
+    // Left: Brand Logo in Game Pixel Font
     const brand = document.createElement("div");
-    Object.assign(brand.style, { display: "flex", alignItems: "center", gap: "12px", cursor: "pointer" });
+    brand.className = "pixel-game-title";
+    brand.textContent = "Space Benders";
+    Object.assign(brand.style, {
+      fontSize: "22px",
+      fontWeight: "700",
+      letterSpacing: "0.5px",
+      color: "#ffffff",
+      cursor: "pointer",
+    });
     brand.addEventListener("click", () => {
       this.pageEl?.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    const logo = document.createElement("img");
-    logo.src = "/favicon.png";
-    logo.alt = "NASA Space Benders";
-    Object.assign(logo.style, { width: "28px", height: "28px", imageRendering: "pixelated", borderRadius: "6px" });
+    // Center Links (Like Jams, Games, Rules in Jamboree)
+    const centerLinks = document.createElement("div");
+    Object.assign(centerLinks.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "28px",
+      fontSize: "13px",
+      fontWeight: "500",
+      color: "rgba(255, 255, 255, 0.7)",
+    });
 
-    const brandText = document.createElement("div");
-    brandText.innerHTML = `
-      <div style="font-size: 14px; font-weight: 800; letter-spacing: 0.5px; color: #ffffff;">SPACE BENDERS</div>
-      <div style="font-size: 10px; font-family:'JetBrains Mono', monospace; color: #29ADFF;">NASA DEEP SPACE CO-OP</div>
-    `;
-    brand.append(logo, brandText);
+    const createLink = (label: string, onClick: () => void) => {
+      const a = document.createElement("span");
+      a.textContent = label;
+      a.style.cursor = "pointer";
+      a.style.transition = "color 0.15s ease";
+      a.addEventListener("mouseenter", () => (a.style.color = "#ffffff"));
+      a.addEventListener("mouseleave", () => (a.style.color = "rgba(255, 255, 255, 0.7)"));
+      a.addEventListener("click", onClick);
+      return a;
+    };
 
-    // Right: Controls (Audio, Lang, Enter Game)
+    centerLinks.append(
+      createLink(isAr ? "دليل المهمة" : "Mission Briefing", () => {
+        this.pageEl?.scrollTo({ top: 0, behavior: "smooth" });
+      }),
+      createLink(isAr ? "الفيديوهات (10)" : "10 Video Briefings", () => {
+        document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
+      }),
+      createLink(isAr ? "قواعد ناسا (12)" : "12 NASA Rules", () => {
+        document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
+      }),
+    );
+
+    // Right Controls
     const right = document.createElement("div");
-    Object.assign(right.style, { display: "flex", alignItems: "center", gap: "12px" });
+    Object.assign(right.style, { display: "flex", alignItems: "center", gap: "14px" });
 
     // Ambience Audio Button
     const audioBtn = document.createElement("button");
@@ -472,81 +525,61 @@ export class OnboardingGuideUI {
 
     // Language Toggle
     const langBtn = document.createElement("button");
-    langBtn.innerHTML = `<span>${isAr ? "EN / إنجليزي" : "عربي / AR"}</span>`;
+    langBtn.innerHTML = `<span>${isAr ? "EN" : "عربي"}</span>`;
     Object.assign(langBtn.style, {
-      background: "rgba(255, 255, 255, 0.06)",
-      border: "1px solid rgba(255, 255, 255, 0.15)",
-      borderRadius: "8px",
-      color: "#ffffff",
-      padding: "7px 14px",
-      fontSize: "11.5px",
+      background: "transparent",
+      border: "none",
+      color: "rgba(255, 255, 255, 0.75)",
+      fontSize: "13px",
       fontWeight: "600",
       cursor: "pointer",
-      fontFamily: "'JetBrains Mono', monospace",
-      transition: "all 0.15s ease",
+      padding: "6px 8px",
+      transition: "color 0.15s ease",
     });
-    langBtn.addEventListener("mouseenter", () => {
-      langBtn.style.background = "rgba(255, 255, 255, 0.14)";
-    });
-    langBtn.addEventListener("mouseleave", () => {
-      langBtn.style.background = "rgba(255, 255, 255, 0.06)";
-    });
+    langBtn.addEventListener("mouseenter", () => (langBtn.style.color = "#ffffff"));
+    langBtn.addEventListener("mouseleave", () => (langBtn.style.color = "rgba(255, 255, 255, 0.75)"));
     langBtn.addEventListener("click", () => {
       this._setLanguage(isAr ? "en" : "ar");
     });
 
-    // Launch CTA / Skip Button
+    // Enter Mission Bay Button (Just like "Sign in" on the right in Jamboree)
     const enterBtn = document.createElement("button");
-    enterBtn.textContent = isAr ? "دخول محطة الإطلاق ←" : "Enter Mission Bay →";
+    enterBtn.textContent = isAr ? "دخول اللعبة ←" : "Enter Mission Bay";
     Object.assign(enterBtn.style, {
-      background: "#ffffff",
+      background: "transparent",
       border: "none",
-      borderRadius: "8px",
-      color: "#030712",
-      padding: "8px 18px",
-      fontSize: "12px",
-      fontWeight: "700",
+      color: "#ffffff",
+      fontSize: "13px",
+      fontWeight: "600",
       cursor: "pointer",
-      boxShadow: "0 4px 16px rgba(255, 255, 255, 0.25)",
-      transition: "all 0.15s ease",
+      padding: "6px 12px",
+      transition: "opacity 0.15s ease",
     });
-    enterBtn.addEventListener("mouseenter", () => {
-      enterBtn.style.boxShadow = "0 6px 24px rgba(255, 255, 255, 0.4)";
-      enterBtn.style.transform = "translateY(-1px)";
-    });
-    enterBtn.addEventListener("mouseleave", () => {
-      enterBtn.style.boxShadow = "0 4px 16px rgba(255, 255, 255, 0.25)";
-      enterBtn.style.transform = "translateY(0)";
-    });
+    enterBtn.addEventListener("mouseenter", () => (enterBtn.style.opacity = "0.75"));
+    enterBtn.addEventListener("mouseleave", () => (enterBtn.style.opacity = "1"));
     enterBtn.addEventListener("click", () => {
       localStorage.setItem("space_benders_onboarding_seen", "true");
       this.close();
     });
 
     right.append(audioBtn, langBtn, enterBtn);
-    nav.append(brand, right);
+    nav.append(brand, centerLinks, right);
     return nav;
   }
 
   private _styleAmbienceBtn(btn: HTMLButtonElement): void {
-    const isAr = this.currentLanguage === "ar";
     btn.innerHTML = `
-      <span style="font-size:12px; font-family:'JetBrains Mono', monospace;">
-        ${this.isAmbiencePlaying ? "● AUDIO LIVE" : "○ AUDIO OFF"}
+      <span style="font-size:11px; font-family:'JetBrains Mono', monospace;">
+        ${this.isAmbiencePlaying ? "● AUDIO ON" : "○ AUDIO OFF"}
       </span>
     `;
     Object.assign(btn.style, {
-      background: this.isAmbiencePlaying ? "rgba(16, 185, 129, 0.15)" : "rgba(255, 255, 255, 0.04)",
-      border: `1px solid ${this.isAmbiencePlaying ? "rgba(16, 185, 129, 0.4)" : "rgba(255, 255, 255, 0.1)"}`,
-      borderRadius: "8px",
-      color: this.isAmbiencePlaying ? "#34D399" : "rgba(255, 255, 255, 0.6)",
-      padding: "7px 12px",
-      fontSize: "11px",
-      fontWeight: "600",
+      background: this.isAmbiencePlaying ? "rgba(52, 211, 153, 0.12)" : "rgba(255, 255, 255, 0.05)",
+      border: `1px solid ${this.isAmbiencePlaying ? "rgba(52, 211, 153, 0.35)" : "rgba(255, 255, 255, 0.1)"}`,
+      borderRadius: "6px",
+      color: this.isAmbiencePlaying ? "#34D399" : "rgba(255, 255, 255, 0.5)",
+      padding: "5px 10px",
       cursor: "pointer",
-      display: "flex",
-      alignItems: "center",
-      gap: "6px",
       transition: "all 0.15s ease",
     });
   }
@@ -556,173 +589,202 @@ export class OnboardingGuideUI {
     if (btn) this._styleAmbienceBtn(btn);
   }
 
-  // ── Section 1: Hero & Onboarding ───────────────────────────────────────
+  // ── Section 1: Hero Section (2-Column Jamboree Style) ──────────────────
 
   private _buildHeroSectionDOM(): HTMLDivElement {
     const isAr = this.currentLanguage === "ar";
 
     const section = document.createElement("section");
     Object.assign(section.style, {
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+      alignItems: "center",
+      gap: "48px",
+      padding: "20px 0 10px 0",
+    });
+
+    // ── Left Column: Content ──
+    const leftCol = document.createElement("div");
+    Object.assign(leftCol.style, {
       display: "flex",
       flexDirection: "column",
-      alignItems: "center",
-      textAlign: "center",
-      gap: "24px",
-      padding: "30px 10px 10px 10px",
+      gap: "18px",
     });
 
-    // Eyebrow Badge
+    // Eyebrow tag: "A WEEKEND GAME JAM" style
     const eyebrow = document.createElement("div");
+    eyebrow.textContent = isAr ? "مهمة فضائية جماعية · وكالة ناسا" : "A NASA SPACE HACKATHON CO-OP";
     Object.assign(eyebrow.style, {
-      display: "inline-flex",
-      alignItems: "center",
-      gap: "8px",
-      padding: "4px 14px",
-      borderRadius: "20px",
-      background: "rgba(41, 173, 255, 0.1)",
-      border: "1px solid rgba(41, 173, 255, 0.3)",
-      color: "#29ADFF",
-      fontSize: "11px",
+      fontSize: "12px",
       fontFamily: "'JetBrains Mono', monospace",
-      letterSpacing: "1.5px",
+      color: "rgba(255, 255, 255, 0.5)",
+      letterSpacing: "2px",
       textTransform: "uppercase",
     });
-    eyebrow.innerHTML = `<span>NASA HACKATHON · MULTIPLAYER CO-OP OPERATIONS</span>`;
 
-    // Grand Headline
-    const headline = document.createElement("h1");
-    headline.textContent = isAr
-      ? "ابنِ الصاروخ. اخْتَرِقْ أَعْمَاقَ الفَضَاءِ."
-      : "BUILD THE ROCKET. SURVIVE DEEP SPACE.";
-    Object.assign(headline.style, {
-      fontSize: "clamp(32px, 5vw, 56px)",
-      fontWeight: "800",
-      letterSpacing: "-1px",
-      lineHeight: "1.15",
-      margin: "0",
-      maxWidth: "920px",
-      background: "linear-gradient(180deg, #ffffff 40%, rgba(255, 255, 255, 0.65) 100%)",
-      WebkitBackgroundClip: "text",
-      WebkitTextFillColor: "transparent",
-    });
+    // Giant Pixel Headline (Matching "Make a small game by Sunday.")
+    const headline = document.createElement("div");
+    headline.innerHTML = isAr
+      ? `
+        <div class="pixel-game-title" style="font-size:clamp(46px, 6vw, 76px); font-weight:700; color:#ffffff; line-height:1.05; letter-spacing:-1px;">ابنِ</div>
+        <div style="font-size:clamp(22px, 3.2vw, 38px); font-weight:700; color:#ffffff; line-height:1.2; margin-top:6px;">صاروخ أعماق الفضاء.</div>
+      `
+      : `
+        <div class="pixel-game-title" style="font-size:clamp(46px, 6vw, 76px); font-weight:700; color:#ffffff; line-height:1.05; letter-spacing:-1px;">Build</div>
+        <div style="font-size:clamp(22px, 3.2vw, 38px); font-weight:700; color:#ffffff; line-height:1.2; margin-top:6px;">the rocket to deep space.</div>
+      `;
 
-    // 2-line Subtitle (No fluff!)
+    // Subtitle paragraph
     const sub = document.createElement("p");
     sub.textContent = isAr
-      ? "تحدٍّ هندسي لأربعة رواد فضاء مبني على علوم ناسا. وزّعوا الأدوار وصمّموا مركبة تجتاز 12 قانوناً فيزيائياً وملاحياً لكل كوكب."
-      : "A 4-player cooperative engineering challenge grounded in authentic NASA mission science. Coordinate team roles to construct a spacecraft meeting all 12 physics checks.";
+      ? "اختر دورك الهندسي، كوّن فريقاً من 4 رواد فضاء، وصمّموا مركبة تجتاز 12 قاعدة فيزيائية وملاحية قبل الإطلاق."
+      : "Pick an engineering role, assemble a team of 4 astronauts and build a launch-ready spacecraft meeting all 12 physics constraints.";
     Object.assign(sub.style, {
-      fontSize: "clamp(15px, 1.8vw, 18px)",
-      color: "rgba(255, 255, 255, 0.65)",
-      maxWidth: "760px",
+      fontSize: "15px",
+      color: "rgba(255, 255, 255, 0.7)",
       lineHeight: "1.6",
       margin: "0",
+      maxWidth: "460px",
     });
 
-    // 4 Role Badges (Clean horizontal strip)
-    const rolesStrip = document.createElement("div");
-    Object.assign(rolesStrip.style, {
-      display: "flex",
-      flexWrap: "wrap",
-      justifyContent: "center",
-      gap: "10px",
-      marginTop: "8px",
-    });
-
-    const ROLES = [
-      { nameEn: "Flight Ops", nameAr: "عمليات الطيران", tagEn: "Engines & Fuel", tagAr: "المحركات والوقود", color: "#FFA800" },
-      { nameEn: "Commander", nameAr: "قائد المهمة", tagEn: "Frames & Computers", tagAr: "الهياكل والحواسيب", color: "#29ADFF" },
-      { nameEn: "Science", nameAr: "أخصائي العلوم", tagEn: "Sensors & Star Part", tagAr: "الأجهزة والعلوم", color: "#B05CFF" },
-      { nameEn: "Comms", nameAr: "مهندس الاتصالات", tagEn: "Power & Antennas", tagAr: "الطاقة والهوائيات", color: "#00E5FF" },
-    ];
-
-    ROLES.forEach((r) => {
-      const pill = document.createElement("div");
-      Object.assign(pill.style, {
-        background: "rgba(255, 255, 255, 0.04)",
-        border: `1px solid rgba(255, 255, 255, 0.1)`,
-        borderLeft: `3px solid ${r.color}`,
-        borderRadius: "8px",
-        padding: "6px 12px",
-        fontSize: "12px",
-        display: "flex",
-        alignItems: "center",
-        gap: "6px",
-      });
-      pill.innerHTML = `
-        <span style="font-weight:700; color:${r.color};">${isAr ? r.nameAr : r.nameEn}</span>
-        <span style="color:rgba(255,255,255,0.4); font-size:11px;">· ${isAr ? r.tagAr : r.tagEn}</span>
-      `;
-      rolesStrip.appendChild(pill);
-    });
-
-    // CTA Action Row
-    const ctaRow = document.createElement("div");
-    Object.assign(ctaRow.style, {
+    // Action Buttons Row (Matching "Join the next jam" & "Browse the games")
+    const actionRow = document.createElement("div");
+    Object.assign(actionRow.style, {
       display: "flex",
       alignItems: "center",
-      justifyContent: "center",
-      gap: "16px",
-      marginTop: "16px",
+      gap: "20px",
+      marginTop: "8px",
       flexWrap: "wrap",
     });
 
-    const startBtn = document.createElement("button");
-    startBtn.textContent = isAr ? "ابدأ المهمة الآن ←" : "Start Mission Now →";
-    Object.assign(startBtn.style, {
-      background: "#ffffff",
+    // Vibrant Pink/Crimson Button (Jamboree primary button style)
+    const primaryBtn = document.createElement("button");
+    primaryBtn.textContent = isAr ? "ابدأ المهمة الآن" : "Launch Mission Now";
+    Object.assign(primaryBtn.style, {
+      background: "#ff1a60", // Vibrant Jamboree pink/crimson
       border: "none",
-      borderRadius: "10px",
-      color: "#030712",
-      padding: "14px 28px",
+      borderRadius: "6px",
+      color: "#ffffff",
+      fontFamily: "'Inter', sans-serif",
       fontSize: "14px",
       fontWeight: "700",
+      padding: "14px 28px",
       cursor: "pointer",
-      boxShadow: "0 4px 24px rgba(255, 255, 255, 0.3)",
+      boxShadow: "0 4px 18px rgba(255, 26, 96, 0.45)",
       transition: "all 0.15s ease",
     });
-    startBtn.addEventListener("mouseenter", () => {
-      startBtn.style.transform = "translateY(-2px)";
-      startBtn.style.boxShadow = "0 6px 32px rgba(255, 255, 255, 0.45)";
+    primaryBtn.addEventListener("mouseenter", () => {
+      primaryBtn.style.background = "#ff3377";
+      primaryBtn.style.transform = "translateY(-1px)";
+      primaryBtn.style.boxShadow = "0 6px 24px rgba(255, 26, 96, 0.6)";
     });
-    startBtn.addEventListener("mouseleave", () => {
-      startBtn.style.transform = "translateY(0)";
-      startBtn.style.boxShadow = "0 4px 24px rgba(255, 255, 255, 0.3)";
+    primaryBtn.addEventListener("mouseleave", () => {
+      primaryBtn.style.background = "#ff1a60";
+      primaryBtn.style.transform = "translateY(0)";
+      primaryBtn.style.boxShadow = "0 4px 18px rgba(255, 26, 96, 0.45)";
     });
-    startBtn.addEventListener("click", () => {
+    primaryBtn.addEventListener("click", () => {
       localStorage.setItem("space_benders_onboarding_seen", "true");
       this.close();
     });
 
-    const exploreVideosBtn = document.createElement("button");
-    exploreVideosBtn.textContent = isAr ? "استكشف الفيديوهات (10) ↓" : "Watch Video Briefings (10) ↓";
-    Object.assign(exploreVideosBtn.style, {
-      background: "rgba(255, 255, 255, 0.06)",
-      border: "1px solid rgba(255, 255, 255, 0.15)",
-      borderRadius: "10px",
+    // Underline Secondary Link
+    const secondaryLink = document.createElement("span");
+    secondaryLink.textContent = isAr ? "مشاهدة الفيديوهات (10)" : "Watch the 10 videos";
+    Object.assign(secondaryLink.style, {
       color: "#ffffff",
-      padding: "14px 24px",
       fontSize: "14px",
-      fontWeight: "600",
+      fontWeight: "500",
+      textDecoration: "underline",
       cursor: "pointer",
-      transition: "all 0.15s ease",
+      textUnderlineOffset: "4px",
+      transition: "opacity 0.15s ease",
     });
-    exploreVideosBtn.addEventListener("mouseenter", () => {
-      exploreVideosBtn.style.background = "rgba(255, 255, 255, 0.12)";
-    });
-    exploreVideosBtn.addEventListener("mouseleave", () => {
-      exploreVideosBtn.style.background = "rgba(255, 255, 255, 0.06)";
-    });
-    exploreVideosBtn.addEventListener("click", () => {
+    secondaryLink.addEventListener("mouseenter", () => (secondaryLink.style.opacity = "0.75"));
+    secondaryLink.addEventListener("mouseleave", () => (secondaryLink.style.opacity = "1"));
+    secondaryLink.addEventListener("click", () => {
       document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
     });
 
-    ctaRow.append(startBtn, exploreVideosBtn);
-    section.append(eyebrow, headline, sub, rolesStrip, ctaRow);
+    actionRow.append(primaryBtn, secondaryLink);
+
+    // Stats Row (Matching "48 HOURS | 320 MAKERS | 86 GAMES")
+    const statsRow = document.createElement("div");
+    Object.assign(statsRow.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "36px",
+      marginTop: "24px",
+      paddingTop: "24px",
+      borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+    });
+
+    const createStat = (num: string, labelEn: string, labelAr: string) => {
+      const box = document.createElement("div");
+      box.style.display = "flex";
+      box.style.flexDirection = "column";
+      box.style.gap = "4px";
+
+      const numEl = document.createElement("div");
+      numEl.className = "pixel-stats-num";
+      numEl.textContent = num;
+      Object.assign(numEl.style, {
+        fontSize: "30px",
+        fontWeight: "700",
+        color: "#ffffff",
+        lineHeight: "1",
+      });
+
+      const labelEl = document.createElement("div");
+      labelEl.textContent = isAr ? labelAr : labelEn;
+      Object.assign(labelEl.style, {
+        fontSize: "11px",
+        fontFamily: "'JetBrains Mono', monospace",
+        color: "rgba(255, 255, 255, 0.5)",
+        letterSpacing: "1px",
+        textTransform: "uppercase",
+      });
+
+      box.append(numEl, labelEl);
+      return box;
+    };
+
+    statsRow.append(
+      createStat("4", "ROLES", "رواد فضاء"),
+      createStat("6", "PLANETS", "مستويات"),
+      createStat("12", "RULES", "قوانين فيزيائية"),
+      createStat("10", "VIDEOS", "فيديوهات علمية"),
+    );
+
+    leftCol.append(eyebrow, headline, sub, actionRow, statsRow);
+
+    // ── Right Column: Floating Pixel Island with Rocket ──
+    const rightCol = document.createElement("div");
+    Object.assign(rightCol.style, {
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      position: "relative",
+    });
+
+    const rocketImg = document.createElement("img");
+    rocketImg.src = "/assets/landing_hero_rocket.jpg";
+    rocketImg.alt = "Ascending Pixel Rocket on Floating Island";
+    Object.assign(rocketImg.style, {
+      width: "100%",
+      maxWidth: "380px",
+      height: "auto",
+      imageRendering: "pixelated",
+      animation: "floatIsland 4s ease-in-out infinite",
+      filter: "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5))",
+    });
+
+    rightCol.appendChild(rocketImg);
+    section.append(leftCol, rightCol);
     return section;
   }
 
-  // ── Section 2: Video Academy (Live First-Frame Thumbnails) ──────────────
+  // ── Section 2: Video Academy Grid (10 Topics) ──────────────────────────
 
   private _buildVideosSectionDOM(): HTMLDivElement {
     const isAr = this.currentLanguage === "ar";
@@ -732,33 +794,33 @@ export class OnboardingGuideUI {
     Object.assign(section.style, {
       display: "flex",
       flexDirection: "column",
-      gap: "24px",
-      paddingTop: "20px",
+      gap: "28px",
+      paddingTop: "40px",
     });
 
-    // Section Header
+    // Section Header (Jamboree Clean Style)
     const headRow = document.createElement("div");
     Object.assign(headRow.style, {
       display: "flex",
       alignItems: "flex-end",
       justifyContent: "space-between",
       flexWrap: "wrap",
-      gap: "14px",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
+      gap: "16px",
       paddingBottom: "16px",
+      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
     });
 
-    const headText = document.createElement("div");
-    headText.innerHTML = `
-      <div style="font-size:11px; font-family:'JetBrains Mono', monospace; color:#34D399; letter-spacing:1px; text-transform:uppercase;">
+    const headTitle = document.createElement("div");
+    headTitle.innerHTML = `
+      <div style="font-size:11px; font-family:'JetBrains Mono', monospace; color:#34D399; letter-spacing:1.5px; text-transform:uppercase;">
         ${isAr ? "المكتبة العلمية المرئية" : "VISUAL AEROSPACE BRIEFINGS"}
       </div>
-      <div style="font-size:24px; font-weight:700; color:#ffffff; margin-top:4px;">
+      <div class="pixel-game-title" style="font-size:24px; font-weight:700; color:#ffffff; margin-top:6px;">
         ${isAr ? "فيديوهات القواعد والفيزياء (10 مقاطع)" : "10 Mission Science Topics"}
       </div>
     `;
 
-    // Filter Chips
+    // Category Filter Chips
     const filters = document.createElement("div");
     Object.assign(filters.style, { display: "flex", gap: "8px", flexWrap: "wrap" });
 
@@ -774,17 +836,19 @@ export class OnboardingGuideUI {
       const chip = document.createElement("button");
       chip.textContent = isAr ? c.ar : c.en;
       const isSel = this.selectedCategory === c.id;
+
       Object.assign(chip.style, {
-        background: isSel ? "#ffffff" : "rgba(255, 255, 255, 0.05)",
-        color: isSel ? "#040711" : "rgba(255, 255, 255, 0.7)",
-        border: "1px solid rgba(255, 255, 255, 0.1)",
-        borderRadius: "20px",
-        padding: "5px 12px",
-        fontSize: "11.5px",
+        background: isSel ? "#ffffff" : "rgba(255, 255, 255, 0.06)",
+        color: isSel ? "#191c2b" : "rgba(255, 255, 255, 0.75)",
+        border: "none",
+        borderRadius: "6px",
+        padding: "6px 14px",
+        fontSize: "12px",
         fontWeight: isSel ? "700" : "500",
         cursor: "pointer",
         transition: "all 0.15s ease",
       });
+
       chip.addEventListener("click", () => {
         this.selectedCategory = c.id;
         SoundFX.playClick();
@@ -793,16 +857,16 @@ export class OnboardingGuideUI {
       filters.appendChild(chip);
     });
 
-    headRow.append(headText, filters);
+    headRow.append(headTitle, filters);
     section.appendChild(headRow);
 
-    // Video Cards Grid Container
+    // Cards Grid
     const grid = document.createElement("div");
     grid.id = "landing-videos-grid";
     Object.assign(grid.style, {
       display: "grid",
       gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-      gap: "22px",
+      gap: "24px",
     });
 
     this._populateVideoCards(grid);
@@ -825,8 +889,8 @@ export class OnboardingGuideUI {
       const card = document.createElement("div");
       Object.assign(card.style, {
         background: "rgba(255, 255, 255, 0.03)",
-        border: "1px solid rgba(255, 255, 255, 0.09)",
-        borderRadius: "14px",
+        border: "1px solid rgba(255, 255, 255, 0.08)",
+        borderRadius: "12px",
         overflow: "hidden",
         display: "flex",
         flexDirection: "column",
@@ -836,13 +900,13 @@ export class OnboardingGuideUI {
 
       card.addEventListener("mouseenter", () => {
         card.style.background = "rgba(255, 255, 255, 0.06)";
-        card.style.borderColor = "rgba(41, 173, 255, 0.4)";
+        card.style.borderColor = "rgba(255, 26, 96, 0.5)"; // Jamboree pink hover accent!
         card.style.transform = "translateY(-4px)";
         card.style.boxShadow = "0 12px 32px rgba(0, 0, 0, 0.5)";
       });
       card.addEventListener("mouseleave", () => {
         card.style.background = "rgba(255, 255, 255, 0.03)";
-        card.style.borderColor = "rgba(255, 255, 255, 0.09)";
+        card.style.borderColor = "rgba(255, 255, 255, 0.08)";
         card.style.transform = "translateY(0)";
         card.style.boxShadow = "none";
       });
@@ -851,17 +915,16 @@ export class OnboardingGuideUI {
         this.openVideo(globalIdx);
       });
 
-      // ── Thumbnail / First Frame Container ──
+      // ── Thumbnail Container (Shows first-frame JPEG directly from Google Drive) ──
       const mediaBox = document.createElement("div");
       Object.assign(mediaBox.style, {
         position: "relative",
         width: "100%",
-        paddingTop: "56.25%", // 16:9 Aspect Ratio
-        background: "#080c14",
+        paddingTop: "56.25%", // 16:9 aspect ratio
+        background: "#0d101a",
         overflow: "hidden",
       });
 
-      // Actual first-frame image loaded directly from Google Drive's CDN
       const thumbImg = document.createElement("img");
       thumbImg.src = `https://lh3.googleusercontent.com/d/${topic.driveId}=w640`;
       thumbImg.alt = isAr ? topic.title.ar : topic.title.en;
@@ -876,14 +939,10 @@ export class OnboardingGuideUI {
         transition: "transform 0.3s ease",
       });
 
-      card.addEventListener("mouseenter", () => {
-        thumbImg.style.transform = "scale(1.04)";
-      });
-      card.addEventListener("mouseleave", () => {
-        thumbImg.style.transform = "scale(1)";
-      });
+      card.addEventListener("mouseenter", () => (thumbImg.style.transform = "scale(1.04)"));
+      card.addEventListener("mouseleave", () => (thumbImg.style.transform = "scale(1)"));
 
-      // Play button overlay in center
+      // Play Overlay
       const playOverlay = document.createElement("div");
       Object.assign(playOverlay.style, {
         position: "absolute",
@@ -900,8 +959,8 @@ export class OnboardingGuideUI {
         width: "44px",
         height: "44px",
         borderRadius: "50%",
-        background: "rgba(41, 173, 255, 0.9)",
-        boxShadow: "0 4px 20px rgba(41, 173, 255, 0.5)",
+        background: "rgba(255, 26, 96, 0.9)", // Jamboree pink play button
+        boxShadow: "0 4px 18px rgba(255, 26, 96, 0.6)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -910,7 +969,7 @@ export class OnboardingGuideUI {
       playPill.appendChild(createElement(Play, { width: 18, height: 18, fill: "#ffffff", "stroke-width": 1 }));
       playOverlay.appendChild(playPill);
 
-      // Rule Tag on top left/right
+      // Rule Tag on top corner
       const tagPill = document.createElement("div");
       tagPill.textContent = isAr ? topic.ruleTag.ar : topic.ruleTag.en;
       Object.assign(tagPill.style, {
@@ -930,9 +989,9 @@ export class OnboardingGuideUI {
 
       mediaBox.append(thumbImg, playOverlay, tagPill);
 
-      // Card Meta & Description
-      const infoBox = document.createElement("div");
-      Object.assign(infoBox.style, {
+      // Card Body
+      const body = document.createElement("div");
+      Object.assign(body.style, {
         padding: "16px 18px",
         display: "flex",
         flexDirection: "column",
@@ -955,8 +1014,8 @@ export class OnboardingGuideUI {
         lineHeight: "1.5",
       });
 
-      infoBox.append(cardTitle, briefText);
-      card.append(mediaBox, infoBox);
+      body.append(cardTitle, briefText);
+      card.append(mediaBox, body);
       grid.appendChild(card);
     });
   }
@@ -966,7 +1025,7 @@ export class OnboardingGuideUI {
     if (grid) this._populateVideoCards(grid);
   }
 
-  // ── Video Cinema Popup Modal ───────────────────────────────────────────
+  // ── Cinema Video Modal ─────────────────────────────────────────────────
 
   private _buildVideoModalDOM(): HTMLDivElement {
     const isAr = this.currentLanguage === "ar";
@@ -984,12 +1043,12 @@ export class OnboardingGuideUI {
       alignItems: "center",
       justifyContent: "center",
       padding: "20px",
-      background: "rgba(0, 0, 0, 0.9)",
+      background: "rgba(0, 0, 0, 0.92)",
       backdropFilter: "blur(20px)",
       WebkitBackdropFilter: "blur(20px)",
       opacity: "0",
       transition: "opacity 0.2s ease",
-      fontFamily: Theme.font.family,
+      fontFamily: "'Inter', sans-serif",
     });
 
     const modal = document.createElement("div");
@@ -999,8 +1058,8 @@ export class OnboardingGuideUI {
       maxHeight: "92vh",
       display: "flex",
       flexDirection: "column",
-      background: "#080c14",
-      borderRadius: "18px",
+      background: "#121522",
+      borderRadius: "16px",
       border: "1px solid rgba(255, 255, 255, 0.15)",
       boxShadow: "0 24px 60px rgba(0, 0, 0, 0.9)",
       overflow: "hidden",
@@ -1026,10 +1085,11 @@ export class OnboardingGuideUI {
     Object.assign(numBadge.style, {
       fontSize: "11px",
       fontFamily: "'JetBrains Mono', monospace",
-      color: "#34D399",
-      background: "rgba(16, 185, 129, 0.15)",
+      color: "#ff1a60",
+      background: "rgba(255, 26, 96, 0.15)",
       padding: "2px 6px",
       borderRadius: "4px",
+      fontWeight: "700",
     });
 
     const titleText = document.createElement("span");
@@ -1091,7 +1151,7 @@ export class OnboardingGuideUI {
 
     const ruleText = document.createElement("div");
     ruleText.innerHTML = `
-      <span style="color:#29ADFF; font-weight:700; font-size:12px;">${isAr ? "القاعدة المرتبطة:" : "Connected NASA Rule:"}</span>
+      <span style="color:#ff1a60; font-weight:700; font-size:12px;">${isAr ? "القاعدة المرتبطة:" : "Connected NASA Rule:"}</span>
       <span style="color:rgba(255,255,255,0.75); font-size:12px;"> ${isAr ? topic.ruleHint.ar : topic.ruleHint.en}</span>
     `;
 
@@ -1125,10 +1185,10 @@ export class OnboardingGuideUI {
     nextBtn.disabled = this.activeVideoIndex === VIDEO_TOPICS.length - 1;
     nextBtn.textContent = isAr ? "المقطع التالي →" : "Next Video →";
     Object.assign(nextBtn.style, {
-      background: "rgba(255, 255, 255, 0.1)",
-      border: "1px solid rgba(255, 255, 255, 0.2)",
+      background: "rgba(255, 26, 96, 0.15)",
+      border: "1px solid rgba(255, 26, 96, 0.4)",
       borderRadius: "6px",
-      color: nextBtn.disabled ? "rgba(255, 255, 255, 0.25)" : "#ffffff",
+      color: nextBtn.disabled ? "rgba(255, 255, 255, 0.25)" : "#ff4d88",
       padding: "6px 14px",
       fontSize: "11px",
       fontWeight: "600",

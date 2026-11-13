@@ -3,6 +3,7 @@ import { REMOTE_ASSETS, SPRITESHEET_ASSETS } from "../config/assets";
 import { Theme } from "../config/theme";
 import { AccountForm, getSavedUsername } from "../ui/AccountForm";
 import { registerAnimations } from "../game/data/AnimationKeys";
+import { OnboardingGuideUI } from "../ui/OnboardingGuideUI";
 
 /**
  * BootScene
@@ -53,17 +54,23 @@ export class BootScene extends Phaser.Scene {
     // Register all sprite animations (centralized in AnimationKeys.ts)
     registerAnimations(this);
 
-    const saved = getSavedUsername();
+    const continueToGame = () => {
+      const saved = getSavedUsername();
+      if (saved) {
+        this.scene.start("LobbyScene", { username: saved });
+      } else {
+        const form = new AccountForm((username) => {
+          form.destroy();
+          this.scene.start("LobbyScene", { username });
+        });
+        form.mount();
+      }
+    };
 
-    if (saved) {
-      this.scene.start("LobbyScene", { username: saved });
-    } else {
-      const form = new AccountForm((username) => {
-        form.destroy();
-        this.scene.start("LobbyScene", { username });
-      });
-      form.mount();
-    }
+    // First thing to show: Landing Page!
+    OnboardingGuideUI.get().open("hero", () => {
+      continueToGame();
+    });
   }
 
   // ── Procedural Textures ─────────────────────────────────────────────────
