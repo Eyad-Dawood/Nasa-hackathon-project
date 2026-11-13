@@ -107,26 +107,33 @@ export class StationMenuUI {
   private _items: GameItem[];
   private _carry: CarrySystem;
   private _onClose: () => void;
+  private _onInputLock?: (locked: boolean) => void;
   private _openDetail: ItemDetailUI | null = null;
 
   // Selected item state
   private _selectedItem: GameItem | null = null;
+  private _selectedSlotIndex: number = 0;
   private _activeCategory: string = "all";
   private _gridContainer!: HTMLDivElement;
   private _actionPanelContainer!: HTMLDivElement;
   private _carriedSlotContainer!: HTMLDivElement;
   private _popupMenuEl: HTMLDivElement | null = null;
 
+  // Keyboard navigation
+  private _keydownHandler: ((e: KeyboardEvent) => void) | null = null;
+
   constructor(
     def: StationDefinition,
     items: GameItem[],
     carry: CarrySystem,
     onClose: () => void,
+    onInputLock?: (locked: boolean) => void,
   ) {
     this._def = def;
     this._items = items;
     this._carry = carry;
     this._onClose = onClose;
+    this._onInputLock = onInputLock;
     // Default selected item to first item if available
     this._selectedItem = items.length > 0 ? items[0] : null;
     this._container = this._buildDOM();
@@ -134,13 +141,121 @@ export class StationMenuUI {
 
   mount(): void {
     document.body.appendChild(this._container);
+    // Lock player input while inventory is open
+    this._onInputLock?.(true);
+    // Register keyboard navigation
+    this._keydownHandler = (e: KeyboardEvent) => this._handleKeydown(e);
+    window.addEventListener("keydown", this._keydownHandler);
   }
 
   close(): void {
     this._popupMenuEl?.remove();
     this._openDetail?.close();
+    // Remove keyboard listener before calling onClose (which may re-enable input)
+    if (this._keydownHandler) {
+      window.removeEventListener("keydown", this._keydownHandler);
+      this._keydownHandler = null;
+    }
+    // Restore player input
+    this._onInputLock?.(false);
     this._container.remove();
     this._onClose();
+  }
+
+  /**
+   * Arrow-key navigation + Enter/Space/E confirm for inventory slots.
+   */
+  private _handleKeydown(e: KeyboardEvent): void {
+    const filteredItems = this._activeCategory === "all"
+      ? this._items
+      : this._items.filter((i) => i.category === this._activeCategory);
+
+    if (filteredItems.length === 0) return;
+
+    switch (e.key) {
+      case "ArrowRight":
+      case "ArrowDown": {
+        e.preventDefault();
+        SoundFX.playClick();
+        this._selectedSlotIndex = (this._selectedSlotIndex + 1) % filteredItems.length;
+        this._selectedItem = filteredItems[this._selectedSlotIndex];
+        this._popupMenuEl?.remove();
+        this._renderInventoryGrid();
+        this._refreshActionPanel();
+        this._scrollToSelectedSlot();
+        break;
+      }
+
+      case "ArrowLeft":
+      case "ArrowUp": {
+        e.preventDefault();
+        SoundFX.playClick();
+        this._selectedSlotIndex =
+          (this._selectedSlotIndex - 1 + filteredItems.length) % filteredItems.length;
+        this._selectedItem = filteredItems[this._selectedSlotIndex];
+        this._popupMenuEl?.remove();
+        this._renderInventoryGrid();
+        this._refreshActionPanel();
+        this._scrollToSelectedSlot();
+        break;
+      }
+
+      case "Enter":
+      case " ":
+      case "e":
+      case "E": {
+        e.preventDefault();
+        if (this._selectedItem) {
+          if (!this._carry.isHolding) {
+            SoundFX.playPickup();
+            if (this._carry.pickUp(this._selectedItem)) {
+              this.close();
+            }
+          } else {
+            // Already holding an item - provide clear audio-visual feedback
+            SoundFX.playClick();
+            this._showHandsFullFeedback();
+          }
+        }
+        break;
+      }
+
+      case "i":
+      case "I": {
+        e.preventDefault();
+        if (this._selectedItem) {
+          SoundFX.playClick();
+          this._openDetail?.close();
+          this._openDetail = new ItemDetailUI(this._selectedItem);
+          this._openDetail.mount();
+        }
+        break;
+      }
+
+      case "Escape": {
+        e.preventDefault();
+        this.close();
+        break;
+      }
+    }
+  }
+
+  private _scrollToSelectedSlot(): void {
+    const selectedEl = this._gridContainer.querySelector(".mc-slot-selected") as HTMLElement | null;
+    if (selectedEl) {
+      selectedEl.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }
+  }
+
+  private _showHandsFullFeedback(): void {
+    const carried = this._carriedSlotContainer;
+    carried.style.transition = "transform 0.1s ease, background 0.2s ease";
+    carried.style.background = "#2D1D1D";
+    carried.style.transform = "scale(1.02)";
+    setTimeout(() => {
+      carried.style.background = "#181B24";
+      carried.style.transform = "scale(1)";
+    }, 250);
   }
 
   // ── Private UI Builders ────────────────────────────────────────────────
@@ -297,12 +412,38 @@ export class StationMenuUI {
     this._actionPanelContainer = document.createElement("div");
     this._refreshActionPanel();
 
+    // ── 6. Child-Friendly Keyboard Controls Helper Bar ──
+    const controlsHelp = document.createElement("div");
+    Object.assign(controlsHelp.style, {
+      padding: "6px 14px",
+      background: "#10121A",
+      borderTop: "1px solid #1F2432",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      fontSize: "10px",
+      color: "rgba(255, 255, 255, 0.55)",
+      fontFamily: "'JetBrains Mono', monospace",
+      letterSpacing: "0.2px",
+    });
+    controlsHelp.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+        <span><strong style="color:#60A5FA;">[←][↑][→][↓]</strong> Navigate</span>
+        <span><strong style="color:#34D399;">[Enter/Space/E]</strong> Carry</span>
+        <span><strong style="color:#FBBF24;">[I]</strong> Details</span>
+      </div>
+      <div>
+        <span><strong style="color:#F87171;">[Esc]</strong> Close</span>
+      </div>
+    `;
+
     windowEl.append(
       header,
       this._carriedSlotContainer,
       tabsContainer,
       gridWrapper,
       this._actionPanelContainer,
+      controlsHelp,
     );
 
     overlay.appendChild(windowEl);
@@ -471,12 +612,18 @@ export class StationMenuUI {
       tabBtn.addEventListener("click", () => {
         SoundFX.playClick();
         this._activeCategory = cat;
+        this._selectedSlotIndex = 0;
+        const filtered = cat === "all"
+          ? this._items
+          : this._items.filter((i) => i.category === cat);
+        this._selectedItem = filtered.length > 0 ? filtered[0] : null;
         // Re-render tabs and grid
         const parent = tabs.parentElement;
         if (parent) {
           const newTabs = this._buildCategoryTabs();
           parent.replaceChild(newTabs, tabs);
           this._renderInventoryGrid();
+          this._refreshActionPanel();
         }
       });
 
@@ -642,6 +789,13 @@ export class StationMenuUI {
     slot.addEventListener("click", (e) => {
       SoundFX.playClick();
       this._selectedItem = item;
+      const filtered = this._activeCategory === "all"
+        ? this._items
+        : this._items.filter((i) => i.category === this._activeCategory);
+      const idx = filtered.findIndex((i) => i.id === item.id);
+      if (idx !== -1) {
+        this._selectedSlotIndex = idx;
+      }
       this._renderInventoryGrid();
       this._refreshActionPanel();
       this._showContextualPopup(item, slot);

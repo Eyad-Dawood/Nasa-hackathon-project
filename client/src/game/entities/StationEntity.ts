@@ -34,16 +34,19 @@ export class StationEntity implements IInteractable {
   private _hasAccess:  boolean;
   private _carry:      CarrySystem;
   private _menu:       StationMenuUI | null = null;
+  private _onInputLock?: (locked: boolean) => void;
 
   constructor(
     scene:      Phaser.Scene,
     def:        StationDefinition,
     playerRoles: string[],
     carry:      CarrySystem,
+    onInputLock?: (locked: boolean) => void,
   ) {
     this.def         = def;
     this._carry      = carry;
     this._hasAccess  = playerRoles.includes(def.roleId);
+    this._onInputLock = onInputLock;
 
     const { x, y } = stationWorldPos(def);
     this._worldX = x;
@@ -91,7 +94,11 @@ export class StationEntity implements IInteractable {
       this.def,
       items,
       this._carry,
-      () => { this._menu = null; },  // onClose
+      () => {
+        this._menu = null;
+        this._onInputLock?.(false);
+      },
+      this._onInputLock,
     );
     this._menu.mount();
   }
@@ -99,5 +106,6 @@ export class StationEntity implements IInteractable {
   onInteractEnd(): void {
     this._menu?.close();
     this._menu = null;
+    this._onInputLock?.(false);
   }
 }

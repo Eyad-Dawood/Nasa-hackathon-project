@@ -11,7 +11,7 @@ const envSchema = z.object({
   NODE_ENV: z.string().default("development"),
   AI_PROVIDER: z.enum(["gemini", "mock"]).optional(),
   GEMINI_API_KEY: z.string().optional(),
-  AI_MODEL: z.string().min(1).default("gemini-2.5-flash"),
+  AI_MODEL: z.string().min(1).default("gemini-3.8-flash"),
   AI_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(45000),
   AI_TOOL_TIMEOUT_MS: z.coerce.number().int().min(500).max(30000).default(5000),
   AI_MAX_TOOL_ROUNDS: z.coerce.number().int().min(1).max(10).default(4),

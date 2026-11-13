@@ -509,7 +509,7 @@ export class MissionAiTerminal {
     this._activeContentEl = null;
     this._activeRow = null;
     this._setLiveStatus(null);
-    this.setDroidState(ev.code === "ABORTED" ? "idle" : "alert");
+    this.setDroidState("idle");
   }
 
   // ── UI Rendering Helpers ───────────────────────────────────────────────

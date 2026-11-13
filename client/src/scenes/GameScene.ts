@@ -116,7 +116,23 @@ export class GameScene extends Phaser.Scene {
 
     // 5. Stations positioned tailored to room architecture
     this.stations = layout.stations.map(
-      (def) => new StationEntity(this, def, this.roles, this.carry),
+      (def) =>
+        new StationEntity(
+          this,
+          def,
+          this.roles,
+          this.carry,
+          (locked: boolean) => {
+            this.player.setInputEnabled(!locked);
+            this.interaction.setInputEnabled(!locked);
+            if (this.input.keyboard) {
+              this.input.keyboard.enabled = !locked;
+              if (locked) {
+                this.input.keyboard.resetKeys();
+              }
+            }
+          },
+        ),
     );
 
     // 6. Spaceship on the gantry excavation pad
