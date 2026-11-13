@@ -385,7 +385,7 @@ export class OnboardingGuideUI {
       overflowX: "hidden",
       // 100% OPAQUE static Earth Blaze space wallpaper (zero WebGL/animation overhead, maximum performance)
       backgroundColor: "#020308",
-      backgroundImage: "url('/assets/landing_space_earth_bg.jpg')",
+      backgroundImage: "url('/assets/landing_space_earth_bg.jpg?v=2')",
       backgroundSize: "cover",
       backgroundPosition: "center top",
       backgroundAttachment: "fixed",
