@@ -4,7 +4,8 @@
   "type": "module",
   "description": "Colyseus + Phaser: Client-side",
   "scripts": {
-    "start": "vite",
+    "dev": "vite",
+    "start": "vite preview",
     "build": "vite build",
     "preview": "vite preview"
   },
