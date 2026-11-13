@@ -1,4 +1,4 @@
-import gameData from "../../../../game_data.json";
+import gameData from "./game_data.json";
 
 /**
  * ObjectiveData.ts  —  MASTER MISSION REGISTRY
