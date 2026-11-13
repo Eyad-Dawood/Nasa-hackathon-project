@@ -41,7 +41,6 @@ const config: Phaser.Types.Core.GameConfig = {
   },
   fps: {
     target: 60,
-    forceSetTimeOut: true,
   },
   physics: {
     default: "arcade",

@@ -758,24 +758,10 @@ export class EarthBlazeBackground {
     return EarthBlazeBackground.instance;
   }
 
-  public init(customOptions: EarthBlazeOptions = {}): void {
+  public init(_customOptions: EarthBlazeOptions = {}): void {
     if (this.container) return; // already initialized
 
-    const options: ResolvedOptions = {
-      starCount: Math.round(finite(customOptions.starCount ?? 1800, 1800, 5400)),
-      galaxyBrightness: finite(customOptions.galaxyBrightness ?? 1, 1, 3),
-      surfaceBrightness: finite(customOptions.surfaceBrightness ?? 1, 1, 3),
-      illumination: finite(customOptions.illumination ?? 1, 1, 3),
-      auroraColor: parseColor(customOptions.auroraColor),
-      backgroundColor: parseColor(customOptions.backgroundColor),
-      auroraPreview: customOptions.auroraPreview ?? false,
-      auroraEnabled: customOptions.auroraEnabled ?? true,
-      interactive: customOptions.interactive ?? true,
-      textureUrl: customOptions.textureUrl ?? EARTH_TEXTURE_LOCAL,
-      reducedMotion: customOptions.reducedMotion,
-    };
-
-    // Main background container
+    // Main background container — 100% lightweight static high-performance wallpaper
     this.container = document.createElement("div");
     this.container.id = "earth-blaze-bg";
     Object.assign(this.container.style, {
@@ -784,53 +770,16 @@ export class EarthBlazeBackground {
       width: "100vw",
       height: "100vh",
       overflow: "hidden",
-      background: "#020308",
+      backgroundColor: "#020308",
+      backgroundImage: "url('/assets/landing_space_earth_bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center top",
+      backgroundRepeat: "no-repeat",
       zIndex: "0",
       isolation: "isolate",
       opacity: "1",
-      transition: "opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1)",
+      transition: "opacity 0.5s ease",
     });
-
-    // Fallback gradient/crescent in case WebGL is unavailable
-    this.fallback = document.createElement("div");
-    this.fallback.setAttribute("aria-hidden", "true");
-    Object.assign(this.fallback.style, {
-      position: "absolute",
-      inset: "0",
-      overflow: "hidden",
-      background: "radial-gradient(ellipse at 32% 38%, #312034 0%, #101421 22%, #020308 52%, #000 78%)",
-    });
-    const crescent = document.createElement("div");
-    Object.assign(crescent.style, {
-      position: "absolute",
-      width: "180%",
-      height: "220%",
-      left: "19%",
-      top: "18%",
-      borderRadius: "50%",
-      background: "#000",
-      boxShadow: "-2px -2px 3px #aa7c79, -8px -8px 38px #62406166",
-      transform: "rotate(-28deg)",
-    });
-    this.fallback.appendChild(crescent);
-
-    // Canvas
-    this.canvas = document.createElement("canvas");
-    this.canvas.tabIndex = options.interactive ? 0 : -1;
-    this.canvas.setAttribute("role", "img");
-    this.canvas.setAttribute("aria-label", "Earth Blaze: sunlight over Earth beneath stars");
-    Object.assign(this.canvas.style, {
-      position: "absolute",
-      inset: "0",
-      width: "100%",
-      height: "100%",
-      display: "block",
-      touchAction: options.interactive ? "pan-y" : "auto",
-      outline: "none",
-    });
-
-    this.container.appendChild(this.fallback);
-    this.container.appendChild(this.canvas);
 
     // Space Benders Brand Logo (Top-Left corner)
     const logo = document.createElement("img");
@@ -856,7 +805,6 @@ export class EarthBlazeBackground {
     // Prepend to body so it sits behind everything else
     document.body.prepend(this.container);
 
-    this.renderer = createRenderer(this.canvas, this.fallback, options);
     this.isVisible = true;
   }
 
@@ -864,7 +812,6 @@ export class EarthBlazeBackground {
     if (!this.container) return;
     this.container.style.opacity = "1";
     this.container.style.pointerEvents = "auto";
-    this.renderer?.resume();
     this.isVisible = true;
   }
 
@@ -872,18 +819,10 @@ export class EarthBlazeBackground {
     if (!this.container) return;
     this.container.style.opacity = "0";
     this.container.style.pointerEvents = "none";
-    // Pause rendering after transition completes to save GPU
-    setTimeout(() => {
-      if (!this.isVisible) {
-        this.renderer?.pause();
-      }
-    }, 850);
     this.isVisible = false;
   }
 
   public destroy(): void {
-    this.renderer?.dispose();
-    this.renderer = null;
     this.container?.remove();
     this.container = null;
     this.canvas = null;
