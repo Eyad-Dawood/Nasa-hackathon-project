@@ -11,163 +11,101 @@ import {
   Lock,
   Compass,
   ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Activity,
   Globe,
+  Radio,
+  Lightbulb,
+  Award,
 } from "lucide";
 import { Theme } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
 import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
+import { SoundFX } from "../audio/SoundEffects";
 
-/**
- * Generates an organic flared ribbon SVG path connecting level stage portals.
- * Uses cubic bezier tangents and flared fillets from Thinker PipelineRibbon.
- */
-function generateRibbonPath(
-  start: { x: number; y: number; dx: number; dy: number },
-  end: { x: number; y: number; dx: number; dy: number },
-  filletRadius: number = 26,
-  baseHalfWidth: number = 3.5,
-): { ribbonPath: string; centerCurve: string } {
-  const dist = Math.hypot(end.x - start.x, end.y - start.y);
-  if (dist < 10) return { ribbonPath: "", centerCurve: "" };
-
-  const controlDist = 0.48 * dist;
-  const p1 = { x: start.x + start.dx * controlDist, y: start.y + start.dy * controlDist };
-  const p2 = { x: end.x + end.dx * controlDist, y: end.y + end.dy * controlDist };
-
-  const centerCurve = `M ${start.x.toFixed(1)} ${start.y.toFixed(1)} C ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}, ${end.x.toFixed(1)} ${end.y.toFixed(1)}`;
-
-  const points: { x: number; y: number; nx: number; ny: number; distance: number }[] = [];
-  let totalLength = 0;
-  const SAMPLES = 60;
-
-  for (let i = 0; i <= SAMPLES; i++) {
-    const t = i / SAMPLES;
-    const invT = 1 - t;
-
-    // Cubic bezier position
-    const x =
-      invT ** 3 * start.x +
-      3 * invT ** 2 * t * p1.x +
-      3 * invT * t ** 2 * p2.x +
-      t ** 3 * end.x;
-    const y =
-      invT ** 3 * start.y +
-      3 * invT ** 2 * t * p1.y +
-      3 * invT * t ** 2 * p2.y +
-      t ** 3 * end.y;
-
-    // Tangent derivative along cubic bezier
-    const dx =
-      3 * invT ** 2 * (p1.x - start.x) +
-      6 * invT * t * (p2.x - p1.x) +
-      3 * t ** 2 * (end.x - p2.x);
-    const dy =
-      3 * invT ** 2 * (p1.y - start.y) +
-      6 * invT * t * (p2.y - p1.y) +
-      3 * t ** 2 * (end.y - p2.y);
-    const tanLen = Math.hypot(dx, dy) || 1;
-
-    const prev = points[i - 1];
-    if (prev) {
-      totalLength += Math.hypot(x - prev.x, y - prev.y);
-    }
-
-    points.push({
-      x,
-      y,
-      nx: -dy / tanLen,
-      ny: dx / tanLen,
-      distance: totalLength,
-    });
-  }
-
-  const fillet = Math.min(filletRadius, totalLength / 4);
-  const flare = (d: number) => {
-    const diff = Math.max(0, fillet - d);
-    return fillet - Math.sqrt(Math.max(0, fillet ** 2 - diff ** 2));
-  };
-
-  const edge = (direction: number) => {
-    return points.map((p) => {
-      const hw = baseHalfWidth + flare(p.distance) + flare(totalLength - p.distance);
-      const px = (p.x + p.nx * hw * direction).toFixed(1);
-      const py = (p.y + p.ny * hw * direction).toFixed(1);
-      return `${px} ${py}`;
-    });
-  };
-
-  const ribbonPath = `M ${edge(1).join(" L ")} L ${edge(-1).reverse().join(" L ")} Z`;
-  return { ribbonPath, centerCurve };
-}
-
-interface PlanetStyle {
+interface PlanetCardTheme {
   accentColor: string;
-  borderColor: string;
+  secondaryColor: string;
+  glowColor: string;
   badge: string;
   sprite: string;
+  bgGradient: string;
+  ambientHalo: string;
 }
 
-const PLANET_STYLES: Record<string, PlanetStyle> = {
+const PLANET_CARD_THEMES: Record<string, PlanetCardTheme> = {
   M04: {
     accentColor: "#29ADFF",
-    borderColor: "#38BDF8",
+    secondaryColor: "#0284C7",
+    glowColor: "rgba(41, 173, 255, 0.4)",
     badge: "EARTH LEO",
     sprite: "/assets/planets/planet_earth_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(14, 38, 64, 0.95) 0%, rgba(8, 18, 32, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(41, 173, 255, 0.35) 0%, transparent 70%)",
   },
   M01: {
-    accentColor: "#CBD5E1",
-    borderColor: "#94A3B8",
+    accentColor: "#E2E8F0",
+    secondaryColor: "#94A3B8",
+    glowColor: "rgba(226, 232, 240, 0.35)",
     badge: "THE MOON",
     sprite: "/assets/planets/planet_moon_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(30, 41, 59, 0.95) 0%, rgba(15, 23, 42, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(203, 213, 225, 0.3) 0%, transparent 70%)",
   },
   M02: {
     accentColor: "#F87171",
-    borderColor: "#EF4444",
+    secondaryColor: "#EF4444",
+    glowColor: "rgba(248, 113, 113, 0.4)",
     badge: "MARS BASE",
     sprite: "/assets/planets/planet_mars_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(69, 26, 26, 0.95) 0%, rgba(30, 14, 14, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(239, 68, 68, 0.35) 0%, transparent 70%)",
   },
   M03: {
     accentColor: "#38BDF8",
-    borderColor: "#0284C7",
+    secondaryColor: "#0284C7",
+    glowColor: "rgba(56, 189, 248, 0.4)",
     badge: "EUROPA / JUPITER",
     sprite: "/assets/planets/planet_europa_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(15, 34, 56, 0.95) 0%, rgba(8, 18, 30, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(56, 189, 248, 0.35) 0%, transparent 70%)",
   },
   M05: {
     accentColor: "#FBBF24",
-    borderColor: "#F59E0B",
+    secondaryColor: "#F59E0B",
+    glowColor: "rgba(251, 191, 36, 0.45)",
     badge: "HELIOS CORONA",
     sprite: "/assets/planets/planet_sun_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(64, 42, 10, 0.95) 0%, rgba(28, 18, 4, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(245, 158, 11, 0.4) 0%, transparent 70%)",
   },
   M06: {
     accentColor: "#34D399",
-    borderColor: "#10B981",
+    secondaryColor: "#10B981",
+    glowColor: "rgba(52, 211, 153, 0.4)",
     badge: "TITAN / SATURN",
     sprite: "/assets/planets/planet_titan_64.png",
+    bgGradient: "linear-gradient(180deg, rgba(13, 46, 34, 0.95) 0%, rgba(6, 24, 18, 0.98) 100%)",
+    ambientHalo: "radial-gradient(circle at 50% 45%, rgba(16, 185, 129, 0.35) 0%, transparent 70%)",
   },
 };
 
 /**
  * ObjectivePicker
  * ───────────────
- * Full-screen Horizontal S-Curve Pipeline Ribbon Campaign Map.
- * Players scroll/drag horizontally through space across a zigzagging
- * pipeline connecting Level 1 to Level 6 with Liquid Glass planetary
- * hubs and animated energy pulses.
+ * Engaging, colorful, child-friendly Mission Control Center for NASA Space Benders.
+ *
+ * Displays all 6 canonical missions in an attractive, responsive space-themed card grid:
+ * - Each mission card has a prominent, relevant planet illustration & banner at the top.
+ * - Mission title, destination badge, and story description underneath the image.
+ * - Clear, visual objective icons and specifications (Science Goal, Star Instrument, Budget, Sunlight, Heat, Radiation).
+ * - Child-friendly educational "Fun Fact" callout on each card.
+ * - Responsive layout adapted to desktop, tablet, and mobile screens.
  */
 export class ObjectivePicker {
   private container: HTMLDivElement;
   private isHost: boolean;
   private highestUnlockedLevel: number;
   private errorBanner: HTMLDivElement | null = null;
-  private scrollViewport!: HTMLDivElement;
-  private worldTrack!: HTMLDivElement;
-  private svgLayer!: SVGSVGElement;
-  private resizeObserver: ResizeObserver | null = null;
-  private animFrameId: number | null = null;
-  private portalEls: Map<number, HTMLDivElement> = new Map();
+  private cardEls: Map<number, HTMLDivElement> = new Map();
 
   constructor(isHost: boolean, highestUnlockedLevel: number = 1) {
     this.isHost = isHost;
@@ -177,16 +115,10 @@ export class ObjectivePicker {
 
   mount(): void {
     document.body.appendChild(this.container);
-    this._setupPipelineRibbons();
-    this._setupDragScroll();
-    this._scrollToActiveLevel();
   }
 
   destroy(): void {
-    if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
-    this.resizeObserver?.disconnect();
-    this.resizeObserver = null;
-    this.portalEls.clear();
+    this.cardEls.clear();
     this.container.remove();
   }
 
@@ -213,11 +145,11 @@ export class ObjectivePicker {
       b.style.opacity = "1";
       b.style.cursor = "pointer";
       const lbl = b.querySelector("[data-btn-label]");
-      if (lbl) lbl.textContent = "Deploy Vector";
+      if (lbl) lbl.textContent = "Deploy Mission";
     });
   }
 
-  // ── Private ──────────────────────────────────────────────────────────
+  // ── Private ────────────────────────────────────────────────────────────
 
   private _rebuild(): void {
     const parent = this.container.parentElement;
@@ -230,10 +162,10 @@ export class ObjectivePicker {
 
   private _buildDOM(): HTMLDivElement {
     const { font } = Theme;
-    this.portalEls.clear();
+    this.cardEls.clear();
     this._injectStyles();
 
-    // Fullscreen Overlay
+    // Fullscreen Overlay with starry space backdrop
     const overlay = document.createElement("div");
     overlay.id = "objective-picker-overlay";
     Object.assign(overlay.style, {
@@ -241,762 +173,605 @@ export class ObjectivePicker {
       inset: "0",
       display: "flex",
       flexDirection: "column",
-      background: "#05080E",
+      background: "radial-gradient(circle at 50% 20%, #0F172A 0%, #060911 60%, #030508 100%)",
       zIndex: "1000",
       fontFamily: font.family,
-      overflow: "hidden",
+      overflowY: "auto",
+      overflowX: "hidden",
       userSelect: "none",
+      padding: "20px 24px 48px",
+      boxSizing: "border-box",
     });
 
-    // ── Floating Top HUD Bar (Liquid Glass) ──
-    const topBar = document.createElement("div");
-    Object.assign(topBar.style, {
-      position: "absolute",
-      top: "16px",
-      left: "20px",
-      right: "20px",
-      zIndex: "30",
+    // ── Header Section ──
+    const headerWrapper = document.createElement("div");
+    headerWrapper.className = "mission-header-bar";
+    Object.assign(headerWrapper.style, {
+      width: "100%",
+      maxWidth: "1280px",
+      margin: "0 auto 28px",
       display: "flex",
+      flexWrap: "wrap",
       alignItems: "center",
       justifyContent: "space-between",
-      padding: "12px 20px",
-      background: "rgba(10, 14, 24, 0.75)",
-      boxShadow:
-        "inset 0 1px 0.5px rgba(255, 255, 255, 0.22), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08), 0 20px 40px rgba(0, 0, 0, 0.6)",
-      backdropFilter: "blur(20px) saturate(1.5)",
-      WebkitBackdropFilter: "blur(20px) saturate(1.5)",
+      gap: "16px",
+      padding: "16px 24px",
+      background: "rgba(15, 23, 42, 0.75)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      border: "1px solid rgba(255, 255, 255, 0.12)",
+      borderRadius: "18px",
+      boxShadow: "0 10px 30px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15)",
+    });
+
+    // Left Title Box
+    const titleBox = document.createElement("div");
+    Object.assign(titleBox.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "16px",
+    });
+
+    const logoBadge = document.createElement("div");
+    Object.assign(logoBadge.style, {
+      width: "48px",
+      height: "48px",
       borderRadius: "14px",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
-      pointerEvents: "auto",
+      background: "linear-gradient(135deg, #29ADFF 0%, #0284C7 100%)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      boxShadow: "0 4px 16px rgba(41, 173, 255, 0.4)",
     });
-
-    const leftBox = document.createElement("div");
-    Object.assign(leftBox.style, { display: "flex", alignItems: "center", gap: "12px" });
-
-    const beacon = document.createElement("div");
-    Object.assign(beacon.style, {
-      width: "8px",
-      height: "8px",
-      background: "#29ADFF",
-      borderRadius: "2px",
-    });
+    logoBadge.appendChild(createElement(Rocket, { width: 26, height: 26, color: "#ffffff", "stroke-width": 2 }));
 
     const titleText = document.createElement("div");
     titleText.innerHTML = `
-      <div style="font-size:14px; font-weight:700; color:#ffffff; font-family:'JetBrains Mono', monospace; letter-spacing:0.8px;">
-        NASA CAMPAIGN // FLIGHT TRAJECTORY PIPELINE
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span style="font-size:22px; font-weight:800; color:#ffffff; letter-spacing:0.4px;">NASA Mission Control</span>
+        <span style="background:rgba(41, 173, 255, 0.2); color:#38BDF8; font-size:10px; font-weight:700; padding:2px 8px; border-radius:6px; font-family:'JetBrains Mono', monospace;">SPACE BENDERS</span>
       </div>
-      <div style="font-size:11px; color:rgba(255,255,255,0.5); font-family:'JetBrains Mono', monospace; margin-top:2px;">
-        ← DRAG OR SCROLL HORIZONTALLY TO TRAVERSE MISSIONS →
+      <div style="font-size:13px; color:rgba(255,255,255,0.7); margin-top:3px;">
+        Select an expedition, build your custom spacecraft, and launch into the cosmos!
       </div>
     `;
+    titleBox.append(logoBadge, titleText);
 
-    leftBox.append(beacon, titleText);
-
-    // Right Controls
+    // Right Controls / Badges Box
     const rightBox = document.createElement("div");
-    Object.assign(rightBox.style, { display: "flex", alignItems: "center", gap: "12px" });
+    Object.assign(rightBox.style, {
+      display: "flex",
+      alignItems: "center",
+      flexWrap: "wrap",
+      gap: "12px",
+    });
 
-    // Developer Test Mode Badge (shown when all 6 campaign levels are unlocked)
+    // Test Mode indicator (if level >= 6)
     if (this.highestUnlockedLevel >= 6) {
       const testBadge = document.createElement("div");
       Object.assign(testBadge.style, {
         display: "flex",
         alignItems: "center",
         gap: "6px",
-        fontSize: "10.5px",
+        fontSize: "11px",
         fontFamily: "'JetBrains Mono', monospace",
         fontWeight: "700",
         color: "#FBBF24",
-        background: "rgba(245, 158, 11, 0.12)",
-        border: "1px solid rgba(245, 158, 11, 0.35)",
-        padding: "5px 12px",
-        borderRadius: "8px",
-        letterSpacing: "0.5px",
+        background: "rgba(245, 158, 11, 0.15)",
+        border: "1px solid rgba(245, 158, 11, 0.4)",
+        padding: "6px 14px",
+        borderRadius: "10px",
       });
-      testBadge.innerHTML = `<span>TEST MODE: ALL 6 LEVELS UNLOCKED</span>`;
+      testBadge.innerHTML = `<span>★ ALL 6 MISSIONS UNLOCKED</span>`;
       rightBox.appendChild(testBadge);
     }
 
-    // Quick Level Navigator Pill
-    const navPill = document.createElement("div");
-    Object.assign(navPill.style, {
-      display: "flex",
-      alignItems: "center",
-      gap: "4px",
-      background: "rgba(255, 255, 255, 0.05)",
-      borderRadius: "8px",
-      padding: "4px 8px",
-      border: "1px solid rgba(255, 255, 255, 0.08)",
-    });
-
-    for (let lvl = 1; lvl <= 6; lvl++) {
-      const dot = document.createElement("button");
-      dot.textContent = `L${lvl}`;
-      const isLvlUnlocked = lvl <= this.highestUnlockedLevel;
-      const isLvlActive = lvl === this.highestUnlockedLevel;
-
-      Object.assign(dot.style, {
-        background: isLvlActive
-          ? "#29ADFF"
-          : isLvlUnlocked
-          ? "rgba(52, 211, 153, 0.25)"
-          : "transparent",
-        color: isLvlActive ? "#04060A" : isLvlUnlocked ? "#34D399" : "rgba(255, 255, 255, 0.3)",
-        border: "none",
-        borderRadius: "4px",
-        padding: "3px 8px",
-        fontSize: "10px",
-        fontWeight: "700",
-        fontFamily: "'JetBrains Mono', monospace",
-        cursor: "pointer",
-        transition: "all 0.15s ease",
-      });
-
-      dot.addEventListener("click", () => {
-        const portal = this.portalEls.get(lvl);
-        if (portal && this.scrollViewport) {
-          const rect = portal.getBoundingClientRect();
-          const target = this.scrollViewport.scrollLeft + rect.left - window.innerWidth / 2 + rect.width / 2;
-          this.scrollViewport.scrollTo({ left: target, behavior: "smooth" });
-        }
-      });
-      navPill.appendChild(dot);
-    }
-
-    // Host status badge
+    // Role / Commander Status Badge
     const roleBadge = document.createElement("div");
     Object.assign(roleBadge.style, {
       display: "flex",
       alignItems: "center",
-      gap: "6px",
-      fontSize: "11px",
+      gap: "8px",
+      fontSize: "12px",
+      fontWeight: "700",
       fontFamily: "'JetBrains Mono', monospace",
-      color: this.isHost ? "#29ADFF" : "rgba(255, 255, 255, 0.6)",
-      background: "rgba(255, 255, 255, 0.06)",
-      padding: "6px 14px",
-      borderRadius: "8px",
-      border: "1px solid rgba(255, 255, 255, 0.1)",
+      color: this.isHost ? "#29ADFF" : "rgba(255, 255, 255, 0.75)",
+      background: this.isHost ? "rgba(41, 173, 255, 0.12)" : "rgba(255, 255, 255, 0.06)",
+      border: `1px solid ${this.isHost ? "rgba(41, 173, 255, 0.35)" : "rgba(255, 255, 255, 0.12)"}`,
+      padding: "8px 16px",
+      borderRadius: "10px",
     });
+
     if (this.isHost) {
-      roleBadge.appendChild(createElement(Rocket, { width: 13, height: 13, "stroke-width": 1.6 }));
+      roleBadge.appendChild(createElement(Award, { width: 16, height: 16, color: "#29ADFF" }));
       const span = document.createElement("span");
-      span.textContent = "COMMANDER // AUTHORIZED";
+      span.textContent = "COMMANDER: CHOOSE MISSION";
       roleBadge.appendChild(span);
     } else {
-      roleBadge.appendChild(createElement(Clock, { width: 13, height: 13, "stroke-width": 1.6 }));
+      roleBadge.appendChild(createElement(Clock, { width: 16, height: 16, color: "#34D399" }));
       const span = document.createElement("span");
-      span.textContent = "CREW // AWAITING COMMAND";
+      span.textContent = "CREW: WAITING FOR COMMANDER";
       roleBadge.appendChild(span);
     }
 
-    rightBox.append(navPill, roleBadge);
-    topBar.append(leftBox, rightBox);
+    rightBox.appendChild(roleBadge);
+    headerWrapper.append(titleBox, rightBox);
 
-    // Error banner
+    // ── Error Banner ──
     this.errorBanner = document.createElement("div");
     Object.assign(this.errorBanner.style, {
-      position: "absolute",
-      top: "84px",
-      left: "50%",
-      transform: "translateX(-50%)",
-      zIndex: "40",
+      width: "100%",
+      maxWidth: "1280px",
+      margin: "0 auto 16px",
       display: "none",
-      padding: "8px 18px",
-      borderRadius: "8px",
-      background: "rgba(255, 0, 77, 0.2)",
-      border: "1px solid #FF004D",
-      color: "#FF004D",
-      fontSize: "12px",
+      padding: "10px 20px",
+      borderRadius: "10px",
+      background: "rgba(239, 68, 68, 0.2)",
+      border: "1px solid #EF4444",
+      color: "#FCA5A5",
+      fontSize: "13px",
+      fontWeight: "600",
       fontFamily: "'JetBrains Mono', monospace",
-      boxShadow: "0 8px 24px rgba(0, 0, 0, 0.6)",
+      textAlign: "center",
     });
 
-    // ── Horizontal Scroll Viewport ──
-    this.scrollViewport = document.createElement("div");
-    this.scrollViewport.id = "pipeline-scroll-viewport";
-    Object.assign(this.scrollViewport.style, {
-      position: "relative",
+    // ── Responsive Mission Cards Grid ──
+    const cardsGrid = document.createElement("div");
+    cardsGrid.className = "mission-cards-grid";
+    Object.assign(cardsGrid.style, {
       width: "100%",
-      height: "100%",
-      overflowX: "auto",
-      overflowY: "hidden",
-      cursor: "grab",
-      scrollBehavior: "smooth",
+      maxWidth: "1280px",
+      margin: "0 auto",
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
+      gap: "24px",
+      alignItems: "stretch",
     });
 
-    // Cosmic 2D Tactical World Track: 2700px wide with subtle 2D grid
-    this.worldTrack = document.createElement("div");
-    this.worldTrack.id = "pipeline-world-track";
-    Object.assign(this.worldTrack.style, {
-      position: "relative",
-      width: "2700px",
-      minHeight: "100%",
-      height: "100%",
-      display: "flex",
-      alignItems: "center",
-      backgroundColor: "#060911",
-      backgroundImage: `
-        linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px)
-      `,
-      backgroundSize: "48px 48px",
-    });
-
-    // SVG 2D Pipeline Ribbon Canvas (Clean Vector Strokes, No Blurry Glow Filter)
-    this.svgLayer = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    this.svgLayer.setAttribute("class", "pipeline-ribbon-canvas");
-    Object.assign(this.svgLayer.style, {
-      position: "absolute",
-      top: "0",
-      left: "0",
-      width: "100%",
-      height: "100%",
-      pointerEvents: "none",
-      zIndex: "1",
-    });
-
-    this.svgLayer.innerHTML = `
-      <defs>
-        <pattern id="diagonalHatch" width="8" height="8" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-          <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(255, 255, 255, 0.04)" stroke-width="1" />
-        </pattern>
-      </defs>
-      <g id="ribbon-paths-group"></g>
-    `;
-
-    // ── Generate the Zigzag Nodes across Space ──
-    // Shifted down comfortably to give 2D breathing room from the top bar:
-    // Even levels (upper nodes): yPct = 44% (gives ~350px clearance below top bar)
-    // Odd levels (lower nodes):  yPct = 62% (gives comfortable clearance above bottom)
-    const ZIGZAG_COORDS = [
-      { level: 1, x: 240, yPct: 62 },
-      { level: 2, x: 680, yPct: 44 },
-      { level: 3, x: 1120, yPct: 62 },
-      { level: 4, x: 1560, yPct: 44 },
-      { level: 5, x: 2000, yPct: 62 },
-      { level: 6, x: 2440, yPct: 44 },
-    ];
-
+    // Render cards for all canonical missions
     OBJECTIVES.forEach((obj) => {
-      const coord = ZIGZAG_COORDS.find((c) => c.level === obj.level) ?? {
-        level: obj.level,
-        x: 200 + (obj.level - 1) * 420,
-        yPct: obj.level % 2 === 1 ? 55 : 35,
-      };
-
-      const stageStation = this._buildStageStation(obj, coord);
-      this.portalEls.set(obj.level, stageStation);
-      this.worldTrack.appendChild(stageStation);
+      const card = this._buildMissionCard(obj);
+      this.cardEls.set(obj.level, card);
+      cardsGrid.appendChild(card);
     });
 
-    this.worldTrack.appendChild(this.svgLayer);
-    this.scrollViewport.appendChild(this.worldTrack);
-    overlay.append(topBar, this.errorBanner, this.scrollViewport);
+    overlay.append(headerWrapper, this.errorBanner, cardsGrid);
     return overlay;
   }
 
   /**
-   * Builds a crisp 2D game stage station node (Tactical Sector Node + Attached Mission Dossier)
+   * Builds an attractive, child-friendly Mission Card with:
+   * 1. Relevant visual planet illustration & banner at the top
+   * 2. Mission title and description underneath the image
+   * 3. Additional mission details, specifications, and objectives
+   * 4. Educational Fun Fact callout
+   * 5. Interactive action button with child-friendly feedback
    */
-  private _buildStageStation(
-    obj: Objective,
-    coord: { level: number; x: number; yPct: number },
-  ): HTMLDivElement {
+  private _buildMissionCard(obj: Objective): HTMLDivElement {
     const isTestingAll = this.highestUnlockedLevel >= 6;
     const isUnlocked = isTestingAll || obj.level <= this.highestUnlockedLevel;
     const isCompleted = !isTestingAll && obj.level < this.highestUnlockedLevel;
     const isCurrentActive = isTestingAll ? true : obj.level === this.highestUnlockedLevel;
-    const style = PLANET_STYLES[obj.id] ?? PLANET_STYLES.M04;
+    const theme = PLANET_CARD_THEMES[obj.id] ?? PLANET_CARD_THEMES.M04;
 
-    const stationWrapper = document.createElement("div");
-    stationWrapper.id = `level-station-${obj.level}`;
-    stationWrapper.setAttribute("data-level", String(obj.level));
+    const card = document.createElement("div");
+    card.className = "mission-card-item";
+    card.setAttribute("data-level", String(obj.level));
+    card.setAttribute("data-mission-id", obj.id);
 
-    Object.assign(stationWrapper.style, {
-      position: "absolute",
-      left: `${coord.x}px`,
-      top: `${coord.yPct}%`,
-      transform: "translateY(-50%)",
+    Object.assign(card.style, {
+      position: "relative",
       display: "flex",
       flexDirection: "column",
-      alignItems: "center",
-      gap: "12px",
-      zIndex: "10",
-      width: "280px",
-      pointerEvents: "auto",
+      background: theme.bgGradient,
+      borderRadius: "20px",
+      border: isCurrentActive
+        ? `2px solid ${theme.accentColor}`
+        : isCompleted
+        ? "1.5px solid #10B981"
+        : isUnlocked
+        ? "1.5px solid rgba(255, 255, 255, 0.15)"
+        : "1px dashed rgba(255, 255, 255, 0.12)",
+      boxShadow: isCurrentActive
+        ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px ${theme.glowColor}`
+        : "0 10px 28px rgba(0, 0, 0, 0.4)",
+      overflow: "hidden",
+      transition: "transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease",
+      opacity: isUnlocked ? "1" : "0.6",
     });
 
-    // ── Crisp 2D Tactical Stage Node with Pixel Art Planet Sprite ──
-    const portalHub = document.createElement("div");
-    portalHub.className = "stage-portal-hub";
-    Object.assign(portalHub.style, {
-      width: "74px",
-      height: "74px",
-      borderRadius: "50%",
-      background: isUnlocked ? "#0B111E" : "#080C14",
-      boxShadow: "0 4px 10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12)",
-      border: isCurrentActive
-        ? `2px solid ${style.borderColor}`
-        : isCompleted
-        ? "2px solid #10B981"
-        : "1.5px dashed rgba(255, 255, 255, 0.15)",
-      outline: isCurrentActive ? "2px dashed rgba(56, 189, 248, 0.45)" : "none",
-      outlineOffset: "4px",
+    card.addEventListener("mouseenter", () => {
+      if (isUnlocked) {
+        card.style.transform = "translateY(-4px)";
+        card.style.boxShadow = `0 20px 48px rgba(0, 0, 0, 0.7), 0 0 32px ${theme.glowColor}`;
+      }
+    });
+    card.addEventListener("mouseleave", () => {
+      card.style.transform = "translateY(0)";
+      card.style.boxShadow = isCurrentActive
+        ? `0 16px 40px rgba(0, 0, 0, 0.6), 0 0 24px ${theme.glowColor}`
+        : "0 10px 28px rgba(0, 0, 0, 0.4)";
+    });
+
+    // ── 1. Top Image Banner (Relevant Mission Image at the Top) ──
+    const imageBanner = document.createElement("div");
+    imageBanner.className = "mission-banner-visual";
+    Object.assign(imageBanner.style, {
+      position: "relative",
+      width: "100%",
+      height: "170px",
+      background: theme.ambientHalo,
       display: "flex",
-      flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
-      cursor: "pointer",
-      position: "relative",
-      transition: "all 0.15s ease",
-      padding: "2px",
+      overflow: "hidden",
+      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
     });
 
-    // Top Level Pill Tag
-    const lvlTag = document.createElement("div");
-    lvlTag.textContent = `LVL ${obj.level}`;
-    Object.assign(lvlTag.style, {
-      fontSize: "8.5px",
+    // Background cosmic orbit lines (SVG)
+    const orbitSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    orbitSvg.setAttribute("viewBox", "0 0 300 170");
+    Object.assign(orbitSvg.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      pointerEvents: "none",
+      opacity: "0.4",
+    });
+    orbitSvg.innerHTML = `
+      <ellipse cx="150" cy="85" rx="110" ry="45" fill="none" stroke="${theme.accentColor}" stroke-width="1.2" stroke-dasharray="4 6" />
+      <ellipse cx="150" cy="85" rx="135" ry="60" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="0.8" />
+    `;
+    imageBanner.appendChild(orbitSvg);
+
+    // Central Pixel-Art Planet Sprite (Large, crisp, prominent)
+    const planetImg = document.createElement("img");
+    planetImg.src = theme.sprite;
+    planetImg.alt = obj.destination;
+    planetImg.className = "mission-planet-img";
+    Object.assign(planetImg.style, {
+      width: "72px",
+      height: "72px",
+      imageRendering: "pixelated",
+      zIndex: "2",
+      filter: isUnlocked
+        ? `drop-shadow(0 0 16px ${theme.glowColor})`
+        : "grayscale(0.9) opacity(0.5)",
+      transition: "transform 0.3s ease",
+    });
+    imageBanner.appendChild(planetImg);
+
+    // Top-Left Badge: Level Pill
+    const levelBadge = document.createElement("div");
+    Object.assign(levelBadge.style, {
+      position: "absolute",
+      top: "14px",
+      left: "14px",
+      zIndex: "3",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      padding: "4px 10px",
+      borderRadius: "8px",
+      background: isCurrentActive ? theme.accentColor : "rgba(15, 23, 42, 0.8)",
+      color: isCurrentActive ? "#04060A" : "#FFFFFF",
+      border: `1px solid ${isCurrentActive ? "transparent" : "rgba(255, 255, 255, 0.15)"}`,
+      fontSize: "11px",
       fontWeight: "800",
       fontFamily: "'JetBrains Mono', monospace",
-      color: isUnlocked ? "#ffffff" : "rgba(255, 255, 255, 0.35)",
-      letterSpacing: "0.4px",
-      lineHeight: "1",
+      letterSpacing: "0.5px",
+    });
+    levelBadge.textContent = `MISSION ${obj.level}`;
+    imageBanner.appendChild(levelBadge);
+
+    // Top-Right Badge: Difficulty Stars & Status
+    const topStatusBadge = document.createElement("div");
+    Object.assign(topStatusBadge.style, {
+      position: "absolute",
+      top: "14px",
+      right: "14px",
+      zIndex: "3",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      padding: "4px 10px",
+      borderRadius: "8px",
+      background: "rgba(15, 23, 42, 0.85)",
+      border: "1px solid rgba(255, 255, 255, 0.15)",
+      backdropFilter: "blur(8px)",
     });
 
-    // Central Pixel Art Planet Sprite
-    const planetImg = document.createElement("img");
-    planetImg.src = style.sprite;
-    planetImg.alt = style.badge;
-    Object.assign(planetImg.style, {
-      width: "36px",
-      height: "36px",
-      imageRendering: "pixelated",
-      opacity: isUnlocked ? "1" : "0.35",
-      filter: isUnlocked ? "none" : "grayscale(0.85)",
-      pointerEvents: "none",
-      margin: "1px 0",
-    });
-
-    // Planet Badge below image
-    const planetBadge = document.createElement("span");
-    planetBadge.textContent = style.badge;
-    Object.assign(planetBadge.style, {
-      fontSize: "7px",
-      fontWeight: "700",
-      fontFamily: "'JetBrains Mono', monospace",
-      color: isUnlocked ? style.accentColor : "rgba(255, 255, 255, 0.25)",
-      letterSpacing: "0.4px",
-      lineHeight: "1",
-    });
-
-    portalHub.append(lvlTag, planetImg, planetBadge);
-
-    // Completion or Lock badge over hub
     if (isCompleted) {
-      const checkIcon = document.createElement("div");
-      checkIcon.appendChild(createElement(Check, { width: 12, height: 12, color: "#ffffff", "stroke-width": 3 }));
-      Object.assign(checkIcon.style, {
-        position: "absolute",
-        top: "-3px",
-        right: "-3px",
-        width: "20px",
-        height: "20px",
-        borderRadius: "50%",
-        background: "#10B981",
-        border: "1.5px solid #060911",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      });
-      portalHub.appendChild(checkIcon);
+      topStatusBadge.style.borderColor = "rgba(16, 185, 129, 0.4)";
+      topStatusBadge.style.color = "#34D399";
+      topStatusBadge.innerHTML = `<span style="font-size:10px; font-weight:800; font-family:'JetBrains Mono', monospace;">✓ COMPLETED</span>`;
     } else if (!isUnlocked) {
-      const lockIcon = document.createElement("div");
-      lockIcon.appendChild(createElement(Lock, { width: 11, height: 11, color: "rgba(255, 255, 255, 0.5)" }));
-      Object.assign(lockIcon.style, {
-        position: "absolute",
-        top: "-3px",
-        right: "-3px",
-        width: "20px",
-        height: "20px",
-        borderRadius: "50%",
-        background: "#1E293B",
-        border: "1px solid rgba(255, 255, 255, 0.12)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+      topStatusBadge.style.color = "rgba(255, 255, 255, 0.4)";
+      topStatusBadge.appendChild(createElement(Lock, { width: 12, height: 12 }));
+      const lockText = document.createElement("span");
+      lockText.textContent = "LOCKED";
+      lockText.style.fontSize = "10px";
+      lockText.style.fontWeight = "800";
+      lockText.style.fontFamily = "'JetBrains Mono', monospace";
+      topStatusBadge.appendChild(lockText);
+    } else {
+      // Show difficulty stars
+      const starsWrap = document.createElement("div");
+      Object.assign(starsWrap.style, { display: "flex", alignItems: "center", gap: "2px" });
+      for (let s = 0; s < obj.stars; s++) {
+        starsWrap.appendChild(createElement(Star, { width: 11, height: 11, color: "#FBBF24", fill: "#FBBF24" }));
+      }
+      const diffLabel = document.createElement("span");
+      diffLabel.textContent = obj.difficulty;
+      Object.assign(diffLabel.style, {
+        fontSize: "10px",
+        fontWeight: "700",
+        color: "#FBBF24",
+        fontFamily: "'JetBrains Mono', monospace",
+        marginLeft: "4px",
       });
-      portalHub.appendChild(lockIcon);
+      topStatusBadge.append(starsWrap, diffLabel);
     }
+    imageBanner.appendChild(topStatusBadge);
 
-    // ── Attached Crisp 2D Mission Card (Clean 2D Liquid Glass Dossier) ──
-    const card = document.createElement("div");
-    card.className = "stage-card-panel";
-    Object.assign(card.style, {
-      width: "100%",
-      background: isCurrentActive
-        ? "rgba(13, 19, 33, 0.94)"
-        : isCompleted
-        ? "rgba(11, 16, 27, 0.88)"
-        : "rgba(10, 14, 22, 0.65)",
-      boxShadow: "0 8px 24px rgba(0, 0, 0, 0.5)",
-      backdropFilter: "blur(12px)",
-      WebkitBackdropFilter: "blur(12px)",
-      border: isCurrentActive
-        ? `1px solid rgba(56, 189, 248, 0.45)`
-        : isCompleted
-        ? `1px solid rgba(16, 185, 129, 0.3)`
-        : `1px solid rgba(255, 255, 255, 0.08)`,
-      borderRadius: "10px",
-      padding: "13px",
+    // Bottom Banner Info Tag: Destination & Travel Time
+    const destTag = document.createElement("div");
+    Object.assign(destTag.style, {
+      position: "absolute",
+      bottom: "10px",
+      left: "14px",
+      zIndex: "3",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      fontSize: "11px",
+      fontWeight: "700",
+      color: theme.accentColor,
+      fontFamily: "'JetBrains Mono', monospace",
+      letterSpacing: "0.4px",
+    });
+    destTag.innerHTML = `<span>📍 ${obj.destination.toUpperCase()}</span> <span style="color:rgba(255,255,255,0.4)">•</span> <span style="color:rgba(255,255,255,0.7); font-weight:500;">${obj.distanceKm}</span>`;
+    imageBanner.appendChild(destTag);
+
+    // ── 2. Card Content (Title, Description, Objectives, Fun Fact) ──
+    const cardBody = document.createElement("div");
+    Object.assign(cardBody.style, {
       display: "flex",
       flexDirection: "column",
-      gap: "9px",
-      transition: "all 0.15s ease",
+      padding: "18px 20px 20px",
+      flex: "1",
+      gap: "14px",
     });
 
-    // Card Header (Name + Stars)
-    const cHead = document.createElement("div");
-    Object.assign(cHead.style, {
-      display: "flex",
-      alignItems: "flex-start",
-      justifyContent: "space-between",
-      gap: "6px",
-    });
-
-    const cTitles = document.createElement("div");
-    cTitles.innerHTML = `
-      <div style="font-size:13px; font-weight:700; color:#ffffff; letter-spacing:0.2px;">${obj.label}</div>
-      <div style="font-size:10px; color:rgba(255, 255, 255, 0.5); font-family:'JetBrains Mono', monospace; margin-top:2px;">
-        ${obj.destination} · ${obj.distanceKm}
-      </div>
+    // Mission Title & Story Description
+    const titleGroup = document.createElement("div");
+    titleGroup.innerHTML = `
+      <h3 style="font-size:18px; font-weight:800; color:#FFFFFF; margin:0 0 6px 0; letter-spacing:0.2px; line-height:1.2;">
+        ${obj.label}
+      </h3>
+      <p style="font-size:13px; color:rgba(255, 255, 255, 0.78); margin:0; line-height:1.45;">
+        ${obj.description}
+      </p>
     `;
 
-    const cStars = document.createElement("div");
-    Object.assign(cStars.style, { display: "flex", alignItems: "center", gap: "2px" });
-    for (let s = 0; s < obj.stars; s++) {
-      cStars.appendChild(createElement(Star, { width: 9, height: 9, color: "#FBBF24", fill: "#FBBF24" }));
-    }
-
-    cHead.append(cTitles, cStars);
-
-    // Telemetry Mini Grid
-    const telem = document.createElement("div");
-    Object.assign(telem.style, {
+    // ── 3. Additional Mission Details & Objectives Grid ──
+    const specGrid = document.createElement("div");
+    Object.assign(specGrid.style, {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",
-      gap: "4px 6px",
-      background: "rgba(255, 255, 255, 0.025)",
-      borderRadius: "6px",
-      padding: "6px 8px",
-      fontSize: "10px",
-      fontFamily: "'JetBrains Mono', monospace",
-      color: "rgba(255, 255, 255, 0.75)",
+      gap: "8px",
+      background: "rgba(0, 0, 0, 0.25)",
+      borderRadius: "12px",
+      padding: "10px 12px",
+      border: "1px solid rgba(255, 255, 255, 0.06)",
     });
 
-    const item = (node: Node, val: string, col?: string) => {
-      const d = document.createElement("div");
-      Object.assign(d.style, {
+    const createSpecPill = (icon: Node, label: string, value: string, color: string) => {
+      const pill = document.createElement("div");
+      Object.assign(pill.style, {
         display: "flex",
         alignItems: "center",
-        gap: "4px",
-        color: col ?? "rgba(255,255,255,0.7)",
+        gap: "6px",
+        fontSize: "11px",
+        fontFamily: "'JetBrains Mono', monospace",
       });
-      d.append(node);
-      const s = document.createElement("span");
-      s.textContent = val;
-      d.appendChild(s);
-      return d;
+      pill.appendChild(icon);
+      const textWrap = document.createElement("div");
+      textWrap.innerHTML = `
+        <span style="color:rgba(255, 255, 255, 0.45); font-size:9.5px; display:block; line-height:1;">${label}</span>
+        <span style="color:${color}; font-weight:700; font-size:11px; line-height:1.3;">${value}</span>
+      `;
+      pill.appendChild(textWrap);
+      return pill;
     };
 
-    telem.append(
-      item(createElement(Sun, { width: 10, height: 10, color: "#FBBF24" }), `Sun ${obj.sunlightPct}%`),
-      item(createElement(Flame, { width: 10, height: 10, color: "#FF004D" }), `Heat ${obj.heatDanger}`),
-      item(createElement(ShieldAlert, { width: 10, height: 10, color: "#29ADFF" }), `Rad ${obj.radiation}`),
-      item(createElement(Sparkles, { width: 10, height: 10, color: "#34D399" }), `Goal ${obj.scienceGoal} pts`),
-      item(createElement(Compass, { width: 10, height: 10, color: "#A78BFA" }), `$${obj.budget}M`),
-      item(createElement(Rocket, { width: 10, height: 10, color: "#FFF1E8" }), `${obj.starInstrument}`),
+    specGrid.append(
+      createSpecPill(createElement(Sparkles, { width: 13, height: 13, color: "#34D399" }), "SCIENCE GOAL", `${obj.scienceGoal} pts`, "#34D399"),
+      createSpecPill(createElement(Compass, { width: 13, height: 13, color: "#A78BFA" }), "MISSION BUDGET", `$${obj.budget}M`, "#A78BFA"),
+      createSpecPill(createElement(Sun, { width: 13, height: 13, color: "#FBBF24" }), "SUNLIGHT", `${obj.sunlightPct}%`, "#FBBF24"),
+      createSpecPill(createElement(ShieldAlert, { width: 13, height: 13, color: "#38BDF8" }), "RADIATION", `Tier ${obj.radiation}`, "#38BDF8"),
+      createSpecPill(createElement(Flame, { width: 13, height: 13, color: "#F87171" }), "HEAT DANGER", `Tier ${obj.heatDanger}`, "#F87171"),
+      createSpecPill(createElement(Clock, { width: 13, height: 13, color: "#CBD5E1" }), "TRAVEL TIME", obj.travelTime, "#CBD5E1"),
     );
 
-    // Launch Button / Status
-    const actionBlock = document.createElement("div");
-    Object.assign(actionBlock.style, { marginTop: "2px" });
+    // Star Instrument Bonus Callout
+    const starCallout = document.createElement("div");
+    Object.assign(starCallout.style, {
+      display: "flex",
+      alignItems: "center",
+      gap: "8px",
+      background: "rgba(251, 191, 36, 0.08)",
+      border: "1px solid rgba(251, 191, 36, 0.25)",
+      borderRadius: "10px",
+      padding: "8px 12px",
+      fontSize: "11px",
+      color: "rgba(255, 255, 255, 0.85)",
+    });
+    starCallout.appendChild(createElement(Star, { width: 14, height: 14, color: "#FBBF24", fill: "#FBBF24" }));
+    const starText = document.createElement("span");
+    starText.innerHTML = `<strong>Star Payload:</strong> <span style="color:#FDE68A;">${obj.starInstrument}</span> (+10 bonus science!)`;
+    starCallout.appendChild(starText);
+
+    // Child-Friendly Fun Fact Callout Box
+    const funFactBox = document.createElement("div");
+    Object.assign(funFactBox.style, {
+      display: "flex",
+      alignItems: "flex-start",
+      gap: "8px",
+      background: "rgba(41, 173, 255, 0.07)",
+      border: "1px solid rgba(41, 173, 255, 0.2)",
+      borderRadius: "10px",
+      padding: "8px 12px",
+      fontSize: "11.5px",
+      color: "rgba(255, 255, 255, 0.85)",
+      lineHeight: "1.4",
+      marginTop: "auto",
+    });
+    funFactBox.appendChild(createElement(Lightbulb, { width: 14, height: 14, color: "#38BDF8", style: "flex-shrink:0; margin-top:1px;" }));
+    const factText = document.createElement("span");
+    factText.innerHTML = `<strong style="color:#38BDF8;">Did You Know?</strong> ${obj.funFact}`;
+    funFactBox.appendChild(factText);
+
+    // ── 4. Action Button / Launch Status ──
+    const actionWrapper = document.createElement("div");
+    Object.assign(actionWrapper.style, {
+      marginTop: "8px",
+    });
 
     if (this.isHost) {
       const btn = document.createElement("button");
       btn.setAttribute("data-objective-btn", obj.id);
-      btn.style.display = "flex";
-      btn.style.alignItems = "center";
-      btn.style.justifyContent = "center";
-      btn.style.gap = "6px";
-      btn.style.width = "100%";
+      Object.assign(btn.style, {
+        width: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: "8px",
+        padding: "12px 18px",
+        borderRadius: "12px",
+        fontSize: "13px",
+        fontWeight: "800",
+        fontFamily: "'JetBrains Mono', monospace",
+        letterSpacing: "0.5px",
+        cursor: isUnlocked ? "pointer" : "not-allowed",
+        border: "none",
+        transition: "all 0.15s ease",
+      });
 
       const btnLabel = document.createElement("span");
       btnLabel.setAttribute("data-btn-label", "true");
 
       if (!isUnlocked) {
         btn.disabled = true;
-        btn.appendChild(createElement(Lock, { width: 11, height: 11 }));
-        btnLabel.textContent = `LOCKED // PASS LVL ${obj.level - 1}`;
+        btn.style.background = "rgba(255, 255, 255, 0.06)";
+        btn.style.color = "rgba(255, 255, 255, 0.35)";
+        btn.style.border = "1px solid rgba(255, 255, 255, 0.1)";
+        btn.appendChild(createElement(Lock, { width: 14, height: 14 }));
+        btnLabel.textContent = `COMPLETE MISSION ${obj.level - 1} FIRST`;
         btn.appendChild(btnLabel);
-
-        Object.assign(btn.style, {
-          background: "rgba(255, 255, 255, 0.04)",
-          border: "1px solid rgba(255, 255, 255, 0.06)",
-          borderRadius: "6px",
-          color: "rgba(255, 255, 255, 0.3)",
-          fontSize: "10.5px",
-          fontFamily: "'JetBrains Mono', monospace",
-          padding: "8px 10px",
-          cursor: "not-allowed",
-        });
       } else {
-        btn.appendChild(createElement(Rocket, { width: 12, height: 12, "stroke-width": 2 }));
-        btnLabel.textContent = isTestingAll
-          ? `AUTHORIZE LEVEL ${obj.level}`
-          : isCompleted
-          ? `REPLAY LEVEL ${obj.level}`
-          : `AUTHORIZE LEVEL ${obj.level}`;
+        const isReplay = isCompleted && !isTestingAll;
+        btn.style.background = isReplay
+          ? "linear-gradient(135deg, #10B981 0%, #059669 100%)"
+          : `linear-gradient(135deg, ${theme.accentColor} 0%, ${theme.secondaryColor} 100%)`;
+        btn.style.color = isReplay ? "#FFFFFF" : "#040810";
+        btn.style.boxShadow = `0 4px 18px ${theme.glowColor}`;
+
+        btn.appendChild(createElement(Rocket, { width: 16, height: 16, "stroke-width": 2.2 }));
+        btnLabel.textContent = isReplay ? `REPLAY MISSION ${obj.level}` : `LAUNCH MISSION ${obj.level}`;
         btn.appendChild(btnLabel);
-
-        const btnBg = (isTestingAll || !isCompleted) ? "#29ADFF" : "rgba(16, 185, 129, 0.15)";
-        const btnTextColor = (isTestingAll || !isCompleted) ? "#040810" : "#34D399";
-        const btnBorder = (isTestingAll || !isCompleted) ? "none" : "1px solid rgba(16, 185, 129, 0.35)";
-
-        Object.assign(btn.style, {
-          background: btnBg,
-          boxShadow: isCompleted && !isTestingAll
-            ? "inset 0 1px 0 rgba(255, 255, 255, 0.1)"
-            : "0 2px 8px rgba(0, 0, 0, 0.4)",
-          border: btnBorder,
-          borderRadius: "6px",
-          color: btnTextColor,
-          fontSize: "11px",
-          fontWeight: "700",
-          fontFamily: "'JetBrains Mono', monospace",
-          letterSpacing: "0.4px",
-          padding: "8px 12px",
-          cursor: "pointer",
-          transition: "all 0.12s ease",
-        });
 
         btn.addEventListener("mouseenter", () => {
-          if (!btn.disabled) {
-            btn.style.opacity = "0.92";
-            btn.style.transform = "translateY(-1px)";
-          }
+          btn.style.transform = "scale(1.02)";
+          btn.style.filter = "brightness(1.1)";
         });
         btn.addEventListener("mouseleave", () => {
-          if (!btn.disabled) {
-            btn.style.opacity = "1";
-            btn.style.transform = "translateY(0)";
-          }
+          btn.style.transform = "scale(1)";
+          btn.style.filter = "brightness(1)";
         });
         btn.addEventListener("click", () => {
+          SoundFX.playClick();
           btn.disabled = true;
-          btnLabel.textContent = "TRANSMITTING VECTOR...";
-          btn.style.opacity = "0.6";
+          btnLabel.textContent = "TRANSMITTING FLIGHT VECTOR...";
+          btn.style.opacity = "0.7";
           btn.style.cursor = "not-allowed";
           ColyseusService.selectObjective(obj.id);
         });
       }
 
-      actionBlock.appendChild(btn);
+      actionWrapper.appendChild(btn);
     } else {
-      const statusText = document.createElement("div");
-      Object.assign(statusText.style, {
-        fontSize: "10.5px",
+      // Crew view
+      const statusBox = document.createElement("div");
+      Object.assign(statusBox.style, {
+        width: "100%",
+        padding: "10px 16px",
+        borderRadius: "10px",
+        fontSize: "12px",
+        fontWeight: "700",
         fontFamily: "'JetBrains Mono', monospace",
         textAlign: "center",
-        color: isCurrentActive ? "#29ADFF" : isCompleted ? "#34D399" : "rgba(255, 255, 255, 0.3)",
-        padding: "5px 0",
+        background: isCurrentActive
+          ? "rgba(41, 173, 255, 0.12)"
+          : isCompleted
+          ? "rgba(16, 185, 129, 0.12)"
+          : "rgba(255, 255, 255, 0.05)",
+        color: isCurrentActive ? "#38BDF8" : isCompleted ? "#34D399" : "rgba(255, 255, 255, 0.4)",
+        border: `1px solid ${isCurrentActive ? "rgba(41, 173, 255, 0.3)" : "rgba(255, 255, 255, 0.1)"}`,
       });
-      statusText.textContent = !isUnlocked
-        ? `SECTOR LOCKED (LVL ${obj.level})`
+      statusBox.textContent = !isUnlocked
+        ? `LOCKED // COMPLETE MISSION ${obj.level - 1}`
         : isCompleted
-        ? `LEVEL ${obj.level} CLEARED`
-        : `LEVEL ${obj.level} READY FOR LAUNCH`;
-      actionBlock.appendChild(statusText);
+        ? `MISSION ${obj.level} CLEARED`
+        : `READY FOR COMMANDER'S LAUNCH ORDER`;
+      actionWrapper.appendChild(statusBox);
     }
 
-    card.append(cHead, telem, actionBlock);
-    stationWrapper.append(portalHub, card);
-    return stationWrapper;
-  }
-
-  // ── Dynamic Horizontal Pipeline Ribbon Generation ──────────────────────
-
-  private _setupPipelineRibbons(): void {
-    const updateRibbons = () => {
-      if (!this.worldTrack) return;
-      const trackRect = this.worldTrack.getBoundingClientRect();
-      const group = this.svgLayer.querySelector("#ribbon-paths-group");
-      if (!group) return;
-
-      let html = "";
-
-      // Connect Level 1 -> 2 -> 3 -> 4 -> 5 -> 6
-      for (let lvl = 1; lvl < 6; lvl++) {
-        const fromWrapper = this.portalEls.get(lvl);
-        const toWrapper = this.portalEls.get(lvl + 1);
-        if (!fromWrapper || !toWrapper) continue;
-
-        const fromHub = fromWrapper.querySelector(".stage-portal-hub") as HTMLElement;
-        const toHub = toWrapper.querySelector(".stage-portal-hub") as HTMLElement;
-        if (!fromHub || !toHub) continue;
-
-        const fromRect = fromHub.getBoundingClientRect();
-        const toRect = toHub.getBoundingClientRect();
-
-        // Connect right of hub to left of next hub
-        const start = {
-          x: fromRect.right - trackRect.left + 2,
-          y: fromRect.top + fromRect.height / 2 - trackRect.top,
-          dx: 1,
-          dy: 0,
-        };
-        const end = {
-          x: toRect.left - trackRect.left - 2,
-          y: toRect.top + toRect.height / 2 - trackRect.top,
-          dx: -1,
-          dy: 0,
-        };
-
-        const isConnUnlocked = this.highestUnlockedLevel >= lvl + 1;
-        const isConnCompleted = this.highestUnlockedLevel > lvl + 1;
-
-        const { ribbonPath, centerCurve } = generateRibbonPath(start, end, 22, 3);
-
-        if (ribbonPath) {
-          const ribbonFill = isConnCompleted
-            ? "#0D1E18"
-            : isConnUnlocked
-            ? "#0E1828"
-            : "#090E17";
-
-          const ribbonStroke = isConnCompleted
-            ? "rgba(16, 185, 129, 0.4)"
-            : isConnUnlocked
-            ? "rgba(56, 189, 248, 0.35)"
-            : "rgba(255, 255, 255, 0.05)";
-
-          const pulseStroke = isConnCompleted
-            ? "#10B981"
-            : isConnUnlocked
-            ? "#38BDF8"
-            : "rgba(255, 255, 255, 0.08)";
-
-          const flowClass = isConnUnlocked ? "ribbon-flow-active" : "";
-
-          html += `
-            <g class="ribbon-connection-segment">
-              <!-- Crisp 2D Flared Ribbon Body (No Blurry Filters) -->
-              <path d="${ribbonPath}" fill="${ribbonFill}" stroke="${ribbonStroke}" stroke-width="1.2" opacity="0.95" />
-              <!-- Trajectory Flight Vector Line -->
-              <path d="${centerCurve}" class="${flowClass}" fill="none" stroke="${pulseStroke}" stroke-width="${isConnUnlocked ? '1.6' : '1'}" stroke-dasharray="${isConnUnlocked ? '6 7' : '3 6'}" />
-            </g>
-          `;
-        }
-      }
-
-      group.innerHTML = html;
-    };
-
-    const schedule = () => {
-      if (this.animFrameId) cancelAnimationFrame(this.animFrameId);
-      this.animFrameId = requestAnimationFrame(updateRibbons);
-    };
-
-    this.resizeObserver = new ResizeObserver(schedule);
-    this.resizeObserver.observe(this.worldTrack);
-    window.addEventListener("resize", schedule);
-    setTimeout(schedule, 60);
-  }
-
-  // ── Drag & Scroll Mechanics ────────────────────────────────────────────
-
-  private _setupDragScroll(): void {
-    const vp = this.scrollViewport;
-    if (!vp) return;
-
-    let isDown = false;
-    let startX = 0;
-    let scrollLeft = 0;
-
-    vp.addEventListener("mousedown", (e: MouseEvent) => {
-      if ((e.target as HTMLElement).closest("button")) return;
-      isDown = true;
-      vp.style.cursor = "grabbing";
-      startX = e.pageX - vp.offsetLeft;
-      scrollLeft = vp.scrollLeft;
-    });
-
-    window.addEventListener("mouseup", () => {
-      isDown = false;
-      if (vp) vp.style.cursor = "grab";
-    });
-
-    window.addEventListener("mousemove", (e: MouseEvent) => {
-      if (!isDown || !vp) return;
-      e.preventDefault();
-      const x = e.pageX - vp.offsetLeft;
-      const walk = (x - startX) * 1.5;
-      vp.scrollLeft = scrollLeft - walk;
-    });
-
-    // Vertical wheel to horizontal scroll converter
-    vp.addEventListener(
-      "wheel",
-      (e: WheelEvent) => {
-        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
-          vp.scrollLeft += e.deltaY;
-          e.preventDefault();
-        }
-      },
-      { passive: false },
-    );
-  }
-
-  private _scrollToActiveLevel(): void {
-    setTimeout(() => {
-      const activeEl = this.portalEls.get(this.highestUnlockedLevel);
-      if (activeEl && this.scrollViewport) {
-        const rect = activeEl.getBoundingClientRect();
-        const target =
-          this.scrollViewport.scrollLeft +
-          rect.left -
-          window.innerWidth / 2 +
-          rect.width / 2;
-        this.scrollViewport.scrollTo({ left: target, behavior: "smooth" });
-      }
-    }, 150);
+    cardBody.append(titleGroup, specGrid, starCallout, funFactBox, actionWrapper);
+    card.append(imageBanner, cardBody);
+    return card;
   }
 
   private _injectStyles(): void {
-    if (document.getElementById("pipeline-ribbon-styles")) return;
+    if (document.getElementById("mission-screen-styles")) return;
     const styleEl = document.createElement("style");
-    styleEl.id = "pipeline-ribbon-styles";
+    styleEl.id = "mission-screen-styles";
     styleEl.textContent = `
-      @keyframes ribbonFlowDash {
-        from { stroke-dashoffset: 26; }
-        to { stroke-dashoffset: 0; }
+      #objective-picker-overlay::-webkit-scrollbar {
+        width: 8px;
       }
-      .ribbon-flow-active {
-        animation: ribbonFlowDash 1.2s linear infinite;
+      #objective-picker-overlay::-webkit-scrollbar-track {
+        background: rgba(3, 5, 8, 0.8);
       }
-      #pipeline-scroll-viewport::-webkit-scrollbar {
-        height: 6px;
-      }
-      #pipeline-scroll-viewport::-webkit-scrollbar-track {
-        background: rgba(5, 8, 14, 0.8);
-      }
-      #pipeline-scroll-viewport::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.15);
+      #objective-picker-overlay::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 4px;
       }
-      #pipeline-scroll-viewport::-webkit-scrollbar-thumb:hover {
+      #objective-picker-overlay::-webkit-scrollbar-thumb:hover {
         background: #29ADFF;
+      }
+
+      @keyframes planetFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-5px) rotate(2deg); }
+      }
+
+      .mission-card-item:hover .mission-planet-img {
+        animation: planetFloat 2.5s ease-in-out infinite;
+      }
+
+      @media (max-width: 768px) {
+        .mission-header-bar {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 14px 16px;
+        }
+        .mission-cards-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
       }
     `;
     document.head.appendChild(styleEl);
