@@ -1,5 +1,6 @@
 import { Theme } from "../config/theme";
 import { ColyseusService, LobbyMeta } from "../network/ColyseusService";
+import { OnboardingGuideUI } from "./OnboardingGuideUI";
 
 /**
  * LobbyList
@@ -232,6 +233,45 @@ export class LobbyList {
 
     header.append(title, greeting);
 
+    // NASA Flight Academy & Video Briefings button
+    const academyBtn = document.createElement("button");
+    academyBtn.id = "lobby-academy-btn";
+    academyBtn.innerHTML = `
+      <span style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+        <span style="display:inline-flex; align-items:center; gap:8px;">
+          <span style="font-size:13px; color:#29ADFF; font-weight:700;">▶</span>
+          <span>NASA Academy & Video Briefings</span>
+        </span>
+        <span style="background:rgba(41, 173, 255, 0.2); color:#29ADFF; padding:2px 7px; border-radius:4px; font-size:10px; font-family:'JetBrains Mono', monospace; font-weight:700;">10 VIDEOS</span>
+      </span>
+    `;
+    Object.assign(academyBtn.style, {
+      background: "rgba(41, 173, 255, 0.1)",
+      border: "1px solid rgba(41, 173, 255, 0.3)",
+      borderRadius: "12px",
+      color: "#ffffff",
+      cursor: "pointer",
+      fontFamily: font.family,
+      fontSize: "12.5px",
+      fontWeight: "600",
+      padding: "11px 16px",
+      display: "flex",
+      alignItems: "center",
+      transition: "all 0.15s ease",
+      boxShadow: "0 4px 16px rgba(41, 173, 255, 0.12)",
+    });
+    academyBtn.addEventListener("mouseenter", () => {
+      academyBtn.style.background = "rgba(41, 173, 255, 0.2)";
+      academyBtn.style.borderColor = "rgba(41, 173, 255, 0.55)";
+    });
+    academyBtn.addEventListener("mouseleave", () => {
+      academyBtn.style.background = "rgba(41, 173, 255, 0.1)";
+      academyBtn.style.borderColor = "rgba(41, 173, 255, 0.3)";
+    });
+    academyBtn.addEventListener("click", () => {
+      OnboardingGuideUI.get().open("briefing");
+    });
+
     const listContainer = document.createElement("div");
     listContainer.id = "lobby-list-items";
     Object.assign(listContainer.style, {
@@ -281,7 +321,7 @@ export class LobbyList {
       }
     });
 
-    card.append(tag, header, listContainer, createBtn);
+    card.append(tag, header, academyBtn, listContainer, createBtn);
     overlay.appendChild(card);
     return overlay;
   }

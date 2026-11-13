@@ -1,4 +1,5 @@
 import { Theme, getRoleColor } from "../../config/theme";
+import { OnboardingGuideUI } from "../../ui/OnboardingGuideUI";
 
 /**
  * GameHUD
@@ -312,7 +313,42 @@ export class GameHUD {
       }
     });
 
-    topControls.append(backBtn);
+    // NASA Academy & Video Briefings button
+    const academyBtn = document.createElement("button");
+    academyBtn.id = "hud-academy-btn";
+    academyBtn.title = "View Mission Guide & Video Briefings (10 Topics)";
+    academyBtn.innerHTML = `<span>▶</span><span>Academy</span>`;
+    Object.assign(academyBtn.style, {
+      background: "rgba(41, 173, 255, 0.12)",
+      boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.18), inset 0 0 0 0.5px rgba(41, 173, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.4)",
+      backdropFilter: "blur(14px) saturate(1.4)",
+      WebkitBackdropFilter: "blur(14px) saturate(1.4)",
+      border: "1px solid rgba(41, 173, 255, 0.35)",
+      borderRadius: "10px",
+      color: "#29ADFF",
+      cursor: "pointer",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "11px",
+      fontWeight: "600",
+      padding: "8px 14px",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      transition: "all 0.15s ease",
+    });
+    academyBtn.addEventListener("mouseenter", () => {
+      academyBtn.style.background = "rgba(41, 173, 255, 0.25)";
+      academyBtn.style.color = "#ffffff";
+    });
+    academyBtn.addEventListener("mouseleave", () => {
+      academyBtn.style.background = "rgba(41, 173, 255, 0.12)";
+      academyBtn.style.color = "#29ADFF";
+    });
+    academyBtn.addEventListener("click", () => {
+      OnboardingGuideUI.get().open("briefing");
+    });
+
+    topControls.append(academyBtn, backBtn);
     this.container.append(panel, hints, topControls);
     return { usernameEl, rolesContainer, missionEl };
   }

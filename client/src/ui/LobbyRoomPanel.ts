@@ -2,6 +2,7 @@ import { Theme } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
 import { RolePicker } from "./RolePicker";
 import { ALL_ROLE_IDS, RoleId } from "../config/theme";
+import { OnboardingGuideUI } from "./OnboardingGuideUI";
 
 /**
  * LobbyRoomPanel
@@ -357,7 +358,45 @@ export class LobbyRoomPanel {
       this.destroy();
       window.location.reload();
     });
-    header.append(titleBlock, leaveBtn);
+
+    const headerActions = document.createElement("div");
+    headerActions.style.display = "flex";
+    headerActions.style.alignItems = "center";
+    headerActions.style.gap = "8px";
+
+    const guideBtn = document.createElement("button");
+    guideBtn.title = "View Mission Guide & Video Briefings";
+    guideBtn.innerHTML = `<span>▶</span><span>Academy</span>`;
+    Object.assign(guideBtn.style, {
+      background: "rgba(41, 173, 255, 0.14)",
+      border: "1px solid rgba(41, 173, 255, 0.35)",
+      borderRadius: "8px",
+      color: "#29ADFF",
+      cursor: "pointer",
+      fontFamily: font.family,
+      fontSize: "12px",
+      fontWeight: "600",
+      padding: "6px 12px",
+      display: "flex",
+      alignItems: "center",
+      gap: "6px",
+      transition: "all 0.15s ease",
+      whiteSpace: "nowrap",
+    });
+    guideBtn.addEventListener("mouseenter", () => {
+      guideBtn.style.background = "rgba(41, 173, 255, 0.25)";
+      guideBtn.style.color = "#ffffff";
+    });
+    guideBtn.addEventListener("mouseleave", () => {
+      guideBtn.style.background = "rgba(41, 173, 255, 0.14)";
+      guideBtn.style.color = "#29ADFF";
+    });
+    guideBtn.addEventListener("click", () => {
+      OnboardingGuideUI.get().open("briefing");
+    });
+
+    headerActions.append(guideBtn, leaveBtn);
+    header.append(titleBlock, headerActions);
 
     // Player list section
     const playersSection = document.createElement("div");
