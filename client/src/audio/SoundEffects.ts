@@ -18,6 +18,13 @@ class SoundManager {
   private isMuted: boolean = false;
   private rocketRoarNode: AudioBufferSourceNode | null = null;
   private rocketGainNode: GainNode | null = null;
+  private spaceAmbienceNodes: {
+    osc1: OscillatorNode;
+    osc2: OscillatorNode;
+    lfo: OscillatorNode;
+    filter: BiquadFilterNode;
+    gain: GainNode;
+  } | null = null;
 
   private _getAudioContext(): AudioContext | null {
     if (typeof window === "undefined") return null;
@@ -288,6 +295,84 @@ class SoundManager {
 
     osc.start(now);
     osc.stop(now + 0.22);
+  }
+
+  /** Procedural gentle deep space ambient drone hum */
+  public startSpaceAmbience(targetVolume: number = 0.05): void {
+    if (this.isMuted || this.spaceAmbienceNodes) return;
+    const ctx = this._getAudioContext();
+    if (!ctx) return;
+
+    try {
+      const osc1 = ctx.createOscillator();
+      const osc2 = ctx.createOscillator();
+      const lfo = ctx.createOscillator();
+      const lfoGain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      const masterGain = ctx.createGain();
+
+      // Deep, cosmic fundamental drone (55Hz / A1 and 82.4Hz / E2)
+      osc1.type = "sine";
+      osc1.frequency.setValueAtTime(55, ctx.currentTime);
+
+      osc2.type = "triangle";
+      osc2.frequency.setValueAtTime(82.4, ctx.currentTime);
+
+      // Slow 0.12Hz LFO for gentle celestial breathing effect
+      lfo.type = "sine";
+      lfo.frequency.setValueAtTime(0.12, ctx.currentTime);
+      lfoGain.gain.setValueAtTime(15, ctx.currentTime);
+      lfo.connect(lfoGain);
+      lfoGain.connect(filter.frequency);
+
+      // Lowpass filter to keep it warm, deep and unobtrusive
+      filter.type = "lowpass";
+      filter.frequency.setValueAtTime(160, ctx.currentTime);
+      filter.Q.setValueAtTime(2, ctx.currentTime);
+
+      // Smooth volume fade in
+      masterGain.gain.setValueAtTime(0.001, ctx.currentTime);
+      masterGain.gain.exponentialRampToValueAtTime(targetVolume, ctx.currentTime + 1.5);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      filter.connect(masterGain);
+      masterGain.connect(ctx.destination);
+
+      osc1.start();
+      osc2.start();
+      lfo.start();
+
+      this.spaceAmbienceNodes = { osc1, osc2, lfo, filter, gain: masterGain };
+    } catch (e) {
+      console.warn("Could not start space ambience:", e);
+    }
+  }
+
+  public stopSpaceAmbience(): void {
+    if (!this.spaceAmbienceNodes) return;
+    const ctx = this._getAudioContext();
+    const nodes = this.spaceAmbienceNodes;
+    this.spaceAmbienceNodes = null;
+
+    if (ctx && nodes.gain) {
+      try {
+        nodes.gain.gain.setValueAtTime(nodes.gain.gain.value, ctx.currentTime);
+        nodes.gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.8);
+        setTimeout(() => {
+          try {
+            nodes.osc1.stop();
+            nodes.osc2.stop();
+            nodes.lfo.stop();
+            nodes.osc1.disconnect();
+            nodes.osc2.disconnect();
+            nodes.lfo.disconnect();
+            nodes.filter.disconnect();
+            nodes.gain.disconnect();
+          } catch (_) {}
+        }, 900);
+      } catch (_) {}
+    }
   }
 }
 
