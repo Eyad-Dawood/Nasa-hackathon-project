@@ -4,6 +4,7 @@ import { Theme } from "../config/theme";
 import { AccountForm, getSavedUsername } from "../ui/AccountForm";
 import { registerAnimations } from "../game/data/AnimationKeys";
 import { OnboardingGuideUI } from "../ui/OnboardingGuideUI";
+import { EarthBlazeBackground } from "../ui/EarthBlazeBackground";
 
 /**
  * BootScene
@@ -66,6 +67,9 @@ export class BootScene extends Phaser.Scene {
         form.mount();
       }
     };
+
+    // Show Earth Blaze WebGL background immediately for the landing page
+    EarthBlazeBackground.get().show();
 
     // First thing to show: Landing Page!
     OnboardingGuideUI.get().open("hero", () => {

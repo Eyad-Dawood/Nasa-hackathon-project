@@ -7,6 +7,7 @@ import {
 } from "lucide";
 import { Theme } from "../config/theme";
 import { SoundFX } from "../audio/SoundEffects";
+import { EarthBlazeBackground } from "./EarthBlazeBackground";
 
 export type GuideLanguage = "ar" | "en";
 
@@ -226,6 +227,9 @@ export class OnboardingGuideUI {
   public open(targetSection: "hero" | "videos" = "hero", onClose?: () => void): void {
     this.onCloseCallback = onClose;
 
+    // Show Earth Blaze WebGL background (same as Lobby)
+    EarthBlazeBackground.get().show();
+
     if (this.pageEl) {
       this.pageEl.remove();
     }
@@ -379,14 +383,10 @@ export class OnboardingGuideUI {
       zIndex: "3000",
       overflowY: "auto",
       overflowX: "hidden",
-      backgroundColor: "#191c2b", // Exact background color of user's pixel art asset
-      backgroundImage: `
-        radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 255, 255, 0.7), transparent),
-        radial-gradient(1.5px 1.5px at 85% 15%, rgba(255, 255, 255, 0.6), transparent),
-        radial-gradient(1px 1px at 35% 65%, rgba(255, 255, 255, 0.5), transparent),
-        radial-gradient(1.5px 1.5px at 70% 75%, rgba(255, 255, 255, 0.6), transparent),
-        radial-gradient(1px 1px at 50% 40%, rgba(255, 255, 255, 0.4), transparent)
-      `,
+      // Translucent atmospheric space gradient so the Earth Blaze background shines through seamlessly
+      background: "radial-gradient(ellipse at 70% 30%, rgba(20, 10, 32, 0.35) 0%, rgba(5, 7, 16, 0.65) 50%, rgba(2, 3, 8, 0.88) 100%)",
+      backdropFilter: "blur(4px)",
+      WebkitBackdropFilter: "blur(4px)",
       color: "#ffffff",
       fontFamily: "'Inter', sans-serif",
       opacity: "0",
@@ -457,10 +457,10 @@ export class OnboardingGuideUI {
       display: "flex",
       alignItems: "center",
       justifyContent: "space-between",
-      background: "rgba(25, 28, 43, 0.9)",
-      backdropFilter: "blur(16px)",
-      WebkitBackdropFilter: "blur(16px)",
-      borderBottom: "1px solid rgba(255, 255, 255, 0.06)",
+      background: "rgba(5, 8, 18, 0.75)",
+      backdropFilter: "blur(20px)",
+      WebkitBackdropFilter: "blur(20px)",
+      borderBottom: "1px solid rgba(255, 255, 255, 0.08)",
       gap: "16px",
     });
 
@@ -479,7 +479,7 @@ export class OnboardingGuideUI {
       this.pageEl?.scrollTo({ top: 0, behavior: "smooth" });
     });
 
-    // Center Links (Like Jams, Games, Rules in Jamboree)
+    // Center Links (Mission Briefing & 10 Videos)
     const centerLinks = document.createElement("div");
     Object.assign(centerLinks.style, {
       display: "flex",
@@ -505,10 +505,7 @@ export class OnboardingGuideUI {
       createLink(isAr ? "دليل المهمة" : "Mission Briefing", () => {
         this.pageEl?.scrollTo({ top: 0, behavior: "smooth" });
       }),
-      createLink(isAr ? "الفيديوهات (10)" : "10 Video Briefings", () => {
-        document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
-      }),
-      createLink(isAr ? "قواعد ناسا (12)" : "12 NASA Rules", () => {
+      createLink(isAr ? "أكاديمية الفيديو (10)" : "10 Video Briefings", () => {
         document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
       }),
     );
@@ -523,21 +520,29 @@ export class OnboardingGuideUI {
     this._styleAmbienceBtn(audioBtn);
     audioBtn.addEventListener("click", () => this._toggleAmbience());
 
-    // Language Toggle
+    // Language Toggle (Displays 'AR' in English mode, 'EN' in Arabic mode)
     const langBtn = document.createElement("button");
-    langBtn.innerHTML = `<span>${isAr ? "EN" : "عربي"}</span>`;
+    langBtn.innerHTML = `<span>${isAr ? "EN" : "AR"}</span>`;
     Object.assign(langBtn.style, {
-      background: "transparent",
-      border: "none",
-      color: "rgba(255, 255, 255, 0.75)",
-      fontSize: "13px",
-      fontWeight: "600",
+      background: "rgba(255, 255, 255, 0.08)",
+      border: "1px solid rgba(255, 255, 255, 0.16)",
+      borderRadius: "6px",
+      color: "#ffffff",
+      fontFamily: "'JetBrains Mono', monospace",
+      fontSize: "12px",
+      fontWeight: "700",
       cursor: "pointer",
-      padding: "6px 8px",
-      transition: "color 0.15s ease",
+      padding: "6px 12px",
+      transition: "all 0.15s ease",
     });
-    langBtn.addEventListener("mouseenter", () => (langBtn.style.color = "#ffffff"));
-    langBtn.addEventListener("mouseleave", () => (langBtn.style.color = "rgba(255, 255, 255, 0.75)"));
+    langBtn.addEventListener("mouseenter", () => {
+      langBtn.style.background = "rgba(255, 255, 255, 0.16)";
+      langBtn.style.borderColor = "rgba(255, 255, 255, 0.3)";
+    });
+    langBtn.addEventListener("mouseleave", () => {
+      langBtn.style.background = "rgba(255, 255, 255, 0.08)";
+      langBtn.style.borderColor = "rgba(255, 255, 255, 0.16)";
+    });
     langBtn.addEventListener("click", () => {
       this._setLanguage(isAr ? "en" : "ar");
     });
@@ -758,7 +763,7 @@ export class OnboardingGuideUI {
 
     leftCol.append(eyebrow, headline, sub, actionRow, statsRow);
 
-    // ── Right Column: Floating Pixel Island with Rocket ──
+    // ── Right Column: Pixel Island Rocket Icon (Clean Transparent Sprite, No Float Animation) ──
     const rightCol = document.createElement("div");
     Object.assign(rightCol.style, {
       display: "flex",
@@ -768,15 +773,16 @@ export class OnboardingGuideUI {
     });
 
     const rocketImg = document.createElement("img");
-    rocketImg.src = "/assets/landing_hero_rocket.jpg";
+    rocketImg.src = "/assets/landing_hero_rocket.png";
     rocketImg.alt = "Ascending Pixel Rocket on Floating Island";
     Object.assign(rocketImg.style, {
       width: "100%",
       maxWidth: "380px",
       height: "auto",
       imageRendering: "pixelated",
-      animation: "floatIsland 4s ease-in-out infinite",
-      filter: "drop-shadow(0 20px 40px rgba(0, 0, 0, 0.5))",
+      filter: "drop-shadow(0 24px 48px rgba(0, 0, 0, 0.85))",
+      userSelect: "none",
+      pointerEvents: "none",
     });
 
     rightCol.appendChild(rocketImg);
