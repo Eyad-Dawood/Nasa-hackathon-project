@@ -383,17 +383,13 @@ export class OnboardingGuideUI {
       zIndex: "3000",
       overflowY: "auto",
       overflowX: "hidden",
-      // 100% OPAQUE static deep space CSS background (zero WebGL/animation overhead, maximum performance)
-      backgroundColor: "#0d101c",
-      backgroundImage: `
-        radial-gradient(circle at 85% 15%, rgba(41, 65, 110, 0.22) 0%, transparent 45%),
-        radial-gradient(circle at 15% 85%, rgba(45, 20, 55, 0.18) 0%, transparent 50%),
-        radial-gradient(1.5px 1.5px at 14% 20%, rgba(255, 255, 255, 0.65), transparent),
-        radial-gradient(1.5px 1.5px at 80% 12%, rgba(255, 255, 255, 0.6), transparent),
-        radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.45), transparent),
-        radial-gradient(1.5px 1.5px at 70% 70%, rgba(255, 255, 255, 0.55), transparent),
-        radial-gradient(1px 1px at 50% 35%, rgba(255, 255, 255, 0.4), transparent)
-      `,
+      // 100% OPAQUE static Earth Blaze space wallpaper (zero WebGL/animation overhead, maximum performance)
+      backgroundColor: "#020308",
+      backgroundImage: "url('/assets/landing_space_earth_bg.jpg')",
+      backgroundSize: "cover",
+      backgroundPosition: "center top",
+      backgroundAttachment: "fixed",
+      backgroundRepeat: "no-repeat",
       color: "#ffffff",
       fontFamily: "'Inter', sans-serif",
       opacity: "0",
