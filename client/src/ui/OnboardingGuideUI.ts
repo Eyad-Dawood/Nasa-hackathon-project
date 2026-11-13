@@ -695,7 +695,7 @@ export class OnboardingGuideUI {
 
     // Underline Secondary Link
     const secondaryLink = document.createElement("span");
-    secondaryLink.textContent = isAr ? "مشاهدة الفيديوهات (10)" : "Watch the 10 videos";
+    secondaryLink.textContent = isAr ? "شاهد دليل الإطلاق" : "Watch the guide to launch";
     Object.assign(secondaryLink.style, {
       color: "#ffffff",
       fontSize: "14px",
@@ -755,9 +755,9 @@ export class OnboardingGuideUI {
     };
 
     statsRow.append(
-      createStat("4", "ROLES", "رواد فضاء"),
-      createStat("6", "PLANETS", "مستويات"),
-      createStat("12", "RULES", "قوانين فيزيائية"),
+      createStat("4", "ROLES", "أدوار هندسية"),
+      createStat("6", "MISSIONS", "مهام فضائية"),
+      createStat("12", "RULES", "قواعد فيزيائية"),
       createStat("10", "VIDEOS", "فيديوهات علمية"),
     );
 
@@ -932,9 +932,13 @@ export class OnboardingGuideUI {
       });
 
       const thumbImg = document.createElement("img");
-      thumbImg.src = `https://lh3.googleusercontent.com/d/${topic.driveId}=w640`;
+      thumbImg.src = `/assets/videos/${topic.id}.jpg`;
       thumbImg.alt = isAr ? topic.title.ar : topic.title.en;
       thumbImg.loading = "lazy";
+      thumbImg.onerror = () => {
+        // Fallback to Google Drive URL if local asset fails
+        thumbImg.src = `https://lh3.googleusercontent.com/d/${topic.driveId}=w640`;
+      };
       Object.assign(thumbImg.style, {
         position: "absolute",
         top: "0",
