@@ -68,10 +68,7 @@ export class BootScene extends Phaser.Scene {
       }
     };
 
-    // Show Earth Blaze WebGL background immediately for the landing page
-    EarthBlazeBackground.get().show();
-
-    // First thing to show: Landing Page!
+    // First thing to show: Landing Page! (Lightweight static high-performance background)
     OnboardingGuideUI.get().open("hero", () => {
       continueToGame();
     });

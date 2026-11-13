@@ -269,7 +269,7 @@ export class LobbyList {
       academyBtn.style.borderColor = "rgba(41, 173, 255, 0.3)";
     });
     academyBtn.addEventListener("click", () => {
-      OnboardingGuideUI.get().open("briefing");
+      OnboardingGuideUI.get().open("videos");
     });
 
     const listContainer = document.createElement("div");

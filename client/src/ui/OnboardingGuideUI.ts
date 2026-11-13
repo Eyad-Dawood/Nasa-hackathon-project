@@ -7,7 +7,6 @@ import {
 } from "lucide";
 import { Theme } from "../config/theme";
 import { SoundFX } from "../audio/SoundEffects";
-import { EarthBlazeBackground } from "./EarthBlazeBackground";
 
 export type GuideLanguage = "ar" | "en";
 
@@ -205,6 +204,7 @@ export class OnboardingGuideUI {
   private selectedCategory: string = "all";
   private activeVideoIndex: number = 0;
   private isAmbiencePlaying: boolean = false;
+  private isInGameContext: boolean = false;
   private onCloseCallback?: () => void;
 
   private constructor() {
@@ -222,13 +222,11 @@ export class OnboardingGuideUI {
   }
 
   /**
-   * Opens the full landing page.
+   * Opens the landing page / video briefings.
    */
-  public open(targetSection: "hero" | "videos" = "hero", onClose?: () => void): void {
+  public open(targetSection: "hero" | "videos" | "briefing" = "hero", onClose?: () => void): void {
     this.onCloseCallback = onClose;
-
-    // Show Earth Blaze WebGL background (same as Lobby)
-    EarthBlazeBackground.get().show();
+    this.isInGameContext = targetSection === "videos" || targetSection === "briefing" || !!localStorage.getItem("space_benders_onboarding_seen");
 
     if (this.pageEl) {
       this.pageEl.remove();
@@ -251,10 +249,12 @@ export class OnboardingGuideUI {
       this.isAmbiencePlaying = true;
     }
 
-    if (targetSection === "videos") {
-      setTimeout(() => {
-        document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+    if (targetSection === "videos" || targetSection === "briefing") {
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          document.getElementById("landing-videos-section")?.scrollIntoView({ behavior: "smooth" });
+        }, 60);
+      });
     }
   }
 
@@ -383,10 +383,17 @@ export class OnboardingGuideUI {
       zIndex: "3000",
       overflowY: "auto",
       overflowX: "hidden",
-      // Translucent atmospheric space gradient so the Earth Blaze background shines through seamlessly
-      background: "radial-gradient(ellipse at 70% 30%, rgba(20, 10, 32, 0.35) 0%, rgba(5, 7, 16, 0.65) 50%, rgba(2, 3, 8, 0.88) 100%)",
-      backdropFilter: "blur(4px)",
-      WebkitBackdropFilter: "blur(4px)",
+      // 100% OPAQUE static deep space CSS background (zero WebGL/animation overhead, maximum performance)
+      backgroundColor: "#0d101c",
+      backgroundImage: `
+        radial-gradient(circle at 85% 15%, rgba(41, 65, 110, 0.22) 0%, transparent 45%),
+        radial-gradient(circle at 15% 85%, rgba(45, 20, 55, 0.18) 0%, transparent 50%),
+        radial-gradient(1.5px 1.5px at 14% 20%, rgba(255, 255, 255, 0.65), transparent),
+        radial-gradient(1.5px 1.5px at 80% 12%, rgba(255, 255, 255, 0.6), transparent),
+        radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.45), transparent),
+        radial-gradient(1.5px 1.5px at 70% 70%, rgba(255, 255, 255, 0.55), transparent),
+        radial-gradient(1px 1px at 50% 35%, rgba(255, 255, 255, 0.4), transparent)
+      `,
       color: "#ffffff",
       fontFamily: "'Inter', sans-serif",
       opacity: "0",
@@ -547,9 +554,11 @@ export class OnboardingGuideUI {
       this._setLanguage(isAr ? "en" : "ar");
     });
 
-    // Enter Mission Bay Button (Just like "Sign in" on the right in Jamboree)
+    // Enter / Close Button (Context-aware: in game vs initial onboarding)
     const enterBtn = document.createElement("button");
-    enterBtn.textContent = isAr ? "دخول اللعبة ←" : "Enter Mission Bay";
+    enterBtn.textContent = this.isInGameContext
+      ? (isAr ? "✕ إغلاق والعودة" : "✕ Close & Return")
+      : (isAr ? "دخول اللعبة ←" : "Enter Mission Bay");
     Object.assign(enterBtn.style, {
       background: "transparent",
       border: "none",
@@ -664,7 +673,9 @@ export class OnboardingGuideUI {
 
     // Vibrant Pink/Crimson Button (Jamboree primary button style)
     const primaryBtn = document.createElement("button");
-    primaryBtn.textContent = isAr ? "ابدأ المهمة الآن" : "Launch Mission Now";
+    primaryBtn.textContent = this.isInGameContext
+      ? (isAr ? "العودة إلى المهمة ↵" : "Back to Mission ↵")
+      : (isAr ? "ابدأ المهمة الآن" : "Launch Mission Now");
     Object.assign(primaryBtn.style, {
       background: "#ff1a60", // Vibrant Jamboree pink/crimson
       border: "none",

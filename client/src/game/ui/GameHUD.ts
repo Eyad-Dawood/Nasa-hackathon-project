@@ -345,7 +345,7 @@ export class GameHUD {
       academyBtn.style.color = "#29ADFF";
     });
     academyBtn.addEventListener("click", () => {
-      OnboardingGuideUI.get().open("briefing");
+      OnboardingGuideUI.get().open("videos");
     });
 
     topControls.append(academyBtn, backBtn);
