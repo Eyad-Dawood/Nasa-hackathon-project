@@ -36,35 +36,48 @@ export class RolePicker {
       const isTakenByOther = owner !== null && !isMine;
 
       const roleDef = Theme.roles.find((r) => r.id === roleId)!;
+      const roleColor = roleDef.color;
 
       card.disabled = isTakenByOther;
 
       const label = card.querySelector(".role-label") as HTMLSpanElement | null;
       const statusBadge = card.querySelector(".role-status") as HTMLSpanElement | null;
+      const iconWrap = card.querySelector(".role-icon-wrap") as HTMLDivElement | null;
 
       if (isMine) {
-        card.style.background = "rgba(255, 255, 255, 0.14)";
-        card.style.boxShadow = "inset 0 1px 1px rgba(255, 255, 255, 0.45), inset 0 0 0 0.5px rgba(255, 255, 255, 0.25), 0 8px 24px rgba(0, 0, 0, 0.35)";
+        card.style.background = `linear-gradient(135deg, ${roleColor}18 0%, ${roleColor}08 100%)`;
+        card.style.boxShadow = `inset 0 1px 1px rgba(255, 255, 255, 0.35), inset 0 0 0 0.5px ${roleColor}40, 0 8px 32px ${roleColor}20, 0 0 0 1px ${roleColor}30`;
         card.style.cursor = "pointer";
         card.style.opacity = "1";
+        card.style.transform = "scale(1)";
         card.setAttribute("data-state", "mine");
+        if (iconWrap) {
+          iconWrap.style.background = `${roleColor}28`;
+          iconWrap.style.boxShadow = `0 0 16px ${roleColor}18`;
+        }
         if (label) {
-          label.style.background = "linear-gradient(180deg, #ffffff 30%, rgba(255, 255, 255, 0.85) 100%)";
+          label.style.background = `linear-gradient(180deg, #ffffff 30%, ${roleColor}dd 100%)`;
           label.style.webkitBackgroundClip = "text";
           label.style.webkitTextFillColor = "transparent";
         }
         if (statusBadge) {
           statusBadge.textContent = "ASSIGNED";
-          statusBadge.style.display = "inline-block";
-          statusBadge.style.background = "rgba(255, 255, 255, 0.16)";
-          statusBadge.style.color = "#ffffff";
+          statusBadge.style.display = "inline-flex";
+          statusBadge.style.background = `${roleColor}22`;
+          statusBadge.style.color = roleColor;
+          statusBadge.style.boxShadow = `inset 0 0 0 0.5px ${roleColor}35`;
         }
       } else if (isTakenByOther) {
         card.style.background = "rgba(255, 255, 255, 0.02)";
         card.style.boxShadow = "inset 0 0 0 0.5px rgba(255, 255, 255, 0.04)";
         card.style.cursor = "not-allowed";
         card.style.opacity = "0.35";
+        card.style.transform = "scale(1)";
         card.setAttribute("data-state", "taken");
+        if (iconWrap) {
+          iconWrap.style.background = "rgba(255, 255, 255, 0.03)";
+          iconWrap.style.boxShadow = "none";
+        }
         if (label) {
           label.style.background = "none";
           label.style.webkitBackgroundClip = "unset";
@@ -72,16 +85,22 @@ export class RolePicker {
         }
         if (statusBadge) {
           statusBadge.textContent = "OCCUPIED";
-          statusBadge.style.display = "inline-block";
+          statusBadge.style.display = "inline-flex";
           statusBadge.style.background = "rgba(255, 255, 255, 0.04)";
           statusBadge.style.color = "rgba(255, 255, 255, 0.35)";
+          statusBadge.style.boxShadow = "none";
         }
       } else {
         card.style.background = "rgba(255, 255, 255, 0.04)";
         card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.16), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
         card.style.cursor = "pointer";
         card.style.opacity = "1";
+        card.style.transform = "scale(1)";
         card.setAttribute("data-state", "free");
+        if (iconWrap) {
+          iconWrap.style.background = `${roleColor}0c`;
+          iconWrap.style.boxShadow = "none";
+        }
         if (label) {
           label.style.background = "none";
           label.style.webkitBackgroundClip = "unset";
@@ -101,7 +120,7 @@ export class RolePicker {
     Object.assign(grid.style, {
       display: "grid",
       gridTemplateColumns: "1fr 1fr",
-      gap: "10px",
+      gap: "12px",
     });
 
     const roleIconUrls: Record<string, string> = {
@@ -113,42 +132,66 @@ export class RolePicker {
 
     for (const roleDef of Theme.roles) {
       const roleId = roleDef.id as RoleId;
+      const roleColor = roleDef.color;
 
       const card = document.createElement("button");
       Object.assign(card.style, {
         background: "rgba(255, 255, 255, 0.04)",
         boxShadow: "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)",
-        backdropFilter: "blur(12px) saturate(1.4)",
-        WebkitBackdropFilter: "blur(12px) saturate(1.4)",
+        backdropFilter: "blur(16px) saturate(1.5)",
+        WebkitBackdropFilter: "blur(16px) saturate(1.5)",
         border: "none",
-        borderRadius: "12px",
+        borderRadius: "14px",
         color: colors.textPrimary,
         cursor: "pointer",
         fontFamily: font.family,
-        padding: "12px 14px",
+        padding: "14px 14px 12px",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         textAlign: "center",
-        gap: "4px",
-        transition: `all ${transition.fast}`,
+        gap: "6px",
+        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
         boxSizing: "border-box",
+        position: "relative",
+        overflow: "hidden",
+      });
+
+      // Icon container with role-tinted circular background
+      const iconWrap = document.createElement("div");
+      iconWrap.className = "role-icon-wrap";
+      Object.assign(iconWrap.style, {
+        width: "44px",
+        height: "44px",
+        borderRadius: "50%",
+        background: `${roleColor}0c`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.25s cubic-bezier(0.4, 0, 0.2, 1)",
+        flexShrink: "0",
       });
 
       const icon = document.createElement("img");
       icon.src = roleIconUrls[roleId as string] || "";
       Object.assign(icon.style, {
-        width: "28px",
-        height: "28px",
+        width: "26px",
+        height: "26px",
         objectFit: "contain",
+        filter: "brightness(1.1)",
       });
+
+      iconWrap.appendChild(icon);
 
       const label = document.createElement("span");
       label.className = "role-label";
       label.textContent = roleDef.label;
-      label.style.fontSize = font.sizeSm;
-      label.style.fontWeight = "600";
-      label.style.letterSpacing = "0.2px";
+      Object.assign(label.style, {
+        fontSize: "13px",
+        fontWeight: "700",
+        letterSpacing: "0.15px",
+        lineHeight: "1.2",
+      });
 
       const statusBadge = document.createElement("span");
       statusBadge.className = "role-status";
@@ -158,29 +201,36 @@ export class RolePicker {
         fontFamily: "'JetBrains Mono', monospace",
         fontWeight: "600",
         letterSpacing: "0.8px",
-        padding: "2px 6px",
-        borderRadius: "4px",
+        padding: "3px 8px",
+        borderRadius: "6px",
         textTransform: "uppercase",
+        alignItems: "center",
+        gap: "4px",
       });
 
       const desc = document.createElement("span");
       desc.textContent = roleDef.description;
-      desc.style.fontSize = "10px";
-      desc.style.color = "rgba(255, 255, 255, 0.45)";
-      desc.style.lineHeight = "1.3";
+      Object.assign(desc.style, {
+        fontSize: "10px",
+        color: "rgba(255, 255, 255, 0.4)",
+        lineHeight: "1.35",
+        maxWidth: "160px",
+      });
 
-      card.append(icon, label, statusBadge, desc);
+      card.append(iconWrap, label, statusBadge, desc);
 
       card.addEventListener("mouseenter", () => {
         if (!card.disabled && card.getAttribute("data-state") !== "mine") {
           card.style.background = "rgba(255, 255, 255, 0.08)";
-          card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12)";
+          card.style.boxShadow = `inset 0 1px 0.5px rgba(255, 255, 255, 0.24), inset 0 0 0 0.5px rgba(255, 255, 255, 0.12), 0 4px 16px rgba(0, 0, 0, 0.2)`;
+          card.style.transform = "scale(1.03)";
         }
       });
       card.addEventListener("mouseleave", () => {
         if (card.getAttribute("data-state") === "free") {
           card.style.background = "rgba(255, 255, 255, 0.04)";
           card.style.boxShadow = "inset 0 1px 0.5px rgba(255, 255, 255, 0.14), inset 0 0 0 0.5px rgba(255, 255, 255, 0.08)";
+          card.style.transform = "scale(1)";
         }
       });
 
@@ -202,11 +252,13 @@ export class RolePicker {
     const sectionLabel = document.createElement("h3");
     sectionLabel.textContent = "Subsystem Specialization";
     Object.assign(sectionLabel.style, {
-      color: colors.textSecondary,
-      fontSize: "12px",
+      color: "rgba(255, 255, 255, 0.45)",
+      fontSize: "11px",
+      fontFamily: "'JetBrains Mono', monospace",
       fontWeight: "500",
-      margin: "0 0 8px 0",
-      letterSpacing: "0.5px",
+      margin: "0 0 10px 0",
+      letterSpacing: "1px",
+      textTransform: "uppercase",
     });
 
     this.mountEl.append(sectionLabel, grid);
