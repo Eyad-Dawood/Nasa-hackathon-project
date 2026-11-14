@@ -46,7 +46,7 @@ export interface NpcDefinition {
 export const NPC_LIST: NpcDefinition[] = [
   {
     id: "npc_guard",
-    name: "Control Droid",
+    name: "Beebo",
     tileCol: 5,
     tileRow: 4,
     dialogue: [

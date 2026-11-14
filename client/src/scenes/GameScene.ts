@@ -565,28 +565,28 @@ export class GameScene extends Phaser.Scene {
 
     // 2. High-Tech Floor Sector Emblem Plaque
     const plaqueX = (MAP_COLS * TILE_PX) / 2;
-    const plaqueY = 28;
+    const plaqueY = 16;
 
     const bannerBg = this.add.graphics();
-    bannerBg.setDepth(0.6);
+    bannerBg.setDepth(1.5);
     bannerBg.fillStyle(0x040810, 0.75);
-    bannerBg.fillRoundedRect(plaqueX - 180, plaqueY - 14, 360, 26, 6);
+    bannerBg.fillRoundedRect(plaqueX - 130, plaqueY - 10, 260, 20, 4);
     bannerBg.lineStyle(1, layout.palette.wallTint, 0.4);
-    bannerBg.strokeRoundedRect(plaqueX - 180, plaqueY - 14, 360, 26, 6);
+    bannerBg.strokeRoundedRect(plaqueX - 130, plaqueY - 10, 260, 20, 4);
 
     const bannerText = this.add.text(
       plaqueX,
-      plaqueY - 1,
+      plaqueY,
       layout.sectorTag,
       {
         fontFamily: "'JetBrains Mono', monospace",
-        fontSize: "10px",
+        fontSize: "8px",
         color: layout.palette.accentColor,
         stroke: "#000000",
         strokeThickness: 2,
       },
     );
-    bannerText.setOrigin(0.5, 0.5).setDepth(0.7);
+    bannerText.setOrigin(0.5, 0.5).setDepth(1.6);
 
     // 3. Subtle atmospheric particles floating in the room
     const particles = this.add.particles(0, 0, Assets.itemPlaceholder.key, {
