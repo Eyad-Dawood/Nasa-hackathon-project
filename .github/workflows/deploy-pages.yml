@@ -33,7 +33,7 @@ jobs:
           GITHUB_PAGES: "true"
           VITE_BACKEND_WS_URL: wss://game-server-production-6217125c.up.railway.app
         run: |
-          npm ci
+          npm install
           npm run build
 
       - uses: actions/configure-pages@v4
