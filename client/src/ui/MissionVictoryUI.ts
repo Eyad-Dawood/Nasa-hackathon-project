@@ -3,14 +3,15 @@ import { Theme } from "../config/theme";
 import { Objective, OBJECTIVES } from "../game/data/ObjectiveData";
 import { PixelFxAnimator } from "./PixelFxAnimator";
 import { SoundFX } from "../audio/SoundEffects";
+import { assetUrl } from "../config/basePath";
 
 const PLANET_SPRITES: Record<string, string> = {
-  M04: "/assets/planets/planet_earth_64.png",
-  M01: "/assets/planets/planet_moon_64.png",
-  M02: "/assets/planets/planet_mars_64.png",
-  M03: "/assets/planets/planet_europa_64.png",
-  M05: "/assets/planets/planet_sun_64.png",
-  M06: "/assets/planets/planet_titan_64.png",
+  M04: assetUrl("/assets/planets/planet_earth_64.png"),
+  M01: assetUrl("/assets/planets/planet_moon_64.png"),
+  M02: assetUrl("/assets/planets/planet_mars_64.png"),
+  M03: assetUrl("/assets/planets/planet_europa_64.png"),
+  M05: assetUrl("/assets/planets/planet_sun_64.png"),
+  M06: assetUrl("/assets/planets/planet_titan_64.png"),
 };
 
 export class MissionVictoryUI {
@@ -58,7 +59,7 @@ export class MissionVictoryUI {
 
   private _startConfetti(): void {
     this._confettiFx = new PixelFxAnimator({
-      src: "/assets/vfx/confetti.png",
+      src: assetUrl("/assets/vfx/confetti.png"),
       frameWidth: 200,
       frameHeight: 140,
       totalFrames: 103,

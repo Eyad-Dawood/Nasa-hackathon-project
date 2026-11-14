@@ -7,6 +7,7 @@ import {
 } from "lucide";
 import { Theme } from "../config/theme";
 import { SoundFX } from "../audio/SoundEffects";
+import { assetUrl } from "../config/basePath";
 
 export type GuideLanguage = "ar" | "en";
 
@@ -385,7 +386,7 @@ export class OnboardingGuideUI {
       overflowX: "hidden",
       // 100% OPAQUE static Earth Blaze space wallpaper (zero WebGL/animation overhead, maximum performance)
       backgroundColor: "#020308",
-      backgroundImage: "url('/assets/landing_space_earth_bg.jpg?v=2')",
+      backgroundImage: `url('${assetUrl("/assets/landing_space_earth_bg.jpg")}?v=2')`,
       backgroundSize: "cover",
       backgroundPosition: "center top",
       backgroundAttachment: "fixed",
@@ -780,7 +781,7 @@ export class OnboardingGuideUI {
     });
 
     const rocketImg = document.createElement("img");
-    rocketImg.src = "/assets/landing_hero_rocket.png";
+    rocketImg.src = assetUrl("/assets/landing_hero_rocket.png");
     rocketImg.alt = "Ascending Pixel Rocket on Floating Island";
     Object.assign(rocketImg.style, {
       width: "100%",
@@ -939,7 +940,7 @@ export class OnboardingGuideUI {
       });
 
       const thumbImg = document.createElement("img");
-      thumbImg.src = `/assets/videos/${topic.id}.jpg`;
+      thumbImg.src = assetUrl(`/assets/videos/${topic.id}.jpg`);
       thumbImg.alt = isAr ? topic.title.ar : topic.title.en;
       thumbImg.loading = "lazy";
       thumbImg.onerror = () => {

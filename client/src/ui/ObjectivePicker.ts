@@ -19,6 +19,7 @@ import {
 import { Theme } from "../config/theme";
 import { ColyseusService } from "../network/ColyseusService";
 import { OBJECTIVES, Objective } from "../game/data/ObjectiveData";
+import { assetUrl } from "../config/basePath";
 
 /**
  * Generates an organic flared ribbon SVG path connecting level stage portals.
@@ -115,37 +116,37 @@ const PLANET_STYLES: Record<string, PlanetStyle> = {
     accentColor: "#29ADFF",
     borderColor: "#38BDF8",
     badge: "EARTH LEO",
-    sprite: "/assets/planets/planet_earth_64.png",
+    sprite: assetUrl("/assets/planets/planet_earth_64.png"),
   },
   M01: {
     accentColor: "#CBD5E1",
     borderColor: "#94A3B8",
     badge: "THE MOON",
-    sprite: "/assets/planets/planet_moon_64.png",
+    sprite: assetUrl("/assets/planets/planet_moon_64.png"),
   },
   M02: {
     accentColor: "#F87171",
     borderColor: "#EF4444",
     badge: "MARS BASE",
-    sprite: "/assets/planets/planet_mars_64.png",
+    sprite: assetUrl("/assets/planets/planet_mars_64.png"),
   },
   M03: {
     accentColor: "#38BDF8",
     borderColor: "#0284C7",
     badge: "EUROPA / JUPITER",
-    sprite: "/assets/planets/planet_europa_64.png",
+    sprite: assetUrl("/assets/planets/planet_europa_64.png"),
   },
   M05: {
     accentColor: "#FBBF24",
     borderColor: "#F59E0B",
     badge: "HELIOS CORONA",
-    sprite: "/assets/planets/planet_sun_64.png",
+    sprite: assetUrl("/assets/planets/planet_sun_64.png"),
   },
   M06: {
     accentColor: "#34D399",
     borderColor: "#10B981",
     badge: "TITAN / SATURN",
-    sprite: "/assets/planets/planet_titan_64.png",
+    sprite: assetUrl("/assets/planets/planet_titan_64.png"),
   },
 };
 

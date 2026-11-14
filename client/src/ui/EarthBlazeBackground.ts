@@ -8,7 +8,9 @@
  * Integrated as a seamless background for the Lobby and Sign-in phases.
  */
 
-const EARTH_TEXTURE_LOCAL = "/assets/earth_blue_marble.jpg";
+import { assetUrl } from "../config/basePath";
+
+const EARTH_TEXTURE_LOCAL = assetUrl("/assets/earth_blue_marble.jpg");
 const EARTH_TEXTURE_FALLBACK = "https://cdn.21st.dev/assets/mirror/97/9743175942473681d78838ca1042553dab4779cf957fb6d8f22a81fb796f7797.jpg";
 
 export interface EarthBlazeOptions {
@@ -771,7 +773,7 @@ export class EarthBlazeBackground {
       height: "100vh",
       overflow: "hidden",
       backgroundColor: "#020308",
-      backgroundImage: "url('/assets/landing_space_earth_bg.jpg')",
+      backgroundImage: `url('${assetUrl("/assets/landing_space_earth_bg.jpg")}')`,
       backgroundSize: "cover",
       backgroundPosition: "center top",
       backgroundRepeat: "no-repeat",
@@ -784,7 +786,7 @@ export class EarthBlazeBackground {
     // Space Benders Brand Logo (Top-Left corner)
     const logo = document.createElement("img");
     logo.id = "space-benders-logo";
-    logo.src = "/assets/space_benders_logo.png";
+    logo.src = assetUrl("/assets/space_benders_logo.png");
     logo.alt = "Space Benders Logo";
     Object.assign(logo.style, {
       position: "absolute",

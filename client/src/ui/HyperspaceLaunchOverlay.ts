@@ -13,6 +13,7 @@
  */
 
 import { PixelFxAnimator } from "./PixelFxAnimator";
+import { assetUrl } from "../config/basePath";
 import { SoundFX } from "../audio/SoundEffects";
 
 const VERT_SHADER = `#version 300 es
@@ -161,7 +162,7 @@ export class HyperspaceLaunchOverlay {
     });
 
     const rocketImg = document.createElement("img");
-    rocketImg.src = "/assets/spaceShip/artemis_flight_rocket.png";
+    rocketImg.src = assetUrl("/assets/spaceShip/artemis_flight_rocket.png");
     rocketImg.alt = "Artemis Deep-Space Rocket";
     Object.assign(rocketImg.style, {
       width: "150px",
@@ -344,7 +345,7 @@ export class HyperspaceLaunchOverlay {
 
     // Launch Countdown VFX (3... 2... 1... GO!) procedural retro pixel art
     this.countdownFx = new PixelFxAnimator({
-      src: "/assets/vfx/countdown.png",
+      src: assetUrl("/assets/vfx/countdown.png"),
       frameWidth: 152,
       frameHeight: 136,
       totalFrames: 94,

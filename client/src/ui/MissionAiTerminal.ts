@@ -28,15 +28,17 @@ import {
   ColyseusService,
 } from "../network/ColyseusService";
 
+import { assetUrl } from "../config/basePath";
+
 const ARABIC_CHAR_RX = /[\u0600-\u06FF]/;
 
 export type DroidState = "idle" | "thinking" | "alert" | "ready";
 
 const DROID_AVATARS: Record<DroidState, string> = {
-  idle: "/assets/droid/droid_idle.png",
-  thinking: "/assets/droid/droid_thinking.png",
-  alert: "/assets/droid/droid_alert.png",
-  ready: "/assets/droid/droid_ready.png",
+  idle: assetUrl("/assets/droid/droid_idle.png"),
+  thinking: assetUrl("/assets/droid/droid_thinking.png"),
+  alert: assetUrl("/assets/droid/droid_alert.png"),
+  ready: assetUrl("/assets/droid/droid_ready.png"),
 };
 
 /**
