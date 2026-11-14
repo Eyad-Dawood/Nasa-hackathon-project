@@ -1,18 +1,26 @@
 import { Client, Room } from "@colyseus/sdk";
 
 // ─── Backend URL resolution ───────────────────────────────────────────────────
+// In production, VITE_BACKEND_WS_URL must be set to the Render backend's WSS URL.
+// In development on localhost, it auto-detects ws://localhost:2567.
 const isLocalhost =
   window.location.hostname === "localhost" ||
   window.location.hostname === "127.0.0.1";
 const envWsUrl = (import.meta as unknown as { env?: Record<string, string | undefined> })
   .env?.VITE_BACKEND_WS_URL;
+
 export const BACKEND_WS_URL = envWsUrl?.trim()
   ? envWsUrl.trim()
   : isLocalhost
     ? "ws://localhost:2567"
-    : `${window.location.protocol.replace("http", "ws")}//${window.location.hostname}${
-        window.location.port ? `:${window.location.port}` : ""
-      }`;
+    : (() => {
+        console.error(
+          "[ColyseusService] VITE_BACKEND_WS_URL is not set and we are not on localhost. " +
+          "WebSocket connections will fail. Set VITE_BACKEND_WS_URL in your build environment."
+        );
+        // Return empty string; the Colyseus Client constructor will throw a clear error.
+        return "";
+      })();
 
 export const BACKEND_HTTP_URL = BACKEND_WS_URL.replace(
   "ws://",
