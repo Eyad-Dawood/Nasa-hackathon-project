@@ -52,7 +52,7 @@ export class NpcController implements IInteractable {
     const wy = def.tileRow * TILE_PX + TILE_PX / 2;
 
     this._sprite = scene.add.image(wx, wy, Assets.npc.key);
-    this._sprite.setScale(1).setDepth(10);
+    this._sprite.setDisplaySize(32, 32).setDepth(10);
 
     this._nameLabel = scene.add.text(wx, wy - 20, def.name, {
       fontFamily: Theme.font.family,

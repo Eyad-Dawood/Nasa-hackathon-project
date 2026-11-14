@@ -61,7 +61,7 @@ export class ShipEntity implements IInteractable {
     this._worldY = pos.y;
 
     this._sprite = scene.add.image(this._worldX, this._worldY, Assets.ship.key);
-    this._sprite.setScale(1).setDepth(5);
+    this._sprite.setDisplaySize(96, 160).setDepth(5);
 
     this._label = scene.add.text(
       this._worldX,

@@ -523,9 +523,9 @@ export class GameScene extends Phaser.Scene {
 
         if (isCollidable) {
           const tile = wallsGroup.create(x, y, textureKey) as Phaser.Physics.Arcade.Image;
-          tile.setScale(1).refreshBody().setDepth(1).setTint(wallTint);
+          tile.setDisplaySize(TILE_PX, TILE_PX).refreshBody().setDepth(1).setTint(wallTint);
         } else {
-          this.add.image(x, y, textureKey).setScale(1).setDepth(0).setTint(floorTint);
+          this.add.image(x, y, textureKey).setDisplaySize(TILE_PX, TILE_PX).setDepth(0).setTint(floorTint);
         }
       }
     }

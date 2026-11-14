@@ -62,7 +62,7 @@ export class StationEntity implements IInteractable {
     const textureKey = workstationKeyMap[def.roleId] || Assets.station.key;
 
     this._sprite = scene.add.image(x, y, textureKey);
-    this._sprite.setScale(1).setDepth(5);
+    this._sprite.setDisplaySize(64, 64).setDepth(5);
     if (!this._hasAccess) this._sprite.setAlpha(0.55); // dim if no access
 
     // Label above workstation
